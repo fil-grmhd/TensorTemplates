@@ -5,8 +5,7 @@ Licence      : GPLv3
 --------------------------------------------------------------------------
 
 Tensor class templates with various operations on them defined.
-
-
+For an overview look into tensor_types.hh.
 
 Acknowledgement:
 Originally based on David Radices CPPUtils tensor definitions.
