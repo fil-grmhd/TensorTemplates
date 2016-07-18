@@ -1,0 +1,12 @@
+Cactus Code Thorn TensorTemplates
+Author(s)    : Ludwig Jens Papenfort <papenfort@th.physik.uni-frankfurt.de>
+Maintainer(s): Ludwig Jens Papenfort <papenfort@th.physik.uni-frankfurt.de>
+Licence      : GPLv3
+--------------------------------------------------------------------------
+
+Tensor class templates with various operations on them defined.
+
+
+
+Acknowledgement:
+Originally based on David Radices CPPUtils tensor definitions.

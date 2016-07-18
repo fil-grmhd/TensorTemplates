@@ -1,0 +1,17 @@
+# Interface definition for thorn TensorTemplates
+IMPLEMENTS: TensorTemplates
+
+INCLUDE HEADER: tensor_templates.hh IN tensor_templates.hh
+INCLUDE HEADER: tensor.hh IN tensor.hh
+INCLUDE HEADER: tensor_contraction.hh IN tensor_contraction.hh
+INCLUDE HEADER: tensor_trace.hh IN tensor_trace.hh
+INCLUDE HEADER: tensor_field.hh IN tensor_field.hh
+
+USES INCLUDE: finite_difference.h
+USES INCLUDE: utils.hh
+
+USES INCLUDE: tensor_templates.hh
+USES INCLUDE: tensor.hh
+USES INCLUDE: tensor_contraction.hh
+USES INCLUDE: tensor_trace.hh
+USES INCLUDE: tensor_field.hh
