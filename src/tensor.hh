@@ -19,6 +19,7 @@
 #ifndef TENSORS_TENSOR_HH
 #define TENSORS_TENSOR_HH
 
+#include <cmath>
 #include <cctk.h>
 
 #include "utilities.hh"
@@ -39,15 +40,15 @@ namespace tensors {
  *  \tparam T data type
  *  \tparam ndim_ number of dimensions
  *  \tparam rank_ tensor rank
- *  \tparam symmetry_type tensor symmetry type
+ *  \tparam symmetry_t_ tensor symmetry type
  */
-template<typename T, size_t ndim_, size_t rank_, typename symmetry_type>
+template<typename T, size_t ndim_, size_t rank_, typename symmetry_t_>
 class general_tensor_t {
     public:
         //! Data type
         typedef T data_t;
         //! This tensor type
-        typedef symmetry_type symmetry_t;
+        typedef symmetry_t_ symmetry_t;
 
 
         //! Rank of the tensor
@@ -106,6 +107,9 @@ class general_tensor_t {
 
         //! Contract with another tensor and return resulting tensor
         /*!
+         *
+         *  Implementation can be found in tensor_contraction.hh
+         *
          *  \tparam c_index0 contracted index of this tensor
          *  \tparam c_index1 contracted index of the other tensor
          *  \tparam tensor_t tensor type, automatically deduced from argument
@@ -118,6 +122,9 @@ class general_tensor_t {
 
         //! Trace over the two given indices and return resulting tensor
         /*!
+         *
+         *  Implementation can be found in tensor_trace.hh
+         *
          *  \tparam t_index0 first index to trace
          *  \tparam t_index1 second index to trace
          */
@@ -138,7 +145,7 @@ class general_tensor_t {
           // compute dimensional offset
           size_t index_diff = ndim-max_dim;
           for(auto mi = get_mi(); !mi.end(); ++mi) {
-            // copy value to subtensor if index is in right range
+            // copy value to subtensor if all indices are greater
             if(mi > index_diff-1) {
               for(size_t i = 0; i<rank; ++i) {
                 subtensor_mi[i] = mi[i]-index_diff;
@@ -149,14 +156,53 @@ class general_tensor_t {
           return subtensor;
         }
 
+        //! Compute component-wise difference with tensor of same type
+        /*!
+         *  Only defined for same tensor type, for now
+         */
+        inline this_tensor_t operator-(const this_tensor_t& tensor) {
+            this_tensor_t diff;
+            for(size_t i = 0; i<ndof; ++i) {
+              diff[i] = this->operator[](i)-tensor[i];
+            }
+            return diff;
+        }
+
+        //! Compute component-wise sum with tensor of same type
+        /*!
+         *  Only defined for same tensor type, for now
+         */
+        inline this_tensor_t operator+(const this_tensor_t& tensor) {
+            this_tensor_t sum;
+            for(size_t i = 0; i<ndof; ++i) {
+              sum[i] = this->operator[](i)+tensor[i];
+            }
+            return sum;
+        }
+
+        //! Compute component-wise scalar multiplication
+        template<typename scalar_t_>
+        inline this_tensor_t operator*(const scalar_t_ scalar) {
+          this_tensor_t result;
+          for(auto mi = get_mi(); !mi.end(); ++mi) {
+            result(mi) = scalar*this->operator()(mi);
+          }
+        }
+
+        //! Compute the Euclidean or Frobenius norm
+        inline data_t norm() {
+            data_t squared_sum = 0;
+            for(auto mi = get_mi(); !mi.end(); ++mi) {
+              squared_sum += this->operator()(mi)*this->operator()(mi);
+            }
+            return std::sqrt(squared_sum);
+        }
+
         //! Access the components of a tensor using a compressed index
         /*!
          *  The data is stored in a row major format
          */
         inline T & operator[](size_t const a) {
-#ifdef CPPUTILS_DEBUG
-            assert(a >= 0 && a < ndof);
-#endif
             return m_data[a];
         }
         //! Access the components of a tensor using a compressed index
@@ -164,9 +210,6 @@ class general_tensor_t {
          *  The data is stored in a row major format
          */
         inline T const & operator[](size_t const a) const {
-#ifdef CPPUTILS_DEBUG
-            assert(a >= 0 && a < ndof);
-#endif
             return m_data[a];
         }
 

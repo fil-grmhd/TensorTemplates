@@ -75,6 +75,9 @@ namespace tensors {
       template<typename... pointers_t>
       tensor_field_t(pointers_t... pointers);
 
+      // Default constructor
+      tensor_field_t() = default;
+
       // Access the GF pointers using the natural indices of the tensor
       template<typename... indices_t>
       inline data_t* operator()(indices_t... indices) const;

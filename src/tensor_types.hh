@@ -90,6 +90,17 @@ template<typename tensor0_t, typename tensor1_t>
                                    typename tensor1_t::data_t
                                  >::type;
 
+// Common tensor type, using above common data type definition
+template<typename tensor0_t, typename tensor1_t>
+  using common_tensor_t = generic_tensor_t<
+                            common_data_t<
+                              tensor0_t,
+                              tensor1_t
+                            >,
+                            tensor0_t::ndim,
+                            tensor0_t::rank
+                          >;
+
 } // namespace tensors
 
 
