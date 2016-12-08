@@ -182,11 +182,38 @@ class general_tensor_t {
 
         //! Compute component-wise scalar multiplication
         template<typename scalar_t_>
-        inline this_tensor_t operator*(const scalar_t_ scalar) {
+        friend inline this_tensor_t operator*(const scalar_t_ scalar, const this_tensor_t& tensor) {
           this_tensor_t result;
-          for(auto mi = get_mi(); !mi.end(); ++mi) {
-            result(mi) = scalar*this->operator()(mi);
+          for(auto mi = tensor.get_mi(); !mi.end(); ++mi) {
+            result(mi) = scalar*tensor(mi);
           }
+          return result;
+        }
+        template<typename scalar_t_>
+        friend inline this_tensor_t operator*(const this_tensor_t& tensor, const scalar_t_ scalar) {
+          this_tensor_t result;
+          for(auto mi = tensor.get_mi(); !mi.end(); ++mi) {
+            result(mi) = scalar*tensor(mi);
+          }
+          return result;
+        }
+
+        //! Compute component-wise scalar division
+        template<typename scalar_t_>
+        friend inline this_tensor_t operator/(const scalar_t_ scalar, const this_tensor_t& tensor) {
+          this_tensor_t result;
+          for(auto mi = tensor.get_mi(); !mi.end(); ++mi) {
+            result(mi) = tensor(mi)/scalar;
+          }
+          return result;
+        }
+        template<typename scalar_t_>
+        friend inline this_tensor_t operator/(const this_tensor_t& tensor, const scalar_t_ scalar) {
+          this_tensor_t result;
+          for(auto mi = tensor.get_mi(); !mi.end(); ++mi) {
+            result(mi) = tensor(mi)/scalar;
+          }
+          return result;
         }
 
         //! Compute the Euclidean or Frobenius norm
