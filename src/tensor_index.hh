@@ -49,7 +49,7 @@ constexpr decltype(auto) uncompress_index_impl(std::index_sequence<I...>) {
      return std::make_tuple((uncompress_index_t<ndim,I,c_index>::value)...);
 };
       
-template<size_t ndim, size_t rank, size_t c_index, typename Indices= std::make_index_sequence<rank>>
+template<size_t ndim, size_t c_index, typename Indices= std::make_index_sequence<rank>>
 constexpr decltype(auto) uncompress_index() {
    return uncompress_index_impl<ndim, c_index>(Indices{});
 };

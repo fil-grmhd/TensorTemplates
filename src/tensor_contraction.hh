@@ -1,6 +1,8 @@
 #ifndef TENSOR_CONTRACT_HH
 #define TENSOR_CONTRACT_HH
 
+#include<cassert>
+
 
 
 template<size_t i1, size_t i2, typename E1, typename E2>
@@ -76,11 +78,25 @@ public:
 		"Ranks don't match! Can only contract covariant with contravariant indices!");
     };
     
-    inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i]; };
+    inline decltype(auto) operator[](size_t i) const { 
+      assert(!"Do not acces the tensor expression via the [] operator!");
+      return 0.; };
+
+    template<int N=ndim-1, size_t stride1, size_t stride2>
+    inline decltype(auto) recursive_contract(){
+      using namespace utilities;
+
+      return (N==0) ? _u.template evaluate<stride1>()*_v.template evaluate<stride2>() 
+	            : recursive_contract<(N-1)*(N>0),stride1,stride2>() + 
+		      _u.template evaluate<stride1 + (N-1)*static_pow<ndim,i1>::value>()
+		      *_v.template evaluate<stride2 + (N-1)*static_pow<ndim,i2>::value>();
+    }
 
 
     template<size_t cindex>
     inline decltype(auto) evaluate() const { 
+
+      constexpr auto index_r = uncompress_index<ndim,cindex>();
 
       constexpr size_t index_size = std::tuple_size<decltype(index_r)>::value;
 
