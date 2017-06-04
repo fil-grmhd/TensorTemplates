@@ -3,10 +3,11 @@
 
 #include<cassert>
 
+namespace tensors{
 
 
 template<size_t i1, size_t i2, typename E1, typename E2>
-class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<E1, E2> > {
+class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,i2,E1, E2> > {
    E1 const& _u;
    E2 const& _v;
     
@@ -18,7 +19,7 @@ public:
     static constexpr size_t rank = E1::rank + E2::rank -2;
 
 
-    static inline constexpr get_index_t(){
+    static inline constexpr decltype(auto) get_index_t(){
 
       using E1_t = typename std::tuple_element<i1,typename E1::index_t>::type;
       using E2_t = typename std::tuple_element<i2,typename E2::index_t>::type;
@@ -30,21 +31,21 @@ public:
       constexpr auto E2_size = std::tuple_size<typename E2::index_t>::value;
 
       constexpr auto E1_p1 = get_subtuple<0,i1-1>(E1_it);
-      constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-2>(E1_it);
+      constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-1>(E1_it);
 
       constexpr auto E2_p1 = get_subtuple<E1_size-1,i2-1>(E2_it);
-      constexpr auto E2_p2 = get_subtuple<i2+1,E2_size-2>(E2_it);
+      constexpr auto E2_p2 = get_subtuple<i2+1,E2_size-1>(E2_it);
 
-      constexpr auto index_1 = std::tuple_cat(E1_p1,t1,E1_p2);
-      constexpr auto index_2 = std::tuple_cat(E2_p2,t2,E2_p2);
+      constexpr auto index_1 = std::tuple_cat(E1_p1,E1_p2);
+      constexpr auto index_2 = std::tuple_cat(E2_p2,E2_p2);
 
-      return std::tuple_cat(index_1,index2);
+      return std::tuple_cat(index_1,index_2);
     
     }
 
     using index_t = decltype(get_index_t());
 
-    this_tensor_t = general_tensor_t<data_t,frame_t,index_t,ndim>
+    using this_tensor_t = general_tensor_t<data_t,frame_t,rank,index_t,ndim>;
 
 
     tensor_contraction_t(E1 const& u, E2 const& v) : _u(u), _v(v) {
@@ -58,7 +59,7 @@ public:
 		"Data types don't match!");
 
             static_assert(std::is_same<
-		                        std::conditional<
+		                        typename std::conditional<
 					std::is_same< 
 					typename std::tuple_element<i1,typename E1::index_t>::type,
 					lower_t>::value,
@@ -66,7 +67,7 @@ public:
 					upper_t
 					>::type,
 					
-					std::conditional<
+					typename std::conditional<
 					std::is_same< 
 					typename std::tuple_element<i2,typename E2::index_t>::type,
 					upper_t>::value,
@@ -74,7 +75,7 @@ public:
 					upper_t
 					>::type
 
-		                        >::value
+		                        >::value,
 		"Ranks don't match! Can only contract covariant with contravariant indices!");
     };
     
@@ -96,7 +97,7 @@ public:
     template<size_t cindex>
     inline decltype(auto) evaluate() const { 
 
-      constexpr auto index_r = uncompress_index<ndim,cindex>();
+      constexpr auto index_r = uncompress_index<ndim,rank,cindex>();
 
       constexpr size_t index_size = std::tuple_size<decltype(index_r)>::value;
 
@@ -108,10 +109,10 @@ public:
       constexpr auto E2_size = std::tuple_size<typename E2::index_t>::value;
   
       constexpr auto E1_p1 = get_subtuple<0,i1-1>(index_r);
-      constexpr auto E1_p2 = get_subtuple<i1,E1_size-2>(index_r);
+      constexpr auto E1_p2 = get_subtuple<i1,E1_size-1>(index_r);
 
       constexpr auto E2_p1 = get_subtuple<E1_size-1,i2-1>(index_r);
-      constexpr auto E2_p2 = get_subtuple<i2,E2_size-2>(index_r);
+      constexpr auto E2_p2 = get_subtuple<i2,E2_size-1>(index_r);
 
       constexpr auto index_1 = std::tuple_cat(E1_p1,t1,E1_p2);
       constexpr auto index_2 = std::tuple_cat(E2_p2,t2,E2_p2);
