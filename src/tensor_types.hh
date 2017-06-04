@@ -18,88 +18,54 @@
 #ifndef TENSORS_TYPES_HH
 #define TENSORS_TYPES_HH
 
-#include <cctk.h>
-
 #include <type_traits>
-#include <boost/type_traits.hpp>
 
 namespace tensors {
-// Forward declarations of tensor types
 
-// General tensor type, see tensor.hh
-template<typename T, size_t ndim, size_t rank, typename symmetry_t>
-class general_tensor_t;
+template<typename T, size_t ndim_, typename frame_t_ , typename... ranks>
+using tensor_t = general_tensor_t<T,frame_t_, std::tuple<ranks...>, ndim_>;
 
-// Symmetry types, see symmetry_type.hh
-class generic_symmetry_t;
-class symmetric2_symmetry_t;
+template<typename T,size_t ndim_,typename frame_t_>
+using vector_t = tensor_t<T,ndim_,frame_t_, upper_t>;
 
-// old types, deprecated
-template<typename T, size_t ndim, size_t rank>
-  using generic = general_tensor_t<T,ndim,rank,generic_symmetry_t>;
-template<typename T, size_t ndim, size_t rank>
-  using symmetric2 = general_tensor_t<T,ndim,rank,symmetric2_symmetry_t>;
-template<size_t ndim>
-class metric;
-template<size_t ndim>
-class inv_metric;
+template<typename T>
+using vector3_t = tensor_t<T,3,eulerian_t, upper_t>;
 
-// Tensor specializations
-template<typename T, size_t ndim>
-  using vector_t = general_tensor_t<T,ndim,1,generic_symmetry_t>;
-
-template<typename T, size_t ndim, size_t rank>
-  using generic_tensor_t = general_tensor_t<T,ndim,rank,generic_symmetry_t>;
-template<typename T, size_t ndim, size_t rank>
-  using symmetric_tensor_t = general_tensor_t<T,ndim,rank,symmetric2_symmetry_t>;
-
-template<size_t ndim>
-  using metric_t = metric<ndim>;
-template<size_t ndim>
-  using inv_metric_t = inv_metric<ndim>;
+template<typename T>
+using covector3_t = tensor_t<T,3,eulerian_t, lower_t>;
 
 
-// Tensor fields, see tensor_field.hh
-template<typename tensor_t>
-class tensor_field_t;
+template<typename T, typename... ranks>
+using tensor3_t = tensor_t<T,3,eulerian_t, ranks...>;
 
-template<typename data_t>
-class scalar_field_t;
+template<typename T>
+using vector4_t = tensor_t<T,4,eulerian_t, upper_t>;
 
-template<size_t ndim>
-  using metric_field_t = tensor_field_t<metric_t<ndim>>;
+template<typename T>
+using covector4_t = tensor_t<T,4,eulerian_t, lower_t>;
 
-template<size_t ndim>
-  using inv_metric_field_t = tensor_field_t<inv_metric_t<ndim>>;
+template<typename T, typename... ranks>
+using tensor4_t = tensor_t<T,4,eulerian_t, ranks...>;
 
-template<typename T, size_t ndim, size_t rank>
-  using generic_field_t = tensor_field_t<generic_tensor_t<T,ndim,rank>>;
+template<typename T>
+using cm_vector3_t = tensor_t<T,3,comoving_t, upper_t>;
 
-template<typename T, size_t ndim, size_t rank>
-  using symmetric_field_t = tensor_field_t<symmetric_tensor_t<T,ndim,rank>>;
+template<typename T>
+using cm_covector3_t = tensor_t<T,3,comoving_t, lower_t>;
 
-template<typename T, size_t ndim>
-  using vector_field_t = tensor_field_t<vector_t<T,ndim>>;
+template<typename T, typename... ranks>
+using cm_tensor3_t = tensor_t<T,3,comoving_t, ranks...>;
+
+template<typename T>
+using cm_vector4_t = tensor_t<T,4,comoving_t, upper_t>;
+
+template<typename T>
+using cm_covector4_t = tensor_t<T,4,comoving_t, lower_t>;
+
+template<typename T, typename... ranks>
+using cm_tensor4_t = tensor_t<T,4,comoving_t, ranks...>;
 
 
-// Common data type, both implicitly convertable to (e.g. int,float -> float)
-// Used in trace/contraction routines to get a well defined result
-template<typename tensor0_t, typename tensor1_t>
-  using common_data_t = typename boost::common_type<
-                                   typename tensor0_t::data_t,
-                                   typename tensor1_t::data_t
-                                 >::type;
-
-// Common tensor type, using above common data type definition
-template<typename tensor0_t, typename tensor1_t>
-  using common_tensor_t = generic_tensor_t<
-                            common_data_t<
-                              tensor0_t,
-                              tensor1_t
-                            >,
-                            tensor0_t::ndim,
-                            tensor0_t::rank
-                          >;
 
 } // namespace tensors
 

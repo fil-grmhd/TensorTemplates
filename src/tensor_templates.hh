@@ -18,10 +18,9 @@
 #ifndef TENSORS_HH
 #define TENSORS_HH
 
-#include <tensor.hh>
-#include <tensor_contraction.hh>
-#include <tensor_trace.hh>
-#include <tensor_field.hh>
+#include "tensor.hh"
+#include "tensor_contraction.hh"
+#include "tensor_types.hh"
 
 //! main namespace
 namespace tensors {

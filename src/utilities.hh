@@ -24,12 +24,21 @@ namespace utilities {
 
 template<size_t a, size_t b>
 struct static_pow {
-    static constexpr size_t result = a*static_pow<a,b-1>::result;
+    static constexpr size_t value = a*static_pow<a,b-1>::value;
 };
 template<size_t a>
 struct static_pow<a,0> {
-    static constexpr size_t result = 1;
+    static constexpr size_t value = 1;
 };
+
+
+//Useful helper for checking conditions on template parameters
+//https://stackoverflow.com/questions/28253399/check-traits-for-all-variadic-template-arguments/28253503#28253503
+template<bool...> struct bool_pack;
+template<bool... bs> 
+using all_true = std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
+
+
 
 } // namespace utilities
 } // namespace tensors
