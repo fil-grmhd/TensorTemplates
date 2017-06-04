@@ -51,6 +51,8 @@ public:
 
     using data_t = typename E1::data_t;
     using frame_t = typename E1::frame_t;
+    static constexpr size_t ndim = E1::ndim;
+    static constexpr size_t rank = E1::rank;
 
    using this_tensor_t = typename E1::this_tensor_t;
 
@@ -76,6 +78,8 @@ public:
    using this_tensor_t = typename E1::this_tensor_t;
     using data_t = typename E1::data_t;
     using frame_t = typename E1::frame_t;
+    static constexpr size_t ndim = E1::ndim;
+    static constexpr size_t rank = E1::rank;
 
 
     tensor_sub_t(E1 const& u, E2 const& v) : _u(u), _v(v) {
@@ -98,6 +102,8 @@ public:
    using this_tensor_t = typename E2::this_tensor_t;
     using data_t = typename E2::data_t;
     using frame_t = typename E2::frame_t;
+    static constexpr size_t ndim = E2::ndim;
+    static constexpr size_t rank = E2::rank;
 
     tensor_scalar_mult_t(data_t const& u, E2 const& v) : _u(u), _v(v) {};
     
@@ -116,6 +122,8 @@ public:
    using this_tensor_t = typename E2::this_tensor_t;
     using data_t = typename E2::data_t;
     using frame_t = typename E2::frame_t;
+    static constexpr size_t ndim = E2::ndim;
+    static constexpr size_t rank = E2::rank;
 
     tensor_scalar_div_t( E2 const& u, data_t const & v) : _u(u), _v(v) {};
     

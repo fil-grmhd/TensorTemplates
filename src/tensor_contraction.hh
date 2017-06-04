@@ -30,11 +30,11 @@ public:
       constexpr auto E1_size = std::tuple_size<typename E1::index_t>::value;
       constexpr auto E2_size = std::tuple_size<typename E2::index_t>::value;
 
-      constexpr auto E1_p1 = get_subtuple<0,i1-1>(E1_it);
-      constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-1>(E1_it);
+      constexpr auto E1_p1 = get_subtuple<0,i1-1 >(E1_it);
+      constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-1 >(E1_it);
 
-      constexpr auto E2_p1 = get_subtuple<E1_size-1,i2-1>(E2_it);
-      constexpr auto E2_p2 = get_subtuple<i2+1,E2_size-1>(E2_it);
+      constexpr auto E2_p1 = get_subtuple<E1_size-1,i2-1 >(E2_it);
+      constexpr auto E2_p2 = get_subtuple<i2+1,E2_size-1 >(E2_it);
 
       constexpr auto index_1 = std::tuple_cat(E1_p1,E1_p2);
       constexpr auto index_2 = std::tuple_cat(E2_p2,E2_p2);
@@ -82,16 +82,35 @@ public:
     inline decltype(auto) operator[](size_t i) const { 
       assert(!"Do not acces the tensor expression via the [] operator!");
       return 0.; };
-
-    template<int N=ndim-1, size_t stride1, size_t stride2>
-    inline decltype(auto) recursive_contract(){
+/*  
+    template<int N=ndim-1, int stride1, int stride2>
+    inline decltype(auto) recursive_contract() const {
       using namespace utilities;
+      return (N==0) ? 
+      _u.template evaluate<stride1>()*_v.template evaluate<stride2>() 
+                      : recursive_contract<(N-1)*(N>0),stride1,stride2>() + 
+		      _u.template evaluate<stride1 + N*static_pow<ndim,i1>::value>()
+		      *_v.template evaluate<stride2 + N*static_pow<ndim,i2>::value>();
+    };
+*/
 
-      return (N==0) ? _u.template evaluate<stride1>()*_v.template evaluate<stride2>() 
-	            : recursive_contract<(N-1)*(N>0),stride1,stride2>() + 
-		      _u.template evaluate<stride1 + (N-1)*static_pow<ndim,i1>::value>()
-		      *_v.template evaluate<stride2 + (N-1)*static_pow<ndim,i2>::value>();
-    }
+    template<int N, int stride1, int stride2>
+    struct recursive_contract {
+      template<typename A, typename B>
+      static inline decltype(auto) contract(A const & _u, B const & _v){
+                    return recursive_contract<(N-1)*(N>0),stride1,stride2>::contract(_u,_v) + 
+		      _u.template evaluate<stride1 + N*utilities::static_pow<ndim,i1>::value>()
+		      *_v.template evaluate<stride2 + N*utilities::static_pow<ndim,i2>::value>();
+      };
+    };
+
+    template<int stride1, int stride2>
+    struct recursive_contract<0,stride1,stride2> {
+      template<typename A, typename B>
+      static inline decltype(auto) contract(A const & _u, B const & _v){
+                    return _u.template evaluate<stride1>()*_v.template evaluate<stride2>() ;
+      };
+    };
 
 
     template<size_t cindex>
@@ -109,10 +128,10 @@ public:
       constexpr auto E2_size = std::tuple_size<typename E2::index_t>::value;
   
       constexpr auto E1_p1 = get_subtuple<0,i1-1>(index_r);
-      constexpr auto E1_p2 = get_subtuple<i1,E1_size-1>(index_r);
+      constexpr auto E1_p2 = get_subtuple<i1,E1_size-1 >(index_r);
 
-      constexpr auto E2_p1 = get_subtuple<E1_size-1,i2-1>(index_r);
-      constexpr auto E2_p2 = get_subtuple<i2,E2_size-1>(index_r);
+      constexpr auto E2_p1 = get_subtuple<E1_size-1,i2-1 >(index_r);
+      constexpr auto E2_p2 = get_subtuple<i2,E2_size-1 >(index_r);
 
       constexpr auto index_1 = std::tuple_cat(E1_p1,t1,E1_p2);
       constexpr auto index_2 = std::tuple_cat(E2_p2,t2,E2_p2);
@@ -120,7 +139,10 @@ public:
       constexpr size_t stride_1 =E1::this_tensor_t::compressed_index(index_1);
       constexpr size_t stride_2 =E2::this_tensor_t::compressed_index(index_2);
 
-      return recursive_contract<ndim-1,stride_1,stride_2>(); 
+      static_assert(stride_1>=0 , "internal error");
+      static_assert(stride_2>=0 , "internal error");
+
+      return recursive_contract<ndim-1,stride_1,stride_2>::contract(_u,_v);
      
   }
   

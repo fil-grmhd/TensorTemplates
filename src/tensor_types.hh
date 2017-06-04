@@ -23,7 +23,7 @@
 namespace tensors {
 
 template<typename T, size_t ndim_, typename frame_t_ , typename... ranks>
-using tensor_t = general_tensor_t<T,frame_t_, std::tuple<ranks...>, ndim_>;
+using tensor_t = general_tensor_t<T,frame_t_, sizeof...(ranks),std::tuple<ranks...>, ndim_>;
 
 template<typename T,size_t ndim_,typename frame_t_>
 using vector_t = tensor_t<T,ndim_,frame_t_, upper_t>;

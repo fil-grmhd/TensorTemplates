@@ -34,9 +34,9 @@
 namespace tensors {
 
 //template<typename T, size_t ndim_, frame_t_ ,rank_t_... ranks>
-template<typename T, typename frame_t_ ,typename index_t_, size_t ndim_>
+template<typename T, typename frame_t_ ,size_t rank_, typename index_t_, size_t ndim_>
 class general_tensor_t : 
-public tensor_expression_t< general_tensor_t<T, frame_t_, index_t_, ndim_>>{
+public tensor_expression_t< general_tensor_t<T, frame_t_,rank_ , index_t_, ndim_>>{
 
     public:
         //! Data type
@@ -48,14 +48,14 @@ public tensor_expression_t< general_tensor_t<T, frame_t_, index_t_, ndim_>>{
 	using frame_t = frame_t_;
 
         //! Rank of the tensor
-        static size_t constexpr rank = std::tuple_size<index_t>::value;
+        static size_t constexpr rank = rank_;//std::tuple_size<index_t>::value;
         //! Number of dimensions
         static size_t constexpr ndim = ndim_;
 	//! Number of degrees of freedom
 	static size_t constexpr ndof = utilities::static_pow<ndim,rank>::value;
 
         //! This tensor type
-        using this_tensor_t = general_tensor_t<T, frame_t_, index_t, ndim_>;
+        using this_tensor_t = general_tensor_t<T, frame_t_, rank_, index_t, ndim_>;
 
     private:
       std::array<T, ndof> m_data {};
