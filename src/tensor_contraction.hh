@@ -21,26 +21,19 @@ public:
 
     static inline constexpr decltype(auto) get_index_t(){
 
-      using E1_t = typename std::tuple_element<i1,typename E1::index_t>::type;
-      using E2_t = typename std::tuple_element<i2,typename E2::index_t>::type;
-
       constexpr auto E1_it = typename E1::index_t(); 
       constexpr auto E2_it = typename E2::index_t(); 
 
-      constexpr auto E1_size = std::tuple_size<typename E1::index_t>::value;
-      constexpr auto E2_size = std::tuple_size<typename E2::index_t>::value;
+      constexpr auto E1_size = E1::rank;
+      constexpr auto E2_size = E2::rank;
 
-      constexpr auto E1_p1 = get_subtuple<0,i1-1 >(E1_it);
+      constexpr auto E1_p1 = get_subtuple<E1_size*(i1<1), i1-1 >(E1_it);
       constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-1 >(E1_it);
 
-      constexpr auto E2_p1 = get_subtuple<E1_size-1,i2-1 >(E2_it);
+      constexpr auto E2_p1 = get_subtuple<E2_size*(i2<1) ,i2-1 >(E2_it);
       constexpr auto E2_p2 = get_subtuple<i2+1,E2_size-1 >(E2_it);
 
-      constexpr auto index_1 = std::tuple_cat(E1_p1,E1_p2);
-      constexpr auto index_2 = std::tuple_cat(E2_p2,E2_p2);
-
-      return std::tuple_cat(index_1,index_2);
-    
+      return std::tuple_cat(E1_p1,E1_p2,E2_p1,E2_p2);
     }
 
     using index_t = decltype(get_index_t());
@@ -49,6 +42,7 @@ public:
 
 
     tensor_contraction_t(E1 const& u, E2 const& v) : _u(u), _v(v) {
+
             static_assert(std::is_same<typename E1::frame_t, typename E2::frame_t>::value,
 		"Frame types don't match!");
 
@@ -77,6 +71,8 @@ public:
 
 		                        >::value,
 		"Ranks don't match! Can only contract covariant with contravariant indices!");
+
+	    static_assert(rank == std::tuple_size<index_t>::value , "internal error");
     };
     
     inline decltype(auto) operator[](size_t i) const { 
@@ -116,10 +112,10 @@ public:
       constexpr auto E1_size = std::tuple_size<typename E1::index_t>::value;
       constexpr auto E2_size = std::tuple_size<typename E2::index_t>::value;
   
-      constexpr auto E1_p1 = get_subtuple<0,i1-1>(index_r);
-      constexpr auto E1_p2 = get_subtuple<i1,E1_size-2 >(index_r);
+      constexpr auto E1_p1 = get_subtuple<index_size*(i1<1),i1-1>(index_r);
+      constexpr auto E1_p2 = get_subtuple<i1 +(index_size)*(E1_size<2) ,E1_size-2 >(index_r);
 
-      constexpr auto E2_p1 = get_subtuple<E1_size-1,E1_size-1 + i2-1 >(index_r);
+      constexpr auto E2_p1 = get_subtuple<E1_size-1 +index_size*(i2 + E1_size -1 <1) ,E1_size-1 + i2-1 >(index_r);
       constexpr auto E2_p2 = get_subtuple<E1_size-1 +i2, rank -1 >(index_r);
 
       constexpr auto index_1 = std::tuple_cat(E1_p1,t1,E1_p2);

@@ -33,9 +33,9 @@ struct compressed_index_t{
 
 template<size_t ndim, typename tuple_t, size_t N =std::tuple_size<tuple_t>::value - 1>
 static inline constexpr size_t compressed_index_tuple( tuple_t t){
-   return (N==0) ? std::get<std::tuple_size<tuple_t>::value-1 -N>(t)
+   return (N==0) ? std::get<std::tuple_size<tuple_t>::value-1>(t)
                  : compressed_index_tuple<ndim, tuple_t,(N-1)*(N>0)>(t) * ndim
-		   + std::get<(N-1)*(N>0)>(t) ;
+		   + std::get<(std::tuple_size<tuple_t>::value-1 -N)*(N>0)>(t) ;
 }
 
 //Obtain index from compressed index
@@ -67,6 +67,22 @@ template<size_t begin, size_t end,
 constexpr decltype(auto) get_subtuple(const tuple_t &t){
    return get_subtuple_impl<begin>(t, Indices{});
 };
+
+
+template<typename tuple1_t, typename tuple2_t, size_t... i1, size_t... i2>
+constexpr decltype(auto) concat_tuples_impl(tuple1_t t1, tuple2_t t2,
+    std::index_sequence<i1...>, std::index_sequence<i2...>){
+  return std::make_tuple(std::get<i1>(t1)... , std::get<i2>(t2)...);
+}
+
+
+template<typename tuple1_t, typename tuple2_t, 
+  typename Indices1= std::make_index_sequence<std::tuple_size<tuple1_t>::value>,
+  typename Indices2= std::make_index_sequence<std::tuple_size<tuple2_t>::value>
+  >
+constexpr decltype(auto) concat_tuples(tuple1_t t1, tuple2_t t2){
+  return concat_tuples_impl(t1,t2,Indices1{}, Indices2{});
+}
 
 };
 
