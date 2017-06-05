@@ -35,15 +35,15 @@ struct compressed_index_t {
 
 //! Computes the compressed index of a tuple of indices
 template<size_t ndim, typename tuple_t, size_t N =std::tuple_size<tuple_t>::value - 1>
-static inline constexpr size_t compressed_index_tuple(tuple_t t) {
-  return (N==0) ? std::get<std::tuple_size<tuple_t>::value-1 -N>(t)
-                : compressed_index_tuple<ndim, tuple_t,(N-1)*(N>0)>(t) * ndim + std::get<(N-1)*(N>0)>(t) ;
+static inline constexpr size_t compressed_index_tuple( tuple_t t){
+  return (N==0) ? std::get<std::tuple_size<tuple_t>::value-1>(t)
+                : compressed_index_tuple<ndim, tuple_t,(N-1)*(N>0)>(t) * ndim + std::get<(std::tuple_size<tuple_t>::value-1 -N)*(N>0)>(t);
 }
 
 //Obtain index from compressed index
 template<size_t ndim, size_t rank, size_t c_index>
-struct uncompress_index_t {
-   static constexpr size_t value = (c_index/utilities::static_pow<ndim,rank>::value) % ndim;
+struct uncompress_index_t{
+   static constexpr size_t value = static_cast<size_t>(c_index/utilities::static_pow<ndim,rank>::value) % ndim;
 };
 
 template<size_t ndim, size_t c_index, std::size_t... I>
