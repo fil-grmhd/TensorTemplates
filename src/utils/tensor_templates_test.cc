@@ -166,7 +166,7 @@ int main(void) {
     }
 
     tensors::vector_t<CCTK_REAL,3> up_beta;
-    up_beta.set_to_zero();
+    up_beta.zero();
 
     for(int a = 0; a < 3; ++a)
     for(int b = 0; b < 3; ++b) {

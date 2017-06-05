@@ -10,7 +10,7 @@ template<size_t i1, size_t i2, typename E1, typename E2>
 class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,i2,E1, E2> > {
    E1 const& _u;
    E2 const& _v;
-    
+
 public:
 
     using data_t = typename E1::data_t;
@@ -24,8 +24,8 @@ public:
       using E1_t = typename std::tuple_element<i1,typename E1::index_t>::type;
       using E2_t = typename std::tuple_element<i2,typename E2::index_t>::type;
 
-      constexpr auto E1_it = typename E1::index_t(); 
-      constexpr auto E2_it = typename E2::index_t(); 
+      constexpr auto E1_it = typename E1::index_t();
+      constexpr auto E2_it = typename E2::index_t();
 
       constexpr auto E1_size = std::tuple_size<typename E1::index_t>::value;
       constexpr auto E2_size = std::tuple_size<typename E2::index_t>::value;
@@ -40,7 +40,6 @@ public:
       constexpr auto index_2 = std::tuple_cat(E2_p2,E2_p2);
 
       return std::tuple_cat(index_1,index_2);
-    
     }
 
     using index_t = decltype(get_index_t());

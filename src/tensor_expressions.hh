@@ -30,41 +30,49 @@
 
 namespace tensors {
 
+//! Cumulative type check of index types
 template<typename E1, typename E2, size_t... I>
-constexpr bool compare_index_impl(std::index_sequence<I...>){
+constexpr bool compare_index_impl(std::index_sequence<I...>) {
   using namespace utilities;
   return all_true<
-    	std::is_same< 
-	std::remove_cv_t<typename std::tuple_element<I, typename E1::index_t>::type>,
-	std::remove_cv_t<typename std::tuple_element<I, typename E2::index_t>::type>
-	>::value...
-    >::value;
+           std::is_same<
+	           std::remove_cv_t<typename std::tuple_element<I, typename E1::index_t>::type>,
+	           std::remove_cv_t<typename std::tuple_element<I, typename E2::index_t>::type>
+	         >::value...
+         >::value;
 };
-
 template<typename E1, typename E2, size_t ndim, typename Indices = std::make_index_sequence<ndim>>
-constexpr bool compare_index(){
+constexpr bool compare_index() {
   return compare_index_impl<E1,E2>(Indices{});
 }
 
 
 
-template <typename E>
+template<typename E>
 class tensor_expression_t {
   public:
-    inline decltype(auto) operator[](size_t i) const { return static_cast<E const&>(*this)[i];     };
-    template<size_t index>
-    inline decltype(auto) evaluate() const { return static_cast<E const&>(*this).template evaluate<index>();     };
-      
-    operator E& () { return static_cast<E&>(*this); };
-    operator const E& () const { return static_cast<const E&>(*this); };
+    inline decltype(auto) operator[](size_t i) const {
+      return static_cast<E const&>(*this)[i];
+    };
 
-  };
+    template<size_t index>
+    inline decltype(auto) evaluate() const {
+      return static_cast<E const&>(*this).template evaluate<index>();
+    };
+
+    operator E& () {
+      return static_cast<E&>(*this);
+    };
+    operator const E& () const {
+      return static_cast<const E&>(*this);
+    };
+};
 
 template <typename E1, typename E2>
 class tensor_sum_t : public tensor_expression_t<tensor_sum_t<E1, E2> > {
    E1 const& _u;
    E2 const& _v;
-    
+
 public:
 
     using data_t = typename E1::data_t;

@@ -31,11 +31,33 @@ inline constexpr decltype(auto) tuple_factory_call(){
   return tuple_factory(I{});
 }
 
-int main(){
-  auto tp = tuple_factory_call<0>();
+template<typename Tuple, int index, typename... Ts>
+ struct print_tuple {
+     void operator() (Tuple& t) {
+         std::cout << std::get<index>(t) << " ";
+         print_tuple<Tuple,index - 1, Ts...>{}(t);
+     }
+ };
 
-//  std::cout << std::get<0>(tp) <<std::endl;
-  std::cout << std::tuple_size<decltype(tp)>::value;
+ template<typename Tuple, typename... Ts>
+ struct print_tuple<Tuple, 0, Ts...> {
+     void operator() (Tuple& t) {
+         std::cout << std::get<0>(t) << std::endl;
+     }
+ };
+
+ template<typename Tuple, typename... Ts>
+ void print(Tuple& t) {
+     const auto size = std::tuple_size<Tuple>::value;
+     print_tuple<Tuple,size - 1, Ts...>{}(t);
+ }
+
+int main(){
+
+  auto tp = tuple_factory_call<10>();
+
+  print(tp);
+  std::cout << std::tuple_size<decltype(tp)>::value << std::endl;
 
   return 0;
 }
