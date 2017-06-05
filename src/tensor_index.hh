@@ -68,15 +68,6 @@ constexpr decltype(auto) get_subtuple(const tuple_t &t){
    return get_subtuple_impl<begin>(t, Indices{});
 };
 
-//template<size_t begin, size_t end, size_t size,
-//         typename tuple_t,
-//         typename Indices = std::make_index_sequence<(
-//	     std::min(size-1,end)-begin+1 > 0)
-//             *(std::min(size-1,end)-begin+1)>>
-//constexpr decltype(auto) get_subtuple(const tuple_t &t){
-//   return get_subtuple_impl<begin>(t, Indices{});
-//};
-
 };
 
 #endif

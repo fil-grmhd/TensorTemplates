@@ -30,6 +30,24 @@
 
 namespace tensors {
 
+template<typename E1, typename E2, size_t... I>
+constexpr bool compare_index_impl(std::index_sequence<I...>){
+  using namespace utilities;
+  return all_true<
+    	std::is_same< 
+	std::remove_cv_t<typename std::tuple_element<I, typename E1::index_t>::type>,
+	std::remove_cv_t<typename std::tuple_element<I, typename E2::index_t>::type>
+	>::value...
+    >::value;
+};
+
+template<typename E1, typename E2, size_t ndim, typename Indices = std::make_index_sequence<ndim>>
+constexpr bool compare_index(){
+  return compare_index_impl<E1,E2>(Indices{});
+}
+
+
+
 template <typename E>
 class tensor_expression_t {
   public:
@@ -54,11 +72,26 @@ public:
     static constexpr size_t ndim = E1::ndim;
     static constexpr size_t rank = E1::rank;
 
-   using this_tensor_t = typename E1::this_tensor_t;
+    using index_t = typename E1::index_t;
+    using this_tensor_t = typename E1::this_tensor_t;
 
     tensor_sum_t(E1 const& u, E2 const& v) : _u(u), _v(v) {
-            static_assert(std::is_same<typename E1::this_tensor_t, typename E2::this_tensor_t>::value,
-		"Tensor types don't match!");
+
+            static_assert(std::is_same<typename E1::frame_t, typename E2::frame_t>::value,
+		"Frame types don't match!");
+
+            static_assert(E1::ndim == E2::ndim,
+		"Dimensions don't match!");
+
+            static_assert(E1::rank == E2::rank,
+		"Ranks don't match!");
+
+            static_assert(std::is_same<typename E1::data_t, typename E2::data_t>::value,
+		"Data types don't match!");
+	     
+	    static_assert(compare_index<E1,E2,rank>(),
+		"Indices do not match!");
+
     };
     
     inline decltype(auto) operator[](size_t i) const { return _u[i] + _v[i]; };
@@ -80,11 +113,24 @@ public:
     using frame_t = typename E1::frame_t;
     static constexpr size_t ndim = E1::ndim;
     static constexpr size_t rank = E1::rank;
+    using index_t = typename E1::index_t;
 
 
     tensor_sub_t(E1 const& u, E2 const& v) : _u(u), _v(v) {
-            static_assert(std::is_same<typename E1::this_tensor_t, typename E2::this_tensor_t>::value,
-		"Tensor types don't match!");
+            static_assert(std::is_same<typename E1::frame_t, typename E2::frame_t>::value,
+		"Frame types don't match!");
+
+            static_assert(E1::ndim == E2::ndim,
+		"Dimensions don't match!");
+
+            static_assert(E1::rank == E2::rank,
+		"Ranks don't match!");
+
+            static_assert(std::is_same<typename E1::data_t, typename E2::data_t>::value,
+		"Data types don't match!");
+	     
+	    static_assert(compare_index<E1,E2,rank>(),
+		"Indices do not match!");
     };
     
     inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i]; };
@@ -104,6 +150,7 @@ public:
     using frame_t = typename E2::frame_t;
     static constexpr size_t ndim = E2::ndim;
     static constexpr size_t rank = E2::rank;
+    using index_t = typename E2::index_t;
 
     tensor_scalar_mult_t(data_t const& u, E2 const& v) : _u(u), _v(v) {};
     
@@ -124,6 +171,7 @@ public:
     using frame_t = typename E2::frame_t;
     static constexpr size_t ndim = E2::ndim;
     static constexpr size_t rank = E2::rank;
+    using index_t = typename E2::index_t;
 
     tensor_scalar_div_t( E2 const& u, data_t const & v) : _u(u), _v(v) {};
     
