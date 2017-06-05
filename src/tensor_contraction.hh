@@ -27,10 +27,10 @@ public:
       constexpr auto E1_size = E1::rank;
       constexpr auto E2_size = E2::rank;
 
-      constexpr auto E1_p1 = get_subtuple<E1_size*(i1<1), i1-1 >(E1_it);
+      constexpr auto E1_p1 = get_subtuple<E1_size*(i1<1), (i1-1)*(i1>1) >(E1_it);
       constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-1 >(E1_it);
 
-      constexpr auto E2_p1 = get_subtuple<E2_size*(i2<1) ,i2-1 >(E2_it);
+      constexpr auto E2_p1 = get_subtuple<E2_size*(i2<1) ,(i2-1)*(i2>1) >(E2_it);
       constexpr auto E2_p2 = get_subtuple<i2+1,E2_size-1 >(E2_it);
 
       return std::tuple_cat(E1_p1,E1_p2,E2_p1,E2_p2);
@@ -112,17 +112,18 @@ public:
       constexpr auto E1_size = std::tuple_size<typename E1::index_t>::value;
       constexpr auto E2_size = std::tuple_size<typename E2::index_t>::value;
   
-      constexpr auto E1_p1 = get_subtuple<index_size*(i1<1),i1-1>(index_r);
-      constexpr auto E1_p2 = get_subtuple<i1 +(index_size)*(E1_size<2) ,E1_size-2 >(index_r);
+      constexpr auto E1_p1 = get_subtuple<index_size*(i1<1),(i1-1)*(i1>1)>(index_r);
+      constexpr auto E1_p2 = get_subtuple<i1 +(index_size)*(E1_size<2) ,(E1_size-2)*(E1_size>2) >(index_r);
 
-      constexpr auto E2_p1 = get_subtuple<E1_size-1 +index_size*(i2 + E1_size -1 <1) ,E1_size-1 + i2-1 >(index_r);
-      constexpr auto E2_p2 = get_subtuple<E1_size-1 +i2, rank -1 >(index_r);
+      constexpr auto E2_p1 = get_subtuple<E1_size-1 +index_size*(i2 + E1_size -1 <1) ,(E1_size-1 + i2-1)*(E1_size-1+i2>1) >(index_r);
+      constexpr auto E2_p2 = get_subtuple<E1_size-1 +i2, rank - 1 >(index_r);
 
       constexpr auto index_1 = std::tuple_cat(E1_p1,t1,E1_p2);
-      constexpr auto index_2 = std::tuple_cat(E2_p2,t2,E2_p2);
+      constexpr auto index_2 = std::tuple_cat(E2_p1,t2,E2_p2);
 
       constexpr size_t stride_1 =E1::this_tensor_t::compressed_index(index_1);
       constexpr size_t stride_2 =E2::this_tensor_t::compressed_index(index_2);
+
 
       static_assert(stride_1>=0 , "internal error");
       static_assert(stride_2>=0 , "internal error");

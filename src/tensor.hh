@@ -65,9 +65,25 @@ public tensor_expression_t< general_tensor_t<T, frame_t_,rank_ , index_t_, ndim_
 
        //C++14 way to completely get around the for loop
        template<typename E, std::size_t... I>
-       general_tensor_t(tensor_expression_t<E> const& tensor, std::index_sequence<I...>) : m_data({tensor.template evaluate<I>()...}) {};
+       general_tensor_t(tensor_expression_t<E> const& tensor, std::index_sequence<I...>) : m_data({tensor.template evaluate<I>()...}) {
+       
+            static_assert(std::is_same<frame_t, typename E::frame_t>::value,
+		"Frame types don't match!");
+
+            static_assert(ndim == E::ndim,
+		"Dimensions don't match!");
+
+            static_assert(rank == E::rank,
+		"Ranks don't match!");
+
+            static_assert(std::is_same<data_t, typename E::data_t>::value,
+		"Data types don't match!");
+	     
+	    static_assert(compare_index<this_tensor_t,E,rank>(),
+		"Indices do not match!");
+       };
      
-       template<typename E, typename Indices = std::make_index_sequence<ndim>>
+       template<typename E, typename Indices = std::make_index_sequence<ndof>>
        general_tensor_t(tensor_expression_t<E> const& tensor) : this_tensor_t(this_tensor_t(tensor,Indices{})) {};
 
        general_tensor_t() : m_data({0}) {};

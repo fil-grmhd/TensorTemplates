@@ -41,7 +41,7 @@ static inline constexpr size_t compressed_index_tuple( tuple_t t){
 //Obtain index from compressed index
 template<size_t ndim, size_t rank, size_t c_index>
 struct uncompress_index_t{
-   static constexpr size_t value = (c_index/utilities::static_pow<ndim,rank>::value) % ndim;
+   static constexpr size_t value = static_cast<size_t>(c_index/utilities::static_pow<ndim,rank>::value) % ndim;
 };
 
 template<size_t ndim, size_t c_index, std::size_t... I>
@@ -67,22 +67,6 @@ template<size_t begin, size_t end,
 constexpr decltype(auto) get_subtuple(const tuple_t &t){
    return get_subtuple_impl<begin>(t, Indices{});
 };
-
-
-template<typename tuple1_t, typename tuple2_t, size_t... i1, size_t... i2>
-constexpr decltype(auto) concat_tuples_impl(tuple1_t t1, tuple2_t t2,
-    std::index_sequence<i1...>, std::index_sequence<i2...>){
-  return std::make_tuple(std::get<i1>(t1)... , std::get<i2>(t2)...);
-}
-
-
-template<typename tuple1_t, typename tuple2_t, 
-  typename Indices1= std::make_index_sequence<std::tuple_size<tuple1_t>::value>,
-  typename Indices2= std::make_index_sequence<std::tuple_size<tuple2_t>::value>
-  >
-constexpr decltype(auto) concat_tuples(tuple1_t t1, tuple2_t t2){
-  return concat_tuples_impl(t1,t2,Indices1{}, Indices2{});
-}
 
 };
 
