@@ -36,7 +36,7 @@ int main(){
 
 
   tensor3_t<double, upper_t, lower_t> M;
-  
+
   int nn=1;
   for(int i=0; i<3; ++i){
     for(int j=0; j<3; ++j)
@@ -47,7 +47,7 @@ int main(){
 
   vector3_t<double> e = contract<1,0>(M,a);
 
-  std::cout << "M = " << std::endl; 
+  std::cout << "M = " << std::endl;
   for(int i=0; i<3; ++i){
     for(int j=0; j<3; ++j)
       std::cout << " "<< M[i+3*j] << " ";
@@ -69,22 +69,22 @@ int main(){
   tensor3_t<double, upper_t, lower_t> A,B;
 
   A[0] = 1; A[1] = 14.5; A[2] = 0.1278;
-  A[3] = -12;  A[4] = 7834; A[5] = 0.002; 
+  A[3] = -12;  A[4] = 7834; A[5] = 0.002;
   A[6] = -8; A[7] = 1.e-4; A[8] = 919;
 
   B[0] = 0; B[1] = 1.5; B[2] = 34;
-  B[3] = -3;  B[4] = 7834; B[5] = 5404; 
+  B[3] = -3;  B[4] = 7834; B[5] = 5404;
   B[6] = -3459; B[7] = 2300; B[8] = 93;
 
 
-  std::cout << "A = " << std::endl; 
+  std::cout << "A = " << std::endl;
   for(int i=0; i<3; ++i){
     for(int j=0; j<3; ++j)
       std::cout << " "<< A[i+3*j] << " ";
     std::cout<<std::endl;
   }
 
-  std::cout << "B = " << std::endl; 
+  std::cout << "B = " << std::endl;
   for(int i=0; i<3; ++i){
     for(int j=0; j<3; ++j)
       std::cout << " "<< B[i+3*j] << " ";
@@ -94,26 +94,17 @@ int main(){
   tensor3_t<double, upper_t, lower_t> C=contract<1,0>(A,A);
   tensor3_t<double, upper_t, lower_t> D= contract<1,0>(A,B);
 
-  std::cout << "C = " << std::endl; 
+  std::cout << "C = " << std::endl;
   for(int i=0; i<3; ++i){
     for(int j=0; j<3; ++j)
       std::cout << " "<< C[i+3*j] << " ";
     std::cout<<std::endl;
   }
 
-  std::cout << "D = " << std::endl; 
+  std::cout << "D = " << std::endl;
   for(int i=0; i<3; ++i){
     for(int j=0; j<3; ++j)
       std::cout << " "<< D[i+3*j] << " ";
     std::cout<<std::endl;
   }
-
-
-
-
-  
-
 }
-
-
-

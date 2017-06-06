@@ -22,52 +22,42 @@
 
 namespace tensors {
 
-template<typename T, size_t ndim_, typename frame_t_ , typename... ranks>
-using tensor_t = general_tensor_t<T,frame_t_, sizeof...(ranks),std::tuple<ranks...>, ndim_>;
+template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
+using tensor_t = general_tensor_t<T, frame_t_, sizeof...(ranks), std::tuple<ranks...>, ndim_>;
 
-template<typename T,size_t ndim_,typename frame_t_>
-using vector_t = tensor_t<T,ndim_,frame_t_, upper_t>;
+template <typename T, size_t ndim_, typename frame_t_>
+using vector_t = tensor_t<T, ndim_, frame_t_, upper_t>;
 
-template<typename T>
-using vector3_t = tensor_t<T,3,eulerian_t, upper_t>;
+template <typename T> using vector3_t = tensor_t<T, 3, eulerian_t, upper_t>;
 
-template<typename T>
-using covector3_t = tensor_t<T,3,eulerian_t, lower_t>;
+template <typename T> using covector3_t = tensor_t<T, 3, eulerian_t, lower_t>;
 
+template <typename T, typename... ranks>
+using tensor3_t = tensor_t<T, 3, eulerian_t, ranks...>;
 
-template<typename T, typename... ranks>
-using tensor3_t = tensor_t<T,3,eulerian_t, ranks...>;
+template <typename T> using vector4_t = tensor_t<T, 4, eulerian_t, upper_t>;
 
-template<typename T>
-using vector4_t = tensor_t<T,4,eulerian_t, upper_t>;
+template <typename T> using covector4_t = tensor_t<T, 4, eulerian_t, lower_t>;
 
-template<typename T>
-using covector4_t = tensor_t<T,4,eulerian_t, lower_t>;
+template <typename T, typename... ranks>
+using tensor4_t = tensor_t<T, 4, eulerian_t, ranks...>;
 
-template<typename T, typename... ranks>
-using tensor4_t = tensor_t<T,4,eulerian_t, ranks...>;
+template <typename T> using cm_vector3_t = tensor_t<T, 3, comoving_t, upper_t>;
 
-template<typename T>
-using cm_vector3_t = tensor_t<T,3,comoving_t, upper_t>;
+template <typename T>
+using cm_covector3_t = tensor_t<T, 3, comoving_t, lower_t>;
 
-template<typename T>
-using cm_covector3_t = tensor_t<T,3,comoving_t, lower_t>;
+template <typename T, typename... ranks>
+using cm_tensor3_t = tensor_t<T, 3, comoving_t, ranks...>;
 
-template<typename T, typename... ranks>
-using cm_tensor3_t = tensor_t<T,3,comoving_t, ranks...>;
+template <typename T> using cm_vector4_t = tensor_t<T, 4, comoving_t, upper_t>;
 
-template<typename T>
-using cm_vector4_t = tensor_t<T,4,comoving_t, upper_t>;
+template <typename T>
+using cm_covector4_t = tensor_t<T, 4, comoving_t, lower_t>;
 
-template<typename T>
-using cm_covector4_t = tensor_t<T,4,comoving_t, lower_t>;
-
-template<typename T, typename... ranks>
-using cm_tensor4_t = tensor_t<T,4,comoving_t, ranks...>;
-
-
+template <typename T, typename... ranks>
+using cm_tensor4_t = tensor_t<T, 4, comoving_t, ranks...>;
 
 } // namespace tensors
-
 
 #endif

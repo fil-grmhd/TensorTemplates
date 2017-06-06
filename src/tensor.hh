@@ -38,8 +38,8 @@ class general_tensor_t : public tensor_expression_t<general_tensor_t<T, frame_t_
   public:
     //! Data type
     using data_t = T;
-    //! tensor indices encoded in the tuple type
-    //! In fact we only care about the type here.
+    //! tensor indices encoded in a std::tuple type
+    //! In fact we only care about the type here, which should be of size rank
     using  index_t = index_t_;
     //! frame type
     using frame_t = frame_t_;

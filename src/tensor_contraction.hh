@@ -5,28 +5,30 @@
 
 namespace tensors{
 
-
+//! Expression template for generic tensor contractions
 template<size_t i1, size_t i2, typename E1, typename E2>
 class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,i2,E1, E2> > {
-   E1 const& _u;
-   E2 const& _v;
+    //! references to both tensors
+    E1 const& _u;
+    E2 const& _v;
 
-public:
-
+  public:
+    //! Usual definitions, see tensor definition
     using data_t = typename E1::data_t;
     using frame_t = typename E1::frame_t;
     static constexpr size_t ndim = E1::ndim;
     static constexpr size_t rank = E1::rank + E2::rank -2;
 
     static inline constexpr decltype(auto) get_index_t(){
+      // create index tuples for both tensors
       constexpr auto E1_it = typename E1::index_t();
       constexpr auto E2_it = typename E2::index_t();
 
       constexpr auto E1_size = E1::rank;
       constexpr auto E2_size = E2::rank;
 
-      constexpr auto E1_p1 = get_subtuple<E1_size*(i1<1), (i1-1)*(i1>1) >(E1_it);
-      constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-1 >(E1_it);
+      constexpr auto E1_p1 = get_subtuple<E1_size*(i1<1),(i1-1)*(i1>1)>(E1_it);
+      constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-1>(E1_it);
 
       constexpr auto E2_p1 = get_subtuple<E2_size*(i2<1) ,(i2-1)*(i2>1) >(E2_it);
       constexpr auto E2_p2 = get_subtuple<i2+1,E2_size-1 >(E2_it);
@@ -128,12 +130,12 @@ public:
                     "contraction: stride is less than zero, this shouldn't happen");
 
       return recursive_contract<ndim-1,stride_1,stride_2>::contract(_u,_v);
-  }
+    }
 };
 
 template<size_t i1, size_t i2, typename E1, typename E2>
 tensor_contraction_t<i1,i2,E1,E2> const
-inline contract( E1 const &u, E2 const &v){
+inline contract(E1 const &u, E2 const &v) {
   return tensor_contraction_t<i1,i2,E1,E2>(u,v);
 }
 
