@@ -84,9 +84,9 @@ class general_tensor_t : public tensor_expression_t<general_tensor_t<T, frame_t_
 		                "Indices do not match!");
     };
 
-    //! Constructor from tensor expression given a index sequence
-    //! Calls contructor with index sequence Indices
-    template<typename E, typename Indices = std::make_index_sequence<ndim>>
+    //! Constructor from tensor expression
+    //! Calls constructor above with index sequence Indices
+    template<typename E, typename Indices = std::make_index_sequence<ndof>>
     general_tensor_t(tensor_expression_t<E> const& tensor_expression)
                     : this_tensor_t(tensor_expression,Indices{}) {};
 
