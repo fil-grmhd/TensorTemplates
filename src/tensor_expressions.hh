@@ -64,7 +64,7 @@ class tensor_sum_t : public tensor_expression_t<tensor_sum_t<E1,E2>> {
   public:
 
     // This operation doesn't change the tensor properties, but one has to check for compatibility
-    using property_t = arithmetic_expression_property_t<typename E1::property_t::this_tensor_t, typename E2::property_t::this_tensor_t>;
+    using property_t = arithmetic_expression_property_t<E1,E2>;
 
     tensor_sum_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
 
@@ -83,8 +83,7 @@ class tensor_sub_t : public tensor_expression_t<tensor_sub_t<E1, E2> > {
   public:
 
     // This operation doesn't change the tensor properties, but one has to check for compatibility
-    using property_t = arithmetic_expression_property_t<typename E1::property_t::this_tensor_t, typename E2::property_t::this_tensor_t>;
-//    using property_t = arithmetic_expression_property_t<E1,E2>;
+    using property_t = arithmetic_expression_property_t<E1,E2>;
 
     tensor_sub_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
 
@@ -101,7 +100,7 @@ class tensor_scalar_mult_t : public tensor_expression_t<tensor_scalar_mult_t<E>>
   public:
 
     //! Scalar expression doesn't change tensor properties
-    using property_t = scalar_expression_property_t<typename E::property_t::this_tensor_t>;
+    using property_t = scalar_expression_property_t<E>;
 
     tensor_scalar_mult_t(typename property_t::data_t const& u, E const& v) : _u(u), _v(v) {};
 
@@ -123,7 +122,7 @@ class tensor_scalar_div_t : public tensor_expression_t<tensor_scalar_div_t<E>> {
   public:
 
     //! Scalar expression doesn't change tensor properties
-    using property_t = scalar_expression_property_t<typename E::property_t::this_tensor_t>;
+    using property_t = scalar_expression_property_t<E>;
 
     tensor_scalar_div_t( E const& u, typename property_t::data_t const & v) : _u(u), _v(v) {};
 

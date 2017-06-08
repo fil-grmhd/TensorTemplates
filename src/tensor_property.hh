@@ -38,7 +38,7 @@ class general_tensor_property_t {
 //! Property class holding data and types defining arithmetic combination of two tensors of same type
 //  These operations don't change the tensor properties, but one has to check for compatibility
 template<typename E1, typename E2>
-class arithmetic_expression_property_t : public general_tensor_property_t<E1> {
+class arithmetic_expression_property_t : public general_tensor_property_t<typename E1::property_t::this_tensor_t> {
       static_assert(std::is_same<typename E1::property_t::frame_t, typename E2::property_t::frame_t>::value,
                     "Frame types don't match!");
 
@@ -58,7 +58,7 @@ class arithmetic_expression_property_t : public general_tensor_property_t<E1> {
 //! Property class holding data and types defining a scalar operation on one tensor
 //  These operations don't change the tensor properties, but one could check scalar data type
 template<typename E>
-class scalar_expression_property_t : public general_tensor_property_t<E> {
+class scalar_expression_property_t : public general_tensor_property_t<typename E::property_t::this_tensor_t> {
 /*
       static_assert(std::is_same<typename E::property_t::data_t, scalar_data_t>::value,
                     "Data types don't match!");
