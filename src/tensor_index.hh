@@ -19,6 +19,8 @@
 #ifndef TENSOR_INDEX_HH
 #define TENSOR_INDEX_HH
 
+#include <tuple>
+
 namespace tensors {
 
 //! Computes the compressed index (in row-major format)

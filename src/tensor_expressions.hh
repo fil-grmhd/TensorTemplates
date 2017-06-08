@@ -30,197 +30,141 @@
 
 namespace tensors {
 
-//! Cumulative type check of index types
-template<typename E1, typename E2, size_t... I>
-constexpr bool compare_index_impl(std::index_sequence<I...>) {
-  using namespace utilities;
-  return all_true<
-           std::is_same<
-	           std::remove_cv_t<typename std::tuple_element<I, typename E1::index_t>::type>,
-	           std::remove_cv_t<typename std::tuple_element<I, typename E2::index_t>::type>
-	         >::value...
-         >::value;
-};
-template<typename E1, typename E2, size_t ndim, typename Indices = std::make_index_sequence<ndim>>
-constexpr bool compare_index() {
-  return compare_index_impl<E1,E2>(Indices{});
-}
-
-
-
+//! Base class for tensor expressions, including actual tensors
 template<typename E>
 class tensor_expression_t {
   public:
+
+    //! Index access of tensor expression E
     inline decltype(auto) operator[](size_t i) const {
       return static_cast<E const&>(*this)[i];
     };
 
+    //! Evaluation routine, triggering actual computation
     template<size_t index>
     inline decltype(auto) evaluate() const {
       return static_cast<E const&>(*this).template evaluate<index>();
     };
 
+    //! Conversion operator to reference of tensor expression E
     operator E& () {
       return static_cast<E&>(*this);
     };
+    //! Conversion operator to constant reference of tensor expression E
     operator const E& () const {
       return static_cast<const E&>(*this);
     };
 };
 
-template <typename E1, typename E2>
-class tensor_sum_t : public tensor_expression_t<tensor_sum_t<E1, E2> > {
-   E1 const& _u;
-   E2 const& _v;
+template<typename E1, typename E2>
+class tensor_sum_t : public tensor_expression_t<tensor_sum_t<E1,E2>> {
+    E1 const& _u;
+    E2 const& _v;
 
-public:
+  public:
 
-    using data_t = typename E1::data_t;
-    using frame_t = typename E1::frame_t;
-    static constexpr size_t ndim = E1::ndim;
-    static constexpr size_t rank = E1::rank;
+    // This operation doesn't change the tensor properties, but one has to check for compatibility
+    using property_t = arithmetic_expression_property_t<typename E1::property_t::this_tensor_t, typename E2::property_t::this_tensor_t>;
 
-    using index_t = typename E1::index_t;
-    using this_tensor_t = typename E1::this_tensor_t;
+    tensor_sum_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
 
-    tensor_sum_t(E1 const& u, E2 const& v) : _u(u), _v(v) {
-
-            static_assert(std::is_same<typename E1::frame_t, typename E2::frame_t>::value,
-		"Frame types don't match!");
-
-            static_assert(E1::ndim == E2::ndim,
-		"Dimensions don't match!");
-
-            static_assert(E1::rank == E2::rank,
-		"Ranks don't match!");
-
-            static_assert(std::is_same<typename E1::data_t, typename E2::data_t>::value,
-		"Data types don't match!");
-	     
-	    static_assert(compare_index<E1,E2,rank>(),
-		"Indices do not match!");
-
-    };
-    
     inline decltype(auto) operator[](size_t i) const { return _u[i] + _v[i]; };
     template<size_t index>
     inline decltype(auto) evaluate() const { return _u.template evaluate<index>() + _v.template evaluate<index>(); };
 };
 
-//Q: Is it better to define this separately or to just use a - b = a +(-1)*b ??
+// CHECK: Is it better to define this separately or to just use a - b = a +(-1)*b ??
 
-template <typename E1, typename E2>
+template<typename E1, typename E2>
 class tensor_sub_t : public tensor_expression_t<tensor_sub_t<E1, E2> > {
-   E1 const& _u;
-   E2 const& _v;
-    
-public:
+    E1 const& _u;
+    E2 const& _v;
 
-   using this_tensor_t = typename E1::this_tensor_t;
-    using data_t = typename E1::data_t;
-    using frame_t = typename E1::frame_t;
-    static constexpr size_t ndim = E1::ndim;
-    static constexpr size_t rank = E1::rank;
-    using index_t = typename E1::index_t;
+  public:
 
+    // This operation doesn't change the tensor properties, but one has to check for compatibility
+    using property_t = arithmetic_expression_property_t<typename E1::property_t::this_tensor_t, typename E2::property_t::this_tensor_t>;
+//    using property_t = arithmetic_expression_property_t<E1,E2>;
 
-    tensor_sub_t(E1 const& u, E2 const& v) : _u(u), _v(v) {
-            static_assert(std::is_same<typename E1::frame_t, typename E2::frame_t>::value,
-		"Frame types don't match!");
+    tensor_sub_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
 
-            static_assert(E1::ndim == E2::ndim,
-		"Dimensions don't match!");
-
-            static_assert(E1::rank == E2::rank,
-		"Ranks don't match!");
-
-            static_assert(std::is_same<typename E1::data_t, typename E2::data_t>::value,
-		"Data types don't match!");
-	     
-	    static_assert(compare_index<E1,E2,rank>(),
-		"Indices do not match!");
-    };
-    
     inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i]; };
     template<size_t index>
     inline decltype(auto) evaluate() const { return _u.template evaluate<index>() - _v.template evaluate<index>(); };
 };
 
-template <typename E2>
-class tensor_scalar_mult_t : public tensor_expression_t<tensor_scalar_mult_t< E2> > {
-   typename E2::data_t const&  _u;
-   E2 const& _v;
-    
-public:
+template<typename E>
+class tensor_scalar_mult_t : public tensor_expression_t<tensor_scalar_mult_t<E>> {
+    typename E::property_t::data_t const&  _u;
+    E const& _v;
 
-   using this_tensor_t = typename E2::this_tensor_t;
-    using data_t = typename E2::data_t;
-    using frame_t = typename E2::frame_t;
-    static constexpr size_t ndim = E2::ndim;
-    static constexpr size_t rank = E2::rank;
-    using index_t = typename E2::index_t;
+  public:
 
-    tensor_scalar_mult_t(data_t const& u, E2 const& v) : _u(u), _v(v) {};
-    
-    inline decltype(auto) operator[](size_t i) const { return _u * _v[i]; };
+    //! Scalar expression doesn't change tensor properties
+    using property_t = scalar_expression_property_t<typename E::property_t::this_tensor_t>;
+
+    tensor_scalar_mult_t(typename property_t::data_t const& u, E const& v) : _u(u), _v(v) {};
+
+    inline decltype(auto) operator[](size_t i) const {
+      return _u * _v[i];
+    };
+
     template<size_t index>
-    inline decltype(auto) evaluate() const { return _v.template evaluate<index>() *_u;};
+    inline decltype(auto) evaluate() const {
+      return _v.template evaluate<index>() *_u;
+    };
 };
 
-template <typename E2>
-class tensor_scalar_div_t : public tensor_expression_t<tensor_scalar_div_t< E2> > {
-   typename E2::data_t const&  _v;
-   E2 const& _u;
-    
-public:
+template<typename E>
+class tensor_scalar_div_t : public tensor_expression_t<tensor_scalar_div_t<E>> {
+   typename E::property_t::data_t const&  _v;
+   E const& _u;
 
-   using this_tensor_t = typename E2::this_tensor_t;
-    using data_t = typename E2::data_t;
-    using frame_t = typename E2::frame_t;
-    static constexpr size_t ndim = E2::ndim;
-    static constexpr size_t rank = E2::rank;
-    using index_t = typename E2::index_t;
+  public:
 
-    tensor_scalar_div_t( E2 const& u, data_t const & v) : _u(u), _v(v) {};
-    
+    //! Scalar expression doesn't change tensor properties
+    using property_t = scalar_expression_property_t<typename E::property_t::this_tensor_t>;
+
+    tensor_scalar_div_t( E const& u, typename property_t::data_t const & v) : _u(u), _v(v) {};
+
     inline decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
     template<size_t index>
     inline decltype(auto) evaluate() const { return _u.template evaluate<index>()/_v;};
 };
 
 
-template <typename E1, typename E2>
+template<typename E1, typename E2>
 tensor_sum_t<E1,E2> const
 inline operator+(E1 const& u, E2 const& v) {
    return tensor_sum_t<E1, E2>(u, v);
 }
 
-template <typename E1, typename E2>
+template<typename E1, typename E2>
 tensor_sub_t<E1,E2> const
 inline operator-(E1 const& u, E2 const& v) {
    return tensor_sub_t<E1, E2>(u, v);
 }
 
 
-template <typename E2>
-tensor_scalar_mult_t<E2> const
-inline operator*(typename E2::data_t const& u, E2 const& v) {
+template<typename E>
+tensor_scalar_mult_t<E> const
+inline operator*(typename E::property_t::data_t const& u, E const& v) {
   //Should we add a data_t check here??
-   return tensor_scalar_mult_t<E2>(u, v);
+   return tensor_scalar_mult_t<E>(u, v);
 }
 
-template < typename E2>
-tensor_scalar_mult_t<E2> const
-inline operator*(E2 const& u, typename E2::data_t const& v) {
+template<typename E>
+tensor_scalar_mult_t<E> const
+inline operator*(E const& u, typename E::property_t::data_t const& v) {
   //Should we add a data_t check here??
    return v*u;
 }
 
-template < typename E2>
-tensor_scalar_div_t<E2> const
-inline operator/(E2 const& u, typename E2::data_t const& v) {
+template<typename E>
+tensor_scalar_div_t<E> const
+inline operator/(E const& u, typename E::property_t::data_t const& v) {
   //Should we add a data_t check here??
-   return tensor_scalar_div_t<E2>(u,v);
+   return tensor_scalar_div_t<E>(u,v);
 }
 
 

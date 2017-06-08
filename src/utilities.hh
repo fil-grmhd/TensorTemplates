@@ -19,6 +19,8 @@
 #ifndef TENSORS_UTILITIES_HH
 #define TENSORS_UTILITIES_HH
 
+#include <tuple>
+
 namespace tensors {
 namespace utilities {
 
@@ -35,10 +37,46 @@ struct static_pow<a,0> {
 //Useful helper for checking conditions on template parameters
 //https://stackoverflow.com/questions/28253399/check-traits-for-all-variadic-template-arguments/28253503#28253503
 template<bool...> struct bool_pack;
-template<bool... bs> 
+template<bool... bs>
 using all_true = std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 
+// printing for tuples (for debugging purposes)
+template<typename Tuple, int index, typename... Ts>
+struct print_tuple_impl {
+  void operator() (Tuple& t) {
+    std::cout << std::get<index>(t) << " ";
+    print_tuple_impl<Tuple,index - 1, Ts...>{}(t);
+  }
+};
 
+template<typename Tuple, typename... Ts>
+struct print_tuple_impl<Tuple, 0, Ts...> {
+  void operator() (Tuple& t) {
+    std::cout << std::get<0>(t) << std::endl;
+  }
+};
+
+template<typename Tuple, typename... Ts>
+void print_tuple(Tuple& t) {
+  const auto size = std::tuple_size<Tuple>::value;
+  print_tuple_impl<Tuple,size - 1, Ts...>{}(t);
+}
+
+//! Cumulative type check of index types
+template<typename I1, typename I2, size_t... I>
+constexpr bool compare_index_impl(std::index_sequence<I...>) {
+  using namespace utilities;
+  return all_true<
+           std::is_same<
+             std::remove_cv_t<typename std::tuple_element<I, I1>::type>,
+             std::remove_cv_t<typename std::tuple_element<I, I2>::type>
+           >::value...
+         >::value;
+};
+template<typename I1, typename I2, size_t ndim, typename Indices = std::make_index_sequence<ndim>>
+constexpr bool compare_index() {
+  return compare_index_impl<I1,I2>(Indices{});
+}
 
 } // namespace utilities
 } // namespace tensors

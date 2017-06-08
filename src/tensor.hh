@@ -54,6 +54,9 @@ class general_tensor_t : public tensor_expression_t<general_tensor_t<T, frame_t_
     //! This tensor type
     using this_tensor_t = general_tensor_t<T, frame_t_, rank_, index_t, ndim_>;
 
+    //! Fill property type with constexpr and types above (used in expressions)
+    using property_t = general_tensor_property_t<this_tensor_t>;
+
   private:
     //! Data storage for ndof elements
     std::array<T, ndof> m_data {};
@@ -68,19 +71,19 @@ class general_tensor_t : public tensor_expression_t<general_tensor_t<T, frame_t_
     general_tensor_t(tensor_expression_t<E> const& tensor_expression, std::index_sequence<I...>)
                     : m_data({tensor_expression.template evaluate<I>()...}) {
 
-      static_assert(std::is_same<frame_t, typename E::frame_t>::value,
+      static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
 		                "Frame types don't match!");
 
-      static_assert(ndim == E::ndim,
+      static_assert(ndim == E::property_t::ndim,
 		                "Dimensions don't match!");
 
-      static_assert(rank == E::rank,
+      static_assert(rank == E::property_t::rank,
 		                "Ranks don't match!");
 
-      static_assert(std::is_same<data_t, typename E::data_t>::value,
+      static_assert(std::is_same<data_t, typename E::property_t::data_t>::value,
 		                "Data types don't match!");
 
-	    static_assert(compare_index<this_tensor_t,E,rank>(),
+	    static_assert(utilities::compare_index<index_t,typename E::property_t::index_t,rank>(),
 		                "Indices do not match!");
     };
 
