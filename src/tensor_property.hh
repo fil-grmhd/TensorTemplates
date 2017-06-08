@@ -65,15 +65,15 @@ class scalar_expression_property_t : public general_tensor_property_t<typename E
 */
 };
 
-//! Property class holding data and types defining a tensor contraction result
+//! Property class holding data and types defining a tensor expression which reduces two indices
 template<size_t i1, size_t i2, typename E1, typename E2>
-class contraction_property_t {
+class index_reduction_property_t {
   public:
 
     using data_t = typename E1::property_t::data_t;
     using frame_t = typename E1::property_t::frame_t;
     static constexpr size_t ndim = E1::property_t::ndim;
-    // two indices are removed by contraction
+    // two indices are removed by this expression
     static constexpr size_t rank = E1::property_t::rank + E2::property_t::rank -2;
 
     // static compile-time routine to get index_t
@@ -127,14 +127,12 @@ class contraction_property_t {
                       upper_t
                     >::type
                   >::value,
-                  "Ranks don't match! Can only contract covariant with contravariant indices!");
+                  "Can only contract covariant with contravariant indices!");
 
     static_assert(rank == std::tuple_size<index_t>::value ,
                   "Index tuple size != rank, this should not happen");
 
 };
-
-
 } // namespace tensors
 
 #endif

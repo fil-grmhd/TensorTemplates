@@ -15,13 +15,10 @@ class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,
   public:
     // Contraction changes the tensor type, thus a special property class is needed.
     // It gives all the relevant properties of a tensor resulting from a contraction
-    // (see tensor_property.hh)
-    using property_t = contraction_property_t<i1,i2,E1,E2>;
+    using property_t = index_reduction_property_t<i1,i2,E1,E2>;
 
     tensor_contraction_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
 
-    // CHECK: is this necessary? Imagine needing only one component of a contraction.
-    //        point-wise evaluation is also defined for the other expressions
     [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
     inline decltype(auto) operator[](size_t i) const = delete;
 

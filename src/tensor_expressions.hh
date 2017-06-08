@@ -68,12 +68,13 @@ class tensor_sum_t : public tensor_expression_t<tensor_sum_t<E1,E2>> {
 
     tensor_sum_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
 
-    inline decltype(auto) operator[](size_t i) const { return _u[i] + _v[i]; };
+    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
+    inline decltype(auto) operator[](size_t i) const = delete;
+//    inline decltype(auto) operator[](size_t i) const { return _u[i] + _v[i]; };
+
     template<size_t index>
     inline decltype(auto) evaluate() const { return _u.template evaluate<index>() + _v.template evaluate<index>(); };
 };
-
-// CHECK: Is it better to define this separately or to just use a - b = a +(-1)*b ??
 
 template<typename E1, typename E2>
 class tensor_sub_t : public tensor_expression_t<tensor_sub_t<E1, E2> > {
@@ -87,7 +88,10 @@ class tensor_sub_t : public tensor_expression_t<tensor_sub_t<E1, E2> > {
 
     tensor_sub_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
 
-    inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i]; };
+    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
+    inline decltype(auto) operator[](size_t i) const = delete;
+//    inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i]; };
+
     template<size_t index>
     inline decltype(auto) evaluate() const { return _u.template evaluate<index>() - _v.template evaluate<index>(); };
 };
@@ -104,9 +108,9 @@ class tensor_scalar_mult_t : public tensor_expression_t<tensor_scalar_mult_t<E>>
 
     tensor_scalar_mult_t(typename property_t::data_t const& u, E const& v) : _u(u), _v(v) {};
 
-    inline decltype(auto) operator[](size_t i) const {
-      return _u * _v[i];
-    };
+    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
+    inline decltype(auto) operator[](size_t i) const = delete;
+//    inline decltype(auto) operator[](size_t i) const { return _u * _v[i]; };
 
     template<size_t index>
     inline decltype(auto) evaluate() const {
@@ -126,7 +130,10 @@ class tensor_scalar_div_t : public tensor_expression_t<tensor_scalar_div_t<E>> {
 
     tensor_scalar_div_t( E const& u, typename property_t::data_t const & v) : _u(u), _v(v) {};
 
-    inline decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
+    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
+    inline decltype(auto) operator[](size_t i) const = delete;
+//    inline decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
+
     template<size_t index>
     inline decltype(auto) evaluate() const { return _u.template evaluate<index>()/_v;};
 };
