@@ -65,22 +65,18 @@ class scalar_expression_property_t : public general_tensor_property_t<typename E
 */
 };
 
-//! Property class holding data and types defining a tensor expression which reduces two indices
+//! Helper class to get around intel compiler "bug"
+//  see https://software.intel.com/en-us/forums/intel-c-compiler/topic/710211
 template<size_t i1, size_t i2, typename E1, typename E2>
-class index_reduction_property_t {
+class index_reduction_generator_t {
   public:
+    static inline constexpr decltype(auto) get_index_t() {
+      using i1_t = typename E1::property_t::index_t;
+      using i2_t = typename E2::property_t::index_t;
 
-    using data_t = typename E1::property_t::data_t;
-    using frame_t = typename E1::property_t::frame_t;
-    static constexpr size_t ndim = E1::property_t::ndim;
-    // two indices are removed by this expression
-    static constexpr size_t rank = E1::property_t::rank + E2::property_t::rank -2;
-
-    // static compile-time routine to get index_t
-    static inline constexpr decltype(auto) get_index_t(){
       // create index tuples for both tensors
-      constexpr auto E1_indices = typename E1::property_t::index_t();
-      constexpr auto E2_indices = typename E2::property_t::index_t();
+      constexpr auto E1_indices = i1_t();
+      constexpr auto E2_indices = i2_t();
 
       constexpr size_t E1_size = E1::property_t::rank;
       constexpr size_t E2_size = E2::property_t::rank;
@@ -94,8 +90,23 @@ class index_reduction_property_t {
 
       return std::tuple_cat(E1_p1,E1_p2,E2_p1,E2_p2);
     }
+};
 
-    using index_t = decltype(get_index_t());
+//! Property class holding data and types defining a tensor expression which reduces two indices
+template<size_t i1, size_t i2, typename E1, typename E2>
+class index_reduction_property_t {
+  public:
+
+    using data_t = typename E1::property_t::data_t;
+    using frame_t = typename E1::property_t::frame_t;
+    static constexpr size_t ndim = E1::property_t::ndim;
+    // two indices are removed by this expression
+    static constexpr size_t rank = E1::property_t::rank + E2::property_t::rank -2;
+
+    // static compile-time routine to get index_t
+    //static inline constexpr decltype(auto) get_index_t(){}
+
+    using index_t = decltype(index_reduction_generator_t<i1,i2,E1,E2>::get_index_t());
 
     using this_tensor_t = general_tensor_t<data_t,frame_t,rank,index_t,ndim>;
 
