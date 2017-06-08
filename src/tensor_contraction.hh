@@ -41,12 +41,18 @@ class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,
     };
 
 
+    template<size_t i, size_t index, size_t ndim >
+    static constexpr size_t restore_index_and_compute_stride() {
+	return (i==0) ? index*ndim : (index -(index%utilities::static_pow<ndim,i>::value)) *ndim + (index%utilities::static_pow<ndim,i>::value);
+    }
+
+
     template<size_t c_index>
     inline decltype(auto) evaluate() const {
+/*  
       // Uncompress index of resulting tensor
       constexpr auto index_r = uncompress_index<property_t::ndim,property_t::rank,c_index>();
       constexpr size_t index_size = std::tuple_size<decltype(index_r)>::value;
-
       // Need to restore the indices of the two tensors involved
       constexpr auto t1 = std::make_tuple(static_cast<size_t>(0));
       constexpr auto t2 = std::make_tuple(static_cast<size_t>(0));
@@ -74,6 +80,21 @@ class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,
                     "contraction: stride is less than zero, this shouldn't happen");
       static_assert(stride_2>=0,
                     "contraction: stride is less than zero, this shouldn't happen");
+*/
+
+      //      TUPLE FREE TENSOR CONTRACTION      //
+      constexpr size_t max_pow_E1 = E1::property_t::rank - 2;
+
+      constexpr size_t ndim = E1::property_t::ndim;
+
+      constexpr size_t index_part_E1 = c_index % (utilities::static_pow<ndim,max_pow_E1+1>::value);
+      constexpr size_t index_part_E2 = c_index - index_part_E1;
+
+      constexpr size_t index_part_E2_n = index_part_E2/utilities::static_pow<ndim,max_pow_E1+1>::value;
+
+      constexpr size_t stride_1 = restore_index_and_compute_stride<i1,index_part_E1,ndim>();
+      constexpr size_t stride_2 = restore_index_and_compute_stride<i2,index_part_E2_n,ndim>();
+
 
       // Compute sum over contracted index for index_r'th component by template recursion
       return recursive_contract<property_t::ndim-1,stride_1,stride_2>::contract(_u,_v);
