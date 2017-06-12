@@ -48,23 +48,23 @@ class metric_t {
     
 
 
-    //FIXME Right now the raised and lowered index will always be the first in the new contraction!! This is counter intuitive
-
     //! Raise index
     template<size_t i=0, typename E>
-    tensor_contraction<1,i,invmetric_tensor_t,E> const
+    decltype(auto) const
     inline raise_index( E const &v){
-      return ::contract<1,i>(invmetric,v);
+      return metric_contraction_t<i>(invmetric,v);
     };
 
     //! Lower index
     template<size_t i=0, typename E>
-    tensor_contraction<1,i,metric_tensor_t,E> const
+    decltype(auto) const
     inline lower_index( E const &v){
-      return ::contract<1,i>(metric,v);
+      return metric_contraction_t<i>(metric,v);
     };
 
 
+//FIXME maybe we should change the name here, since we also have a metric_contraction_t
+//      for raising and lowering now!
     template<size_t i1, size_t i2, typename ind1, typename ind2,
       typename E1, typename E2>
     class metric_contraction{
@@ -75,7 +75,7 @@ class metric_t {
 
       inline decltype(auto) const contract(metric_t const &m,
 	  E1 const &u, E2 const &v){
-	return ::contract<i1,0>(u,m.raise_index<i2>(v));
+	return ::contract<i1,i2>(u,m.raise_index<i2>(v));
       };
     };
 
@@ -103,7 +103,7 @@ class metric_t {
 
       inline decltype(auto) const contract(metric_t const &m,
 	  E1 const &u, E2 const &v){
-	return ::contract<i1,0>(u,m.lower_index<i2>(v));
+	return ::contract<i1,i2>(u,m.lower_index<i2>(v));
       };
     };
 
