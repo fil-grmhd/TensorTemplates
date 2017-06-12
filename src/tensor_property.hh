@@ -70,13 +70,42 @@ class scalar_expression_property_t : public general_tensor_property_t<typename E
 template<size_t i1, size_t i2, typename E1, typename E2>
 class index_reduction_generator_t {
   public:
+    // this is only here to deduce the index type, see below
     static inline constexpr decltype(auto) get_index_t() {
       using i1_t = typename E1::property_t::index_t;
       using i2_t = typename E2::property_t::index_t;
 
       // create index tuples for both tensors
-      constexpr auto E1_indices = i1_t();
-      constexpr auto E2_indices = i2_t();
+      constexpr i1_t E1_indices;
+      constexpr i2_t E2_indices;
+
+      constexpr size_t E1_size = E1::property_t::rank;
+      constexpr size_t E2_size = E2::property_t::rank;
+
+      // get subtuple types
+      using E1_p1_t = decltype(get_subtuple<E1_size*(i1<1),(i1-1)*(i1>1)>(std::declval<i1_t>()));
+      using E1_p2_t = decltype(get_subtuple<i1+1,E1_size-1>(std::declval<i1_t>()));
+
+      using E2_p1_t = decltype(get_subtuple<E2_size*(i2<1),(i2-1)*(i2>1)>(std::declval<i2_t>()));
+      using E2_p2_t = decltype(get_subtuple<i2+1,E2_size-1>(std::declval<i2_t>()));
+
+      using index_t = decltype(std::tuple_cat(std::declval<E1_p1_t>(),
+                                              std::declval<E1_p2_t>(),
+                                              std::declval<E2_p1_t>(),
+                                              std::declval<E2_p2_t>()));
+
+      return index_t{};
+    }
+/* THIS DOESN'T WORK WITH INTEL COMPILER, problems with constexpr tuple generation (assignement)
+
+    // this is used to get the index type at compile-time
+    static inline constexpr decltype(auto) get_index_t() {
+      using i1_t = typename E1::property_t::index_t;
+      using i2_t = typename E2::property_t::index_t;
+
+      // create index tuples for both tensors
+      constexpr i1_t E1_indices;
+      constexpr i2_t E2_indices;
 
       constexpr size_t E1_size = E1::property_t::rank;
       constexpr size_t E2_size = E2::property_t::rank;
@@ -90,6 +119,7 @@ class index_reduction_generator_t {
 
       return std::tuple_cat(E1_p1,E1_p2,E2_p1,E2_p2);
     }
+*/
 };
 
 //! Property class holding data and types defining a tensor expression which reduces two indices

@@ -43,13 +43,13 @@ class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,
 
     template<size_t i, size_t index, size_t ndim >
     static constexpr size_t restore_index_and_compute_stride() {
-	return (i==0) ? index*ndim : (index -(index%utilities::static_pow<ndim,i>::value)) *ndim + (index%utilities::static_pow<ndim,i>::value);
+      return (i==0) ? index*ndim : (index -(index%utilities::static_pow<ndim,i>::value)) *ndim + (index%utilities::static_pow<ndim,i>::value);
     }
 
 
     template<size_t c_index>
     inline decltype(auto) evaluate() const {
-/*  
+/* THIS DOESN'T WORK WITH INTEL COMPILER, problems with constexpr tuple generation (assignement)
       // Uncompress index of resulting tensor
       constexpr auto index_r = uncompress_index<property_t::ndim,property_t::rank,c_index>();
       constexpr size_t index_size = std::tuple_size<decltype(index_r)>::value;
@@ -74,12 +74,6 @@ class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,
       // Get compressed index from index tuples of contracted tensors
       constexpr size_t stride_1 = E1::property_t::this_tensor_t::compressed_index(index_1);
       constexpr size_t stride_2 = E2::property_t::this_tensor_t::compressed_index(index_2);
-
-
-      static_assert(stride_1>=0,
-                    "contraction: stride is less than zero, this shouldn't happen");
-      static_assert(stride_2>=0,
-                    "contraction: stride is less than zero, this shouldn't happen");
 */
 
       //      TUPLE FREE TENSOR CONTRACTION      //
@@ -95,6 +89,10 @@ class tensor_contraction_t : public tensor_expression_t<tensor_contraction_t<i1,
       constexpr size_t stride_1 = restore_index_and_compute_stride<i1,index_part_E1,ndim>();
       constexpr size_t stride_2 = restore_index_and_compute_stride<i2,index_part_E2_n,ndim>();
 
+      static_assert(stride_1>=0,
+                    "contraction: stride is less than zero, this shouldn't happen");
+      static_assert(stride_2>=0,
+                    "contraction: stride is less than zero, this shouldn't happen");
 
       // Compute sum over contracted index for index_r'th component by template recursion
       return recursive_contract<property_t::ndim-1,stride_1,stride_2>::contract(_u,_v);
