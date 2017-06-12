@@ -23,6 +23,7 @@ namespace tensors {
 
 struct comoving_t;
 struct eulerian_t;
+struct any_frame_t;
 
 class rank_t {};
 class upper_t : public rank_t {};

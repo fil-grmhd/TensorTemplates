@@ -35,12 +35,12 @@
 namespace tensors {
 
 //Only 4dim metric
-template<typename T>
+template<typename T,size_t ndim = 4>
 class metric_t {
   public:
 
-    using metric_tensor_t =general_tensor_t<T,eulerian_t,2,std::tuple<lower_t,lower_t>,4>;
-    using invmetric_tensor_t = general_tensor_t<T,eulerian_t,2,std::tuple<upper_t,upper_t>,4>;
+    using metric_tensor_t =general_tensor_t<T,any_frame_t,2,std::tuple<lower_t,lower_t>,ndim>;
+    using invmetric_tensor_t = general_tensor_t<T,any_frame_t,2,std::tuple<upper_t,upper_t>,ndim>;
     metric_tensor_t metric;
     invmetric_tensor_t  invmetric;
 
@@ -112,10 +112,10 @@ class metric_t {
     template<size_t i1, size_t i2, typename E1, typename E2>
     inline decltype(auto) const contract(E1 const &u, E2 const &v){
        return metric_contraction<
-	    i1,i2,E1,E2,
+	    i1,i2,
 	    typename std::tuple_element<i1, typename E1::property_t::index_t>::type,
 	    typename std::tuple_element<i1, typename E2::property_t::index_t>::type>
-	    (*this, u,v);
+	    ::contract(*this, u,v);
     };
 
 };

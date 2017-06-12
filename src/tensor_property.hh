@@ -39,7 +39,10 @@ class general_tensor_property_t {
 //  These operations don't change the tensor properties, but one has to check for compatibility
 template<typename E1, typename E2>
 class arithmetic_expression_property_t : public general_tensor_property_t<typename E1::property_t::this_tensor_t> {
-      static_assert(std::is_same<typename E1::property_t::frame_t, typename E2::property_t::frame_t>::value,
+      static_assert(std::is_same<typename E1::property_t::frame_t, typename E2::property_t::frame_t>::value 
+		    || std::is_same<typename E1::property_t::frame_t, any_frame_t>::value
+		    || std::is_same<typename E2::property_t::frame_t, any_frame_t>::value
+		    ,
                     "Frame types don't match!");
 
       static_assert(E1::property_t::ndim == E2::property_t::ndim,
@@ -170,7 +173,10 @@ class index_reduction_property_t {
 
     using this_tensor_t = general_tensor_t<data_t,frame_t,rank,index_t,ndim>;
 
-    static_assert(std::is_same<typename E1::property_t::frame_t, typename E2::property_t::frame_t>::value,
+    static_assert(std::is_same<typename E1::property_t::frame_t, typename E2::property_t::frame_t>::value
+		    || std::is_same<typename E1::property_t::frame_t, any_frame_t>::value
+		    || std::is_same<typename E2::property_t::frame_t, any_frame_t>::value
+		    ,
                   "Frame types don't match!");
 
     static_assert(E1::property_t::ndim == E2::property_t::ndim,
@@ -229,7 +235,8 @@ class index_metric_contraction_property_t {
 			&& std::is_same< 
 	 	 	typename std::tuple_element<0,typename E1::property_t::index_t>::type,
 	 	 	typename std::tuple_element<0,typename E1::property_t::index_t>::type
-			>::value,
+			>::value
+ 			&& std::is_same<typename E1::property_t::frame_t, any_frame_t>::value ,
 		 "The first tensor has to be a metric_t!");
 
     static_assert(E1::property_t::ndim == E2::property_t::ndim,
