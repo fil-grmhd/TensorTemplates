@@ -90,7 +90,7 @@ public:
     static_assert(
         utilities::compare_index<index_t, typename E::property_t::index_t,
                                  rank>(),
-        "Indices do not match!");
+        "Index types do not match (e.g. lower_t != upper_t)!");
   };
 
   //! Constructor from tensor expression

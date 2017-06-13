@@ -39,14 +39,14 @@ using all_true = std::is_same<bool_pack<bs..., true>, bool_pack<true, bs...>>;
 // printing for tuples (for debugging purposes)
 template <typename Tuple, int index, typename... Ts> struct print_tuple_impl {
   void operator()(Tuple &t) {
-    std::cout << std::get<index>(t) << " ";
+    std::cout << std::get<std::tuple_size<Tuple>::value - 1 - index>(t) << " ";
     print_tuple_impl<Tuple, index - 1, Ts...>{}(t);
   }
 };
 
 template <typename Tuple, typename... Ts>
 struct print_tuple_impl<Tuple, 0, Ts...> {
-  void operator()(Tuple &t) { std::cout << std::get<0>(t) << std::endl; }
+  void operator()(Tuple &t) { std::cout << std::get<std::tuple_size<Tuple>::value - 1>(t); }
 };
 
 template <typename Tuple, typename... Ts> void print_tuple(Tuple &t) {

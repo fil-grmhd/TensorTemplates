@@ -56,10 +56,11 @@ class arithmetic_expression_property_t
                              typename E2::property_t::data_t>::value,
                 "Data types don't match!");
 
+  // CHECK: is this really useful in tensor arithmetic expressions?
   static_assert(utilities::compare_index<typename E1::property_t::index_t,
                                          typename E2::property_t::index_t,
                                          E1::property_t::rank>(),
-                "Indices do not match!");
+                "Index types do not match (e.g. lower_t != upper_t)!");
 };
 
 //! Property class holding data and types defining a scalar operation on one
@@ -82,13 +83,9 @@ template <size_t i1, size_t i2, typename E1, typename E2>
 class index_reduction_generator_t {
 public:
   // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_index_t() {
+  static inline constexpr decltype(auto) get_contraction_index_t() {
     using i1_t = typename E1::property_t::index_t;
     using i2_t = typename E2::property_t::index_t;
-
-    // create index tuples for both tensors
-    constexpr i1_t E1_indices;
-    constexpr i2_t E2_indices;
 
     constexpr size_t E1_size = E1::property_t::rank;
     constexpr size_t E2_size = E2::property_t::rank;
@@ -112,42 +109,27 @@ public:
 
     return index_t{};
   }
-  /* THIS DOESN'T WORK WITH INTEL COMPILER, problems with constexpr tuple
-     generation (assignement)
 
-      // this is used to get the index type at compile-time
-      static inline constexpr decltype(auto) get_index_t() {
-        using i1_t = typename E1::property_t::index_t;
-        using i2_t = typename E2::property_t::index_t;
-
-        // create index tuples for both tensors
-        constexpr i1_t E1_indices;
-        constexpr i2_t E2_indices;
-
-        constexpr size_t E1_size = E1::property_t::rank;
-        constexpr size_t E2_size = E2::property_t::rank;
-
-        // create subtuples
-        constexpr auto E1_p1 =
-     get_subtuple<E1_size*(i1<1),(i1-1)*(i1>1)>(E1_indices);
-        constexpr auto E1_p2 = get_subtuple<i1+1,E1_size-1>(E1_indices);
-
-        constexpr auto E2_p1 =
-     get_subtuple<E2_size*(i2<1),(i2-1)*(i2>1)>(E2_indices);
-        constexpr auto E2_p2 = get_subtuple<i2+1,E2_size-1>(E2_indices);
-
-        return std::tuple_cat(E1_p1,E1_p2,E2_p1,E2_p2);
-      }
-  */
-};
-
-//! Helper class to get around intel compiler "bug"
-//  see https://software.intel.com/en-us/forums/intel-c-compiler/topic/710211
-template <size_t i2, typename E1, typename E2>
-class index_metric_contraction_generator_t {
-public:
   // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_index_t() {
+  static inline constexpr decltype(auto) get_trace_index_t() {
+    using i1_t = typename E1::property_t::index_t;
+
+    constexpr size_t E_size = E1::property_t::rank;
+
+    // get subtuple types
+    using E_p1_t = decltype(get_subtuple<E_size*(i1<1),(i1-1)*(i1>1)>(std::declval<i1_t>()));
+    using E_p2_t = decltype(get_subtuple<i1+1,i2-1>(std::declval<i1_t>()));
+    using E_p3_t = decltype(get_subtuple<i2+1,E_size-1>(std::declval<i1_t>()));
+
+    using index_t = decltype(std::tuple_cat(std::declval<E_p1_t>(),
+                                            std::declval<E_p2_t>(),
+                                            std::declval<E_p3_t>()));
+
+    return index_t{};
+  }
+
+  // this is only here to deduce the index type, see below
+  static inline constexpr decltype(auto) get_metric_contraction_index_t() {
     using i1_t = typename E1::property_t::index_t;
     using i2_t = typename E2::property_t::index_t;
 
@@ -172,12 +154,24 @@ public:
 
     return index_t{};
   }
+
+  // this is only here to deduce the index type, see below
+  static inline constexpr decltype(auto) get_concat_index_t() {
+    using i1_t = typename E1::property_t::index_t;
+    using i2_t = typename E2::property_t::index_t;
+
+    using index_t = decltype(
+        std::tuple_cat(std::declval<i1_t>(), std::declval<i2_t>()));
+
+    return index_t{};
+  };
+
 };
 
-//! Property class holding data and types defining a tensor expression which
-//! reduces two indices
+//! Property class holding data and types defining a tensor expression resulting
+//! from a contraction
 template <size_t i1, size_t i2, typename E1, typename E2>
-class index_reduction_property_t {
+class contraction_property_t {
 public:
   using data_t = typename E1::property_t::data_t;
   using frame_t = typename E1::property_t::frame_t;
@@ -186,11 +180,11 @@ public:
   static constexpr size_t rank =
       E1::property_t::rank + E2::property_t::rank - 2;
 
-  // static compile-time routine to get index_t
+  // static compile-time routine to get index_t, doesn't work, see generator above
   // static inline constexpr decltype(auto) get_index_t(){}
 
   using index_t =
-      decltype(index_reduction_generator_t<i1, i2, E1, E2>::get_index_t());
+      decltype(index_reduction_generator_t<i1, i2, E1, E2>::get_contraction_index_t());
 
   using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
 
@@ -226,10 +220,50 @@ public:
                 "Index tuple size != rank, this should not happen");
 };
 
+//! Property class holding data and types defining a tensor resulting from a trace
+template<size_t i1, size_t i2, typename E>
+class trace_property_t {
+  public:
+
+    using data_t = typename E::property_t::data_t;
+    using frame_t = typename E::property_t::frame_t;
+    static constexpr size_t ndim = E::property_t::ndim;
+    // two indices are removed by a trace
+    static constexpr size_t rank = E::property_t::rank - 2;
+
+    // static compile-time routine to get index_t, doesn't work, see above
+    //static inline constexpr decltype(auto) get_index_t(){}
+
+    using index_t = decltype(index_reduction_generator_t<i1,i2,E,E>::get_trace_index_t());
+
+    using this_tensor_t = general_tensor_t<data_t,frame_t,rank,index_t,ndim>;
+
+    static_assert(std::is_same<
+                    typename std::conditional<
+                      std::is_same<
+                        typename std::tuple_element<i1,typename E::property_t::index_t>::type,
+                        lower_t
+                      >::value,
+                      lower_t,
+                      upper_t
+                    >::type,
+                    typename std::conditional<
+                      std::is_same<
+                        typename std::tuple_element<i2,typename E::property_t::index_t>::type,
+                        upper_t
+                      >::value,
+                      lower_t,
+                      upper_t
+                    >::type
+                  >::value,
+                  "Can only trace covariant with contravariant indices!");
+};
+
+
 //! Property class holding data and types defining a tensor expression which
 //! reduces two indices
 template <size_t i2, typename E1, typename E2>
-class index_metric_contraction_property_t {
+class metric_contraction_property_t {
 public:
   using data_t = typename E2::property_t::data_t;
   using frame_t = typename E2::property_t::frame_t;
@@ -241,7 +275,7 @@ public:
   // static inline constexpr decltype(auto) get_index_t(){}
 
   using index_t =
-      decltype(index_metric_contraction_generator_t<i2, E1, E2>::get_index_t());
+      decltype(index_reduction_generator_t<i2,i2,E1,E2>::get_metric_contraction_index_t());
 
   using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
 
@@ -282,24 +316,7 @@ public:
                 "Index tuple size != rank, this should not happen");
 };
 
-//! Helper class to get around intel compiler "bug"
-//  see https://software.intel.com/en-us/forums/intel-c-compiler/topic/710211
-template <typename E1, typename E2>
-class index_concat_generator_t {
-public:
-  // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_index_t() {
-    using i1_t = typename E1::property_t::index_t;
-    using i2_t = typename E2::property_t::index_t;
-
-    using index_t = decltype(
-        std::tuple_cat(std::declval<i1_t>(), std::declval<i2_t>()));
-
-    return index_t{};
-  };
-};
-
-//! Property class holding data and types defining a tensor expression 
+//! Property class holding data and types defining a tensor expression
 //! which is the tensor product of two tensors
 template <typename E1, typename E2>
 class index_concat_property_t {
@@ -314,7 +331,7 @@ public:
   // static inline constexpr decltype(auto) get_index_t(){}
 
   using index_t =
-      decltype(index_concat_generator_t<E1, E2>::get_index_t());
+      decltype(index_reduction_generator_t<0,0,E1,E2>::get_concat_index_t());
 
   using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
 

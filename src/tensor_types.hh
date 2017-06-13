@@ -27,6 +27,7 @@ template <typename T, typename frame_t_, size_t rank_, typename index_t_,
           size_t ndim_>
 class general_tensor_t;
 
+// Tensor of ranks index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
 using tensor_t = general_tensor_t<T, frame_t_, sizeof...(ranks),
                                   std::tuple<ranks...>, ndim_>;

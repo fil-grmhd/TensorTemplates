@@ -25,6 +25,7 @@
 #include "tensor_property.hh"
 #include "tensor.hh"
 #include "tensor_contraction.hh"
+#include "tensor_trace.hh"
 
 //! main namespace
 namespace tensors {
