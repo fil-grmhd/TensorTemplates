@@ -15,164 +15,159 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 #ifndef TENSORS_EXPRESSIONS_HH
 #define TENSORS_EXPRESSIONS_HH
 
-#include <cmath>
-#include <type_traits>
-#include <tuple>
 #include <array>
+#include <cmath>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 
 #include "tensor_index.hh"
 
-
 namespace tensors {
 
 //! Base class for tensor expressions, including actual tensors
-template<typename E>
-class tensor_expression_t {
-  public:
+template <typename E> class tensor_expression_t {
+public:
+  //! Index access of tensor expression E
+  inline decltype(auto) operator[](size_t i) const {
+    return static_cast<E const &>(*this)[i];
+  };
 
-    //! Index access of tensor expression E
-    inline decltype(auto) operator[](size_t i) const {
-      return static_cast<E const&>(*this)[i];
-    };
+  //! Evaluation routine, triggering actual computation
+  template <size_t index> inline decltype(auto) evaluate() const {
+    return static_cast<E const &>(*this).template evaluate<index>();
+  };
 
-    //! Evaluation routine, triggering actual computation
-    template<size_t index>
-    inline decltype(auto) evaluate() const {
-      return static_cast<E const&>(*this).template evaluate<index>();
-    };
-
-    //! Conversion operator to reference of tensor expression E
-    operator E& () {
-      return static_cast<E&>(*this);
-    };
-    //! Conversion operator to constant reference of tensor expression E
-    operator const E& () const {
-      return static_cast<const E&>(*this);
-    };
+  //! Conversion operator to reference of tensor expression E
+  operator E &() { return static_cast<E &>(*this); };
+  //! Conversion operator to constant reference of tensor expression E
+  operator const E &() const { return static_cast<const E &>(*this); };
 };
 
-template<typename E1, typename E2>
-class tensor_sum_t : public tensor_expression_t<tensor_sum_t<E1,E2>> {
-    E1 const& _u;
-    E2 const& _v;
+template <typename E1, typename E2>
+class tensor_sum_t : public tensor_expression_t<tensor_sum_t<E1, E2>> {
+  E1 const &_u;
+  E2 const &_v;
 
-  public:
+public:
+  // This operation doesn't change the tensor properties, but one has to check
+  // for compatibility
+  using property_t = arithmetic_expression_property_t<E1, E2>;
 
-    // This operation doesn't change the tensor properties, but one has to check for compatibility
-    using property_t = arithmetic_expression_property_t<E1,E2>;
+  tensor_sum_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
-    tensor_sum_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
+  [[deprecated("Do not access the tensor expression via the [] operator, this "
+               "is UNDEFINED!")]] inline decltype(auto)
+  operator[](size_t i) const = delete;
+  //    inline decltype(auto) operator[](size_t i) const { return _u[i] + _v[i];
+  //    };
 
-    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
-    inline decltype(auto) operator[](size_t i) const = delete;
-//    inline decltype(auto) operator[](size_t i) const { return _u[i] + _v[i]; };
-
-    template<size_t index>
-    inline decltype(auto) evaluate() const { return _u.template evaluate<index>() + _v.template evaluate<index>(); };
+  template <size_t index> inline decltype(auto) evaluate() const {
+    return _u.template evaluate<index>() + _v.template evaluate<index>();
+  };
 };
 
-template<typename E1, typename E2>
-class tensor_sub_t : public tensor_expression_t<tensor_sub_t<E1, E2> > {
-    E1 const& _u;
-    E2 const& _v;
+template <typename E1, typename E2>
+class tensor_sub_t : public tensor_expression_t<tensor_sub_t<E1, E2>> {
+  E1 const &_u;
+  E2 const &_v;
 
-  public:
+public:
+  // This operation doesn't change the tensor properties, but one has to check
+  // for compatibility
+  using property_t = arithmetic_expression_property_t<E1, E2>;
 
-    // This operation doesn't change the tensor properties, but one has to check for compatibility
-    using property_t = arithmetic_expression_property_t<E1,E2>;
+  tensor_sub_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
-    tensor_sub_t(E1 const& u, E2 const& v) : _u(u), _v(v) {};
+  [[deprecated("Do not access the tensor expression via the [] operator, this "
+               "is UNDEFINED!")]] inline decltype(auto)
+  operator[](size_t i) const = delete;
+  //    inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i];
+  //    };
 
-    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
-    inline decltype(auto) operator[](size_t i) const = delete;
-//    inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i]; };
-
-    template<size_t index>
-    inline decltype(auto) evaluate() const { return _u.template evaluate<index>() - _v.template evaluate<index>(); };
+  template <size_t index> inline decltype(auto) evaluate() const {
+    return _u.template evaluate<index>() - _v.template evaluate<index>();
+  };
 };
 
-template<typename E>
-class tensor_scalar_mult_t : public tensor_expression_t<tensor_scalar_mult_t<E>> {
-    typename E::property_t::data_t const&  _u;
-    E const& _v;
+template <typename E>
+class tensor_scalar_mult_t
+    : public tensor_expression_t<tensor_scalar_mult_t<E>> {
+  typename E::property_t::data_t const &_u;
+  E const &_v;
 
-  public:
+public:
+  //! Scalar expression doesn't change tensor properties
+  using property_t = scalar_expression_property_t<E>;
 
-    //! Scalar expression doesn't change tensor properties
-    using property_t = scalar_expression_property_t<E>;
+  tensor_scalar_mult_t(typename property_t::data_t const &u, E const &v)
+      : _u(u), _v(v){};
 
-    tensor_scalar_mult_t(typename property_t::data_t const& u, E const& v) : _u(u), _v(v) {};
+  [[deprecated("Do not access the tensor expression via the [] operator, this "
+               "is UNDEFINED!")]] inline decltype(auto)
+  operator[](size_t i) const = delete;
+  //    inline decltype(auto) operator[](size_t i) const { return _u * _v[i]; };
 
-    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
-    inline decltype(auto) operator[](size_t i) const = delete;
-//    inline decltype(auto) operator[](size_t i) const { return _u * _v[i]; };
-
-    template<size_t index>
-    inline decltype(auto) evaluate() const {
-      return _v.template evaluate<index>() *_u;
-    };
+  template <size_t index> inline decltype(auto) evaluate() const {
+    return _v.template evaluate<index>() * _u;
+  };
 };
 
-template<typename E>
+template <typename E>
 class tensor_scalar_div_t : public tensor_expression_t<tensor_scalar_div_t<E>> {
-   typename E::property_t::data_t const&  _v;
-   E const& _u;
+  typename E::property_t::data_t const &_v;
+  E const &_u;
 
-  public:
+public:
+  //! Scalar expression doesn't change tensor properties
+  using property_t = scalar_expression_property_t<E>;
 
-    //! Scalar expression doesn't change tensor properties
-    using property_t = scalar_expression_property_t<E>;
+  tensor_scalar_div_t(E const &u, typename property_t::data_t const &v)
+      : _u(u), _v(v){};
 
-    tensor_scalar_div_t( E const& u, typename property_t::data_t const & v) : _u(u), _v(v) {};
+  [[deprecated("Do not access the tensor expression via the [] operator, this "
+               "is UNDEFINED!")]] inline decltype(auto)
+  operator[](size_t i) const = delete;
+  //    inline decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
 
-    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
-    inline decltype(auto) operator[](size_t i) const = delete;
-//    inline decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
-
-    template<size_t index>
-    inline decltype(auto) evaluate() const { return _u.template evaluate<index>()/_v;};
+  template <size_t index> inline decltype(auto) evaluate() const {
+    return _u.template evaluate<index>() / _v;
+  };
 };
 
-
-template<typename E1, typename E2>
-tensor_sum_t<E1,E2> const
-inline operator+(E1 const& u, E2 const& v) {
-   return tensor_sum_t<E1, E2>(u, v);
+template <typename E1, typename E2>
+tensor_sum_t<E1, E2> const inline operator+(E1 const &u, E2 const &v) {
+  return tensor_sum_t<E1, E2>(u, v);
 }
 
-template<typename E1, typename E2>
-tensor_sub_t<E1,E2> const
-inline operator-(E1 const& u, E2 const& v) {
-   return tensor_sub_t<E1, E2>(u, v);
+template <typename E1, typename E2>
+tensor_sub_t<E1, E2> const inline operator-(E1 const &u, E2 const &v) {
+  return tensor_sub_t<E1, E2>(u, v);
 }
 
-
-template<typename E>
-tensor_scalar_mult_t<E> const
-inline operator*(typename E::property_t::data_t const& u, E const& v) {
-  //Should we add a data_t check here??
-   return tensor_scalar_mult_t<E>(u, v);
+template <typename E>
+tensor_scalar_mult_t<E> const inline
+operator*(typename E::property_t::data_t const &u, E const &v) {
+  // Should we add a data_t check here??
+  return tensor_scalar_mult_t<E>(u, v);
 }
 
-template<typename E>
-tensor_scalar_mult_t<E> const
-inline operator*(E const& u, typename E::property_t::data_t const& v) {
-  //Should we add a data_t check here??
-   return v*u;
+template <typename E>
+tensor_scalar_mult_t<E> const inline
+operator*(E const &u, typename E::property_t::data_t const &v) {
+  // Should we add a data_t check here??
+  return v * u;
 }
 
-template<typename E>
-tensor_scalar_div_t<E> const
-inline operator/(E const& u, typename E::property_t::data_t const& v) {
-  //Should we add a data_t check here??
-   return tensor_scalar_div_t<E>(u,v);
+template <typename E>
+tensor_scalar_div_t<E> const inline
+operator/(E const &u, typename E::property_t::data_t const &v) {
+  // Should we add a data_t check here??
+  return tensor_scalar_div_t<E>(u, v);
 }
-
 
 } // namespace tensors
 

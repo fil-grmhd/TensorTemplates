@@ -293,11 +293,11 @@ public:
     using i2_t = typename E2::property_t::index_t;
 
     using index_t = decltype(
-        std::tuple_cat(std::declval<i1_t>(), std::declval<i2_t>());
+        std::tuple_cat(std::declval<i1_t>(), std::declval<i2_t>()));
 
     return index_t{};
   };
-}
+};
 
 //! Property class holding data and types defining a tensor expression 
 //! which is the tensor product of two tensors

@@ -3,7 +3,7 @@
  *
  *       Filename:  tensor_defs.hh
  *
- *    Description:  Some definitions 
+ *    Description:  Some definitions
  *
  *        Version:  1.0
  *        Created:  04/06/2017 19:18:05
@@ -28,8 +28,6 @@ struct any_frame_t;
 class rank_t {};
 class upper_t : public rank_t {};
 class lower_t : public rank_t {};
-
 }
 
 #endif
-
