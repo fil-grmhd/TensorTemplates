@@ -97,11 +97,51 @@ public:
   }
 };
 
+//! Helper structure to compute contraction of two vectors by a template recursion
+template <typename E1, typename E2, size_t N>
+struct scalar_contraction_recursion {
+  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
+    return scalar_contraction_recursion<E1,E2,N-1>::contract(u,v)
+         + u.template evaluate<N>() * v.template evaluate<N>();
+  }
+};
+// Termination definition of recursion
+template<typename E1, typename E2>
+struct scalar_contraction_recursion<E1,E2,0> {
+  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
+    return u.template evaluate<0>() * v.template evaluate<0>();
+  }
+};
+
+//! Wrapper type for contraction with specialization for two vectors
+//  General contraction expression result
+template<typename E1, typename E2, size_t contracted_rank, size_t i1, size_t i2>
+struct contractor_t {
+  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
+    // CHECK: should we check here for any index order?
+    return tensor_contraction_t<i1, i2, E1, E2>(u, v);
+  }
+};
+// Scalar contraction result (for E1,2::rank == 1)
+template<typename E1, typename E2, size_t i1, size_t i2>
+struct contractor_t<E1,E2,0,i1,i2> {
+  static_assert(utilities::is_reducible<i1,i2,E1,E2>::value, "Can only contract covariant with contravariant indices!");
+
+  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
+    return scalar_contraction_recursion<E1,E2,E1::property_t::ndim-1>::contract(u,v);
+  }
+};
+
 //! Contraction "operator" for two tensor expressions
-template <size_t i1, size_t i2, typename E1, typename E2>
-tensor_contraction_t<i1, i2, E1, E2> const inline contract(E1 const &u,
-                                                           E2 const &v) {
-  return tensor_contraction_t<i1, i2, E1, E2>(u, v);
+//  Returns a tensor_contraction_t or a scalar (if E1,2::rank == 1)
+template <size_t i1 = 0, size_t i2 = 0, typename E1, typename E2>
+decltype(auto) inline contract(E1 const &u, E2 const &v) {
+  return contractor_t<E1,
+                      E2,
+                      E1::property_t::rank + E2::property_t::rank - 2,
+                      i1,
+                      i2
+                      >::contract(u, v);
 }
 
 // CHECK: can we inherit from general tensor_contraction_t above?

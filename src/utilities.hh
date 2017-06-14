@@ -68,6 +68,28 @@ template <typename I1, typename I2, size_t ndim,
 constexpr bool compare_index() {
   return compare_index_impl<I1, I2>(Indices{});
 }
+//! Check if index combination is reducible
+template<size_t i1, size_t i2, typename E1, typename E2>
+struct is_reducible {
+  static constexpr bool value = std::is_same<
+                                  typename std::conditional<
+                                    std::is_same<
+                                      typename std::tuple_element<i1,typename E1::property_t::index_t>::type,
+                                      lower_t
+                                    >::value,
+                                    lower_t,
+                                    upper_t
+                                  >::type,
+                                  typename std::conditional<
+                                    std::is_same<
+                                      typename std::tuple_element<i2,typename E2::property_t::index_t>::type,
+                                      upper_t
+                                    >::value,
+                                    lower_t,
+                                    upper_t
+                                  >::type
+                                >::value;
+};
 
 } // namespace utilities
 } // namespace tensors

@@ -17,6 +17,7 @@
 
 #ifndef TENSORS_PROPERTY_HH
 #define TENSORS_PROPERTY_HH
+#include "tensor_index_reduction.hh"
 
 namespace tensors {
 
@@ -77,97 +78,6 @@ class scalar_expression_property_t
   */
 };
 
-//! Helper class to get around intel compiler "bug"
-//  see https://software.intel.com/en-us/forums/intel-c-compiler/topic/710211
-template <size_t i1, size_t i2, typename E1, typename E2>
-class index_reduction_generator_t {
-public:
-  // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_contraction_index_t() {
-    using i1_t = typename E1::property_t::index_t;
-    using i2_t = typename E2::property_t::index_t;
-
-    constexpr size_t E1_size = E1::property_t::rank;
-    constexpr size_t E2_size = E2::property_t::rank;
-
-    // get subtuple types
-    using E1_p1_t =
-        decltype(get_subtuple<E1_size *(i1 < 1), (i1 - 1) * (i1 > 1)>(
-            std::declval<i1_t>()));
-    using E1_p2_t =
-        decltype(get_subtuple<i1 + 1, E1_size - 1>(std::declval<i1_t>()));
-
-    using E2_p1_t =
-        decltype(get_subtuple<E2_size *(i2 < 1), (i2 - 1) * (i2 > 1)>(
-            std::declval<i2_t>()));
-    using E2_p2_t =
-        decltype(get_subtuple<i2 + 1, E2_size - 1>(std::declval<i2_t>()));
-
-    using index_t = decltype(
-        std::tuple_cat(std::declval<E1_p1_t>(), std::declval<E1_p2_t>(),
-                       std::declval<E2_p1_t>(), std::declval<E2_p2_t>()));
-
-    return index_t{};
-  }
-
-  // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_trace_index_t() {
-    using i1_t = typename E1::property_t::index_t;
-
-    constexpr size_t E_size = E1::property_t::rank;
-
-    // get subtuple types
-    using E_p1_t = decltype(get_subtuple<E_size*(i1<1),(i1-1)*(i1>1)>(std::declval<i1_t>()));
-    using E_p2_t = decltype(get_subtuple<i1+1,i2-1>(std::declval<i1_t>()));
-    using E_p3_t = decltype(get_subtuple<i2+1,E_size-1>(std::declval<i1_t>()));
-
-    using index_t = decltype(std::tuple_cat(std::declval<E_p1_t>(),
-                                            std::declval<E_p2_t>(),
-                                            std::declval<E_p3_t>()));
-
-    return index_t{};
-  }
-
-  // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_metric_contraction_index_t() {
-    using i1_t = typename E1::property_t::index_t;
-    using i2_t = typename E2::property_t::index_t;
-
-    // create index tuples for both tensors
-    constexpr i1_t E1_indices;
-    constexpr i2_t E2_indices;
-
-    constexpr size_t E2_size = E2::property_t::rank;
-
-    // get subtuple types
-    using E1_p1_t = std::tuple<typename std::tuple_element<0, i1_t>::type>;
-
-    using E2_p1_t =
-        decltype(get_subtuple<E2_size *(i2 < 1), (i2 - 1) * (i2 > 1)>(
-            std::declval<i2_t>()));
-    using E2_p2_t =
-        decltype(get_subtuple<i2 + 1, E2_size - 1>(std::declval<i2_t>()));
-
-    using index_t = decltype(std::tuple_cat(std::declval<E2_p1_t>(),
-                                            std::declval<E1_p1_t>(),
-                                            std::declval<E2_p2_t>()));
-
-    return index_t{};
-  }
-
-  // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_concat_index_t() {
-    using i1_t = typename E1::property_t::index_t;
-    using i2_t = typename E2::property_t::index_t;
-
-    using index_t = decltype(
-        std::tuple_cat(std::declval<i1_t>(), std::declval<i2_t>()));
-
-    return index_t{};
-  };
-
-};
-
 //! Property class holding data and types defining a tensor expression resulting
 //! from a contraction
 template <size_t i1, size_t i2, typename E1, typename E2>
@@ -188,6 +98,10 @@ public:
 
   using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
 
+  // Do some compile time checks of the expression properties
+
+  static_assert((i1 < E1::rank) && (i2 < E2::rank), "Contracted indices are out of bound, i.e. i1,i2 >= E1,E2::rank.");
+
   static_assert(
       std::is_same<typename E1::property_t::frame_t,
                    typename E2::property_t::frame_t>::value ||
@@ -202,19 +116,7 @@ public:
                              typename E2::property_t::data_t>::value,
                 "Data types don't match!");
 
-  static_assert(
-      std::is_same<
-          typename std::conditional<
-              std::is_same<typename std::tuple_element<
-                               i1, typename E1::property_t::index_t>::type,
-                           lower_t>::value,
-              lower_t, upper_t>::type,
-          typename std::conditional<
-              std::is_same<typename std::tuple_element<
-                               i2, typename E2::property_t::index_t>::type,
-                           upper_t>::value,
-              lower_t, upper_t>::type>::value,
-      "Can only contract covariant with contravariant indices!");
+  static_assert(utilities::is_reducible<i1,i2,E1,E2>::value,"Can only contract covariant with contravariant indices!");
 
   static_assert(rank == std::tuple_size<index_t>::value,
                 "Index tuple size != rank, this should not happen");
@@ -238,25 +140,18 @@ class trace_property_t {
 
     using this_tensor_t = general_tensor_t<data_t,frame_t,rank,index_t,ndim>;
 
-    static_assert(std::is_same<
-                    typename std::conditional<
-                      std::is_same<
-                        typename std::tuple_element<i1,typename E::property_t::index_t>::type,
-                        lower_t
-                      >::value,
-                      lower_t,
-                      upper_t
-                    >::type,
-                    typename std::conditional<
-                      std::is_same<
-                        typename std::tuple_element<i2,typename E::property_t::index_t>::type,
-                        upper_t
-                      >::value,
-                      lower_t,
-                      upper_t
-                    >::type
-                  >::value,
-                  "Can only trace covariant with contravariant indices!");
+    // Do some compile time checks of the expression properties
+
+    // check if someone tries to trace a vector
+    static_assert(E::rank > 1, "You cannot trace a vector, this is undefined!");
+    // check if trace indices bounds are violated
+    static_assert((i1 < E::rank) && (i2 < E::rank), "Traced indices are out of bound, i.e. i1,i2 >= rank.");
+    // check if someone tries to trace an index with itself
+    static_assert(i1 != i2, "You cannot trace an index with itself, i.e. make sure that i1 != i2");
+    // this can only trigger if tensor_trace_t is created manually, see below in trace "operator"
+    static_assert(i1 < i2, "Please make sure that traced indices are in ascending order, i.e. i1 < i2");
+
+    static_assert(utilities::is_reducible<i1,i2,E,E>::value,"Can only contract covariant with contravariant indices!");
 };
 
 
