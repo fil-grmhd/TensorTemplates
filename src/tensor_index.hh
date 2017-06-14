@@ -23,8 +23,8 @@
 
 namespace tensors {
 
-//! Computes the compressed index (in row-major format)
-// CHECK: which format is it now? row or column major?
+//! Computes the compressed index (in column-major format)
+
 template <size_t ndim, size_t a, size_t... indices> struct compressed_index_t {
   static constexpr size_t value =
       compressed_index_t<ndim, indices...>::value * ndim + a;

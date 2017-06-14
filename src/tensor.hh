@@ -127,12 +127,12 @@ public:
 
   //! Access the components of a tensor using a compressed index
   /*!
-   *  The data is stored in a row major format
+   *  The data is stored in a column major format
    */
   inline T &operator[](size_t const a) { return m_data[a]; }
   //! Access the components of a tensor using a compressed index
   /*!
-   *  The data is stored in a row major format
+   *  The data is stored in a column major format
    */
   inline T const &operator[](size_t const a) const { return m_data[a]; }
 
