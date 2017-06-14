@@ -137,7 +137,7 @@ public:
   inline T const &operator[](size_t const a) const { return m_data[a]; }
 
   //! Evaluation routine for expression templates
-  template <size_t index> inline T const &evaluate() const {
+  template <size_t index> inline T const & evaluate() const {
     return m_data[index];
   }
 
@@ -165,6 +165,29 @@ public:
       m_data[i] = 0;
     }
   }
+
+  //! Comparison routine to a tensor of the same kind
+  template<int exponent>
+  inline bool compare_components(this_tensor_t const& t) {
+    double eps = 1.0/utilities::static_pow<10,exponent>::value;
+
+    for(size_t i = 0; i<ndof; ++i) {
+      if(std::abs(m_data[i] - t[i]) > eps) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  //! Easy print to out stream, e.g. std::out
+  friend std::ostream& operator<< (std::ostream& stream, const this_tensor_t& t) {
+    stream << "[";
+    for(size_t i = 0; i<ndof-1; ++i)
+      stream << t[i] << " ";
+    stream << t[ndof-1] << "]";
+    return stream;
+  }
+
 };
 
 } // namespace tensors

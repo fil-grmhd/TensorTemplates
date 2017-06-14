@@ -24,12 +24,20 @@ namespace tensors {
 //! Property class holding data and types defining a specific tensor
 template <typename E> class general_tensor_property_t {
 public:
+  //! Data type of components
   using data_t = typename E::data_t;
+  //! Frame in which this tensor is defined
   using frame_t = typename E::frame_t;
+  //! Number of dimensions
   static constexpr size_t ndim = E::ndim;
+  //! Rank of the tensor (i.e. number of indices)
   static constexpr size_t rank = E::rank;
+  //! Number of degrees of freedom
+  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
 
+  //! Type of tensor indices (e.g. tuple of upper/lower_t)
   using index_t = typename E::index_t;
+  //! Actual type of tensor with these properties
   using this_tensor_t = typename E::this_tensor_t;
 };
 
@@ -100,7 +108,8 @@ public:
 
   // Do some compile time checks of the expression properties
 
-  static_assert((i1 < E1::rank) && (i2 < E2::rank), "Contracted indices are out of bound, i.e. i1,i2 >= E1,E2::rank.");
+  static_assert((i1 < E1::property_t::rank) && (i2 < E2::property_t::rank),
+                "Contracted indices are out of bound, i.e. i1,i2 >= E1,E2::rank.");
 
   static_assert(
       std::is_same<typename E1::property_t::frame_t,
@@ -145,7 +154,8 @@ class trace_property_t {
     // check if someone tries to trace a vector
     static_assert(E::rank > 1, "You cannot trace a vector, this is undefined!");
     // check if trace indices bounds are violated
-    static_assert((i1 < E::rank) && (i2 < E::rank), "Traced indices are out of bound, i.e. i1,i2 >= rank.");
+    static_assert((i1 < E::property_t::rank) && (i2 < E::property_t::rank),
+                  "Traced indices are out of bound, i.e. i1,i2 >= rank.");
     // check if someone tries to trace an index with itself
     static_assert(i1 != i2, "You cannot trace an index with itself, i.e. make sure that i1 != i2");
     // this can only trigger if tensor_trace_t is created manually, see below in trace "operator"

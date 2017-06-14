@@ -24,6 +24,7 @@
 #include "tensor_types.hh"
 #include "tensor_property.hh"
 #include "tensor.hh"
+#include "tensor_field.hh"
 #include "tensor_contraction.hh"
 #include "tensor_trace.hh"
 
