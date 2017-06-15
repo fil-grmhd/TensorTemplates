@@ -29,7 +29,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     inline decltype(auto) operator[](size_t i) const = delete;
 
     template<size_t index>
-    inline decltype(auto) evaluate() const {
+    inline data_t const & evaluate() const {
       return ptr_array[index][ptr_index];
     }
 };
