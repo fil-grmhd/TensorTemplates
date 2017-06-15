@@ -27,6 +27,8 @@
 #include "tensor_field.hh"
 #include "tensor_contraction.hh"
 #include "tensor_trace.hh"
+#include "tensor_concat.hh"
+#include "metric.hh"
 
 //! main namespace
 namespace tensors {
