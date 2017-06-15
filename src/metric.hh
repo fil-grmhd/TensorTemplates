@@ -33,6 +33,31 @@
 
 namespace tensors {
 
+//! Raise index
+template <size_t i, typename Tmetric, typename E>
+decltype(auto) inline raise_index(Tmetric const& metric_, E const &v) {
+  return metric_contraction_t<i,typename Tmetric::invmetric_tensor_t, E>(metric_.invmetric, v);
+};
+
+//! Lower index
+template <size_t i, typename Tmetric, typename E>
+decltype(auto) inline lower_index(Tmetric const& metric_, E const &v) {
+  return metric_contraction_t<i,typename Tmetric::metric_tensor_t, E>(metric_.metric, v);
+};
+
+//! Contract indices
+template <size_t i1, size_t i2, typename Tmetric, typename E1, typename E2>
+inline decltype(auto) contract( Tmetric const & metric_, E1 const &u, E2 const &v) {
+    return Tmetric::template metric_contraction<
+        i1, i2,
+        typename std::tuple_element<i1, typename E1::property_t::index_t>::type,
+        typename std::tuple_element<
+            i1, typename E2::property_t::index_t>::type,
+	E1,E2>::contract(metric_, u, v);
+};
+
+
+
 template <typename data_t, size_t ndim, typename dim_specialization_t> class metric_t {
 public:
   using metric_tensor_t =
@@ -64,7 +89,6 @@ private:
 
 
 public:
-  
 
   //! Move constructors
   metric_t(data_t lapse_, shift_t&&  shift_, metric_tensor_t&& metric_, invmetric_tensor_t&& invmetric_,
@@ -81,20 +105,6 @@ public:
 	sqrtdet=sqrt(sqrtdet); //Now we fix this.
   };
   
-  //TODO Do we need more constructors?
-
-  //! Raise index
-  template <size_t i = 0, typename E>
-  decltype(auto) inline raise_index(E const &v) {
-    return metric_contraction_t<i,invmetric_tensor_t, E>(invmetric, v);
-  };
-
-  //! Lower index
-  template <size_t i = 0, typename E>
-  decltype(auto) inline lower_index(E const &v) {
-    return metric_contraction_t<i,metric_tensor_t,E>(metric, v);
-  };
-
   // FIXME maybe we should change the name here, since we also have a
   // metric_contraction_t
   //      for raising and lowering now!
@@ -105,16 +115,18 @@ public:
   template <size_t i1, size_t i2, typename E1, typename E2>
   class metric_contraction<i1,i2, lower_t, lower_t,E1,E2> {
 
-    inline decltype(auto) contract(metric_t const &m, E1 const &u,
+   public:
+    static inline decltype(auto) contract(metric_t const &m, E1 const &u,
                                          E2 const &v) {
-      return tensors::template contract<i1, i2>(u, m.raise_index<i2>(v));
+      return tensors::template contract<i1, i2>(u, raise_index<i2>(m,v));
     };
   };
 
   template <size_t i1, size_t i2, typename E1, typename E2>
   class metric_contraction<i1,i2,upper_t, lower_t,E1,E2> {
 
-    inline decltype(auto) contract(metric_t const &m, E1 const &u,
+   public:
+    static inline decltype(auto) contract(metric_t const &m, E1 const &u,
                                          E2 const &v) {
       return tensors::template contract<i1, i2>(u, v);
     };
@@ -123,7 +135,8 @@ public:
   template <size_t i1, size_t i2, typename E1, typename E2>
   class metric_contraction<i1,i2, lower_t, upper_t,E1,E2> {
 
-    inline decltype(auto) contract(metric_t const &m, E1 const &u,
+   public:
+    static inline decltype(auto) contract(metric_t const &m, E1 const &u,
                                          E2 const &v) {
       return tensors::template contract<i1, i2>(u, v);
     };
@@ -132,12 +145,13 @@ public:
   template <size_t i1, size_t i2, typename E1, typename E2>
   class metric_contraction<i1,i2,upper_t, upper_t,E1,E2> {
 
-    inline decltype(auto) contract(metric_t const &m, E1 const &u,
+   public:
+    static inline decltype(auto) contract(metric_t const &m, E1 const &u,
                                          E2 const &v) {
-      return tensors::template contract<i1, i2>(u, m.lower_index<i2>(v));
+      return tensors::template contract<i1, i2>(u, lower_index<i2>(m,v));
     };
   };
-
+/*
   template <size_t i1, size_t i2, typename E1, typename E2>
   inline decltype(auto) contract(E1 const &u, E2 const &v) {
     return metric_contraction<
@@ -147,6 +161,7 @@ public:
             i1, typename E2::property_t::index_t>::type,
 	E1,E2>::contract(*this, u, v);
   };
+*/
 };
 
 
@@ -202,6 +217,7 @@ public:
       general_tensor_t<data_t, any_frame_t, 2, std::tuple<upper_t, upper_t>, 3>;
 
 
+  
   using metric_t<data_t,4,metric4_t<data_t>>::metric_t; //Inherit constructors
   using super = metric_t<data_t,3,metric3_t<data_t>>;
 /*
