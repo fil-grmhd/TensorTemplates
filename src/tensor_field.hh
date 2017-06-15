@@ -3,93 +3,71 @@
 
 namespace tensors {
 
-#ifdef TF_CREATOR
-
-//! Template for generic tensor field
-// A tensor field is not a tensor expression, but delivers tensors at different grid points.
-// This tensors are then used in expression.
-// One could make the tensor field also a tensor expression,
-// but in that case one would need to store an internal state (the current grid point),
-// which is really really bad for thread safety.
-//template<typename E>
-template<typename tensor_t>
-//class tensor_field_t : public tensor_expression_t<tensor_field_t<E> > {
-class tensor_field_t {
+//! Template for generic tensor field expression
+//! This represents a tensor at a specific grid position
+template<typename T>
+class tensor_field_expression_t : public tensor_expression_t<tensor_field_expression_t<T>> {
   public:
     // Get properties of underlying tensor type
-    using property_t = typename tensor_t::property_t;
+    using property_t = typename T::property_t;
     using data_t = typename property_t::data_t;
     static constexpr size_t ndof = property_t::ndof;
 
   private:
-    //! Storage for ndof pointers
-    std::array<data_t*,ndof> m_data{};
-
-    //! Creates a tensor at (pointer) index i
-    template<size_t... I>
-    inline decltype(auto) get_tensor(size_t const i, std::index_sequence<I...>) const {
-      return tensor_t((m_data[I][i])...);
-    }
-  public:
-    //! Constructor from pointer parameters
-    template <typename... TArgs>
-    tensor_field_t(data_t * first_elem, TArgs... elem)
-        : m_data({first_elem, elem...}) {
-      static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
-    };
-
-    //! Returns a tensor at (pointer) index i
-    inline decltype(auto) operator[](size_t const i) const {
-      return get_tensor(i, std::make_index_sequence<ndof>{});
-    }
-};
-
-#endif
-
-#ifdef TF_EXPRESSION
-
-//! Template for generic tensor field
-template<typename E>
-class tensor_field_t : public tensor_expression_t<tensor_field_t<E> > {
-  public:
-    // Get properties of underlying tensor type
-    using property_t = typename E::property_t;
-    using data_t = typename property_t::data_t;
-    static constexpr size_t ndof = property_t::ndof;
-
-  private:
-    //! Storage for ndof pointers
-    std::array<data_t*,ndof> m_data{};
+    //! Reference to pointer array of underlying tensor field
+    std::array<data_t*,ndof> const & ptr_array;
 
     //! Internal (pointer) index
-    static size_t ptr_index;
-    #pragma omp threadprivate(ptr_index)
+    size_t ptr_index;
 
   public:
-    //! Constructor from pointer parameters
-    template <typename... TArgs>
-    tensor_field_t(data_t * first_elem, TArgs... elem)
-        : m_data({first_elem, elem...}) {
-      static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
-    };
-
-    static void move_to(size_t i) {
-      ptr_index = i;
-    }
+    //! Contructor (called from a tensor field)
+    tensor_field_expression_t(std::array<data_t*,ndof> const & arr, size_t const index)
+        : ptr_array(arr), ptr_index(index) {}
 
     [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
     inline decltype(auto) operator[](size_t i) const = delete;
 
     template<size_t index>
     inline decltype(auto) evaluate() const {
-      return m_data[index][ptr_index];
+      return ptr_array[index][ptr_index];
     }
 };
-// get memory for static member
-template<typename E>
-size_t tensor_field_t<E>::ptr_index;
 
-#endif
+//! Template for generic tensor field
+//! A tensor field is not a tensor expression,
+//! but delivers tensor field expressions at different grid points.
+template<typename T>
+class tensor_field_t {
+  public:
+    // Get properties of underlying tensor type
+    using property_t = typename T::property_t;
+    using data_t = typename property_t::data_t;
+    static constexpr size_t ndof = property_t::ndof;
+
+  private:
+    //! Storage for ndof pointers
+    std::array<data_t*,ndof> ptr_array;
+
+  public:
+    //! Constructor from pointer parameters
+    template <typename... TArgs>
+    tensor_field_t(data_t * first_elem, TArgs... elem)
+        : ptr_array({first_elem, elem...}) {
+      static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
+    };
+
+    //! Returns a tensor field expression at (pointer) index i
+    inline decltype(auto) operator[](size_t const i) const {
+      return tensor_field_expression_t<T>(ptr_array,i);
+    }
+
+    //! Set the tensor field components at (pointer) index i
+    inline void set_components(size_t const i, T const &t) {
+      for(size_t k = 0; k<ndof; ++k)
+        ptr_array[k][i] = t[k];
+    }
+};
 
 }
 #endif

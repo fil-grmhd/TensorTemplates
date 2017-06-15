@@ -9,14 +9,11 @@
 #define TEMPLATES
 #define ARRAYS
 
-//#define TF_EXPRESSION
-#define TF_CREATOR
-
 #include "../tensor_templates.hh"
 
 int main(void) {
   using namespace tensors;
-  constexpr size_t n = 100;
+  constexpr size_t n = 30000000;
 //  constexpr size_t n = 100000000;
 
 
@@ -83,40 +80,29 @@ int main(void) {
 
   t0 = std::chrono::high_resolution_clock::now();
 
-  std::array<tensor3_t<double,upper_t,lower_t>,n> contracted_tensors;
-  std::array<vector3_t<double>,n> contracted_vectors;
+  using tensor_t = tensor3_t<double,lower_t,upper_t>;
+  using resulting_tensor_t = tensor3_t<double,upper_t,lower_t>;
+  using vector_t = vector3_t<double>;
 
-  std::vector<double> traces(n);
+  std::array<resulting_tensor_t,n> contracted_tensors;
+  std::array<vector_t,n> contracted_vectors;
 
-  tensor_field_t<tensor3_t<double,lower_t,upper_t>> tensor_field(&axx[0],&axy[0],&axz[0],&ayx[0],&ayy[0],&ayz[0],&azx[0],&azy[0],&azz[0]);
-  tensor_field_t<vector3_t<double>> vector_field(&axx[0],&ayy[0],&azz[0]);
+  std::array<double,n> traces;
+
+  tensor_field_t<tensor_t> tensor_field(&axx[0],&ayx[0],&azx[0],
+                                        &axy[0],&ayy[0],&azy[0],
+                                        &axz[0],&ayz[0],&azz[0]);
+//  tensor_field_t<tensor3_t<double,lower_t,upper_t>> tensor_field(&axx[0],&axy[0],&axz[0],&ayx[0],&ayy[0],&ayz[0],&azx[0],&azy[0],&azz[0]);
+  tensor_field_t<vector_t> vector_field(&axx[0],&ayy[0],&azz[0]);
 
   for(size_t i = 0; i<n; ++i) {
-    #ifdef TF_CREATOR
-    tensor3_t<double,lower_t,upper_t> tensor = tensor_field[i];
-    vector3_t<double> vector = vector_field[i];
-
     // contracted tensor of dim = 3, rank = 2
-    contracted_tensors[i] = contract<0,1>(tensor,tensor);
+    contracted_tensors[i] = contract<0,1>(tensor_field[i],tensor_field[i]);
     // contracted vector of dim = 3
-    contracted_vectors[i] = contract<0,0>(tensor,vector);
+    contracted_vectors[i] = contract<0,0>(tensor_field[i],vector_field[i]);
 
     // traces of rank = 2 tensors
-    traces[i] = trace<0,1>(tensor);
-    #endif
-
-    #ifdef TF_EXPRESSION
-    tensor_field.move_to(i);
-    vector_field.move_to(i);
-
-    // contracted tensor of dim = 3, rank = 2
-    contracted_tensors[i] = contract<0,1>(tensor_field,tensor_field);
-    // contracted vector of dim = 3
-    contracted_vectors[i] = contract<0,0>(tensor_field,vector_field);
-
-    // traces of rank = 2 tensors
-    traces[i] = trace<0,1>(tensor_field);
-    #endif
+    traces[i] = trace<0,1>(tensor_field[i]);
   }
 
   t1 = std::chrono::high_resolution_clock::now();
@@ -211,18 +197,23 @@ int main(void) {
 
   t0 = std::chrono::high_resolution_clock::now();
 
-  tensor_field_t<tensor3_t<double,upper_t,lower_t>> array_field(&bxx[0],&bxy[0],&bxz[0],&byx[0],&byy[0],&byz[0],&bzx[0],&bzy[0],&bzz[0]);
-  tensor_field_t<vector3_t<double>> array_vector_field(&cx[0],&cy[0],&cz[0]);
 
-  constexpr int exp = 4;
+  tensor_field_t<resulting_tensor_t> array_field(&bxx[0],&byx[0],&bzx[0],
+                                                 &bxy[0],&byy[0],&bzy[0],
+                                                 &bxz[0],&byz[0],&bzz[0]);
+
+//  tensor_field_t<tensor3_t<double,upper_t,lower_t>> array_field(&bxx[0],&bxy[0],&bxz[0],&byx[0],&byy[0],&byz[0],&bzx[0],&bzy[0],&bzz[0]);
+  tensor_field_t<vector_t> array_vector_field(&cx[0],&cy[0],&cz[0]);
+
+  constexpr int exp = 14;
 
   for(size_t i = 0; i<n; ++i) {
-    if(!array_field[i].compare_components<exp>(contracted_tensors[i])) {
+    if(!resulting_tensor_t(array_field[i]).compare_components<exp>(contracted_tensors[i])) {
       std::cout << "Tensors differ at " << i << std::endl;
       std::cout << array_field[i] << std::endl;
       std::cout << contracted_tensors[i] << std::endl;
     }
-    if(!array_vector_field[i].compare_components<exp>(contracted_vectors[i])) {
+    if(!vector_t(array_vector_field[i]).compare_components<exp>(contracted_vectors[i])) {
       std::cout << "Vectors differ at " << i << std::endl;
       std::cout << array_vector_field[i] << std::endl;
       std::cout << contracted_vectors[i] << std::endl;
