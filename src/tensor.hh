@@ -101,9 +101,10 @@ public:
 
   //! Constructor from parameters
   template <typename... TArgs>
-  general_tensor_t(data_t & first_elem, TArgs&... elem)
-      : m_data({first_elem, elem...}) {
+  general_tensor_t(data_t first_elem, TArgs... elem)
+      : m_data({first_elem, static_cast<data_t>(elem)...}) {
 	  static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
+	  static_assert(utilities::all_true<(std::is_convertible<data_t,TArgs>::value)...>::value, "The data_types are incompatible!");
   };
 
   general_tensor_t() : m_data({0}){};

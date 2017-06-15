@@ -107,4 +107,35 @@ int main(){
       std::cout << " "<< D[i+3*j] << " ";
     std::cout<<std::endl;
   }
+
+/////////////////////////////////////////////////////////////////////
+//
+//            METRIC TESTS
+//
+/////////////////////////////////////////////////////////////////////
+
+
+//Flat space-time test
+double lapse = 1.;
+vector3_t<double> shift {0,0,0};
+
+metric_tensor_t<double,3> mt {1,0,-0.3,
+			      0,1,0,
+		      	     -0.3,0,1};
+
+metric3_t<double> metric(lapse, std::move(shift), std::move(mt));
+
+std::cout << "Inverse metric" << metric.invmetric <<std::endl;
+std::cout << "metric" << metric.metric <<std::endl;
+std::cout << "sqrt(gamma)" << metric.sqrtdet <<std::endl;
+
+vector3_t<double> am1 {11.,12.,13.};
+covector3_t<double> bm1 = metric.lower_index(am1);
+vector3_t<double> cm1 = metric.raise_index(bm1);
+
+std::cout << "am1 upper_t" << am1 <<std::endl;
+std::cout << "am1 lower_t" << bm1 <<std::endl;
+std::cout << "raised again" << cm1 <<std::endl;
+
+
 }
