@@ -108,6 +108,9 @@ int main(){
     std::cout<<std::endl;
   }
 
+  tensor3_t<double,upper_t,upper_t> ab = tensor_cat(a,b);
+  std::cout << "Concatenating a and b: " << ab << std::endl;
+
 /////////////////////////////////////////////////////////////////////
 //
 //            METRIC TESTS
