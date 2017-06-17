@@ -41,7 +41,7 @@ class tensor_trace_t : public tensor_expression_t<tensor_trace_t<i1,i2,E> > {
     };
 
     template<size_t index>
-    inline decltype(auto) evaluate() const {
+    inline typename property_t::data_t const evaluate() const {
       // tuple free stride computation
       constexpr size_t ndim = E::property_t::ndim;
 

@@ -65,6 +65,15 @@ using cm_covector4_t = tensor_t<T, 4, comoving_t, lower_t>;
 template <typename T, typename... ranks>
 using cm_tensor4_t = tensor_t<T, 4, comoving_t, ranks...>;
 
+
+//metric
+template<typename data_t, size_t ndim>
+using metric_tensor_t =
+      general_tensor_t<data_t, any_frame_t, 2, std::tuple<lower_t, lower_t>, ndim>;
+template<typename data_t, size_t ndim>
+using invmetric_tensor_t =
+      general_tensor_t<data_t, any_frame_t, 2, std::tuple<upper_t, upper_t>, ndim>;
+
 } // namespace tensors
 
 #endif

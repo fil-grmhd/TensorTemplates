@@ -59,7 +59,7 @@ public:
                      (index % utilities::static_pow<ndim, i>::value);
   }
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline typename property_t::data_t const evaluate() const {
 
     // TUPLE FREE TENSOR CONTRACTION, fix for problems with intel compiler
     constexpr size_t max_pow_E1 = E1::property_t::rank - 1;
@@ -144,8 +144,12 @@ decltype(auto) inline contract(E1 const &u, E2 const &v) {
                       >::contract(u, v);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
 // CHECK: can we inherit from general tensor_contraction_t above?
-//! Expression template for generic tensor contractions
+//! Expression template for raising and lowering indices
 template <size_t i2, typename E1, typename E2>
 class metric_contraction_t
     : public tensor_expression_t<metric_contraction_t<i2, E1, E2>> {
@@ -159,7 +163,7 @@ public:
   // It gives all the relevant properties of a tensor resulting from a
   // contraction
   using property_t = metric_contraction_property_t<i2, E1, E2>;
-  static constexpr size_t i1 = 1;
+  static constexpr size_t i1 = 0;
 
   metric_contraction_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
@@ -189,7 +193,7 @@ public:
     };
   };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline typename property_t::data_t const evaluate() const {
     // TUPLE FREE TENSOR CONTRACTION, fix for problems with intel compiler
     constexpr size_t max_pow_E1 = E1::property_t::rank - 1;
 
@@ -199,7 +203,7 @@ public:
     constexpr size_t index_part_less_i2 =
         index % (utilities::static_pow<ndim, i2 + 1>::value);
     constexpr size_t index_part_less_i2_m1 =
-        index_part_less_i2 % (utilities::static_pow<ndim, i2>::value);
+        index % (utilities::static_pow<ndim, i2>::value);
     constexpr size_t index_part_metric =
         (index_part_less_i2 - index_part_less_i2_m1) /
         (utilities::static_pow<ndim, i2>::value);

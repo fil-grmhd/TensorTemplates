@@ -107,4 +107,42 @@ int main(){
       std::cout << " "<< D[i+3*j] << " ";
     std::cout<<std::endl;
   }
+
+  tensor3_t<double,upper_t,upper_t> ab = tensor_cat(a,b);
+  std::cout << "Concatenating a and b: " << ab << std::endl;
+
+/////////////////////////////////////////////////////////////////////
+//
+//            METRIC TESTS
+//
+/////////////////////////////////////////////////////////////////////
+
+
+//Flat space-time test
+double lapse = 1.;
+vector3_t<double> shift {0,0,0};
+
+metric_tensor_t<double,3> mt {1,0,-0.3,
+			      0,1,0,
+		      	     -0.3,0,1};
+
+metric3_t<double> metric(lapse, std::move(shift), std::move(mt));
+
+std::cout << "Inverse metric" << metric.invmetric <<std::endl;
+std::cout << "metric" << metric.metric <<std::endl;
+std::cout << "sqrt(gamma)" << metric.sqrtdet <<std::endl;
+
+vector3_t<double> am1 {11.,12.,13.};
+covector3_t<double> bm1 = lower_index<0>(metric, am1);
+vector3_t<double> cm1 = raise_index<0>(metric, bm1);
+
+std::cout << "am1 upper_t" << am1 <<std::endl;
+std::cout << "am1 lower_t" << bm1 <<std::endl;
+std::cout << "raised again" << cm1 <<std::endl;
+
+double norm2_am1 = contract<0,0>(metric,am1,am1);
+
+std::cout << "norm2 am1 :" << norm2_am1 <<std::endl;
+
+
 }

@@ -1,5 +1,5 @@
-#ifndef TENSOR_CONTRACT_HH
-#define TENSOR_CONTRACT_HH
+#ifndef TENSOR_CONCAT_HH
+#define TENSOR_CONCAT_HH
 
 #include <cassert>
 
@@ -14,19 +14,19 @@ class tensor_concat_t
   E2 const &_v;
 
 public:
-  // Contraction changes the tensor type, thus a special property class is
+  // Concatination changes the tensor type, thus a special property class is
   // needed.
   // It gives all the relevant properties of a tensor resulting from a
   // contraction
   using property_t = index_concat_property_t<E1, E2>;
 
-  tensor_contraction_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
+  tensor_concat_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
                "is UNDEFINED!")]] inline decltype(auto)
   operator[](size_t i) const = delete;
 
-  template <size_t c_index> inline decltype(auto) evaluate() const {
+  template <size_t c_index> inline typename property_t::data_t const evaluate() const {
 
     //      TUPLE FREE TENSOR CONTRACTION      //
     constexpr size_t max_pow_E1 = E1::property_t::rank;
@@ -42,7 +42,7 @@ public:
 
     // Compute sum over contracted index for index_r'th component by template
     // recursion
-    return _u.evaluate<index_part_E1>()*_v.evaluate<index_part_E2_n>();
+    return _u.template evaluate<index_part_E1>()*_v.template evaluate<index_part_E2_n>();
   }
 };
 

@@ -33,6 +33,31 @@
 
 namespace tensors {
 
+//! Raise index
+template <size_t i, typename Tmetric, typename E>
+decltype(auto) inline raise_index(Tmetric const& metric_, E const &v) {
+  return metric_contraction_t<i,typename Tmetric::invmetric_tensor_t, E>(metric_.invmetric, v);
+};
+
+//! Lower index
+template <size_t i, typename Tmetric, typename E>
+decltype(auto) inline lower_index(Tmetric const& metric_, E const &v) {
+  return metric_contraction_t<i,typename Tmetric::metric_tensor_t, E>(metric_.metric, v);
+};
+
+//! Contract indices
+template <size_t i1, size_t i2, typename Tmetric, typename E1, typename E2>
+inline decltype(auto) contract( Tmetric const & metric_, E1 const &u, E2 const &v) {
+    return Tmetric::template metric_contraction<
+        i1, i2,
+        typename std::tuple_element<i1, typename E1::property_t::index_t>::type,
+        typename std::tuple_element<
+            i1, typename E2::property_t::index_t>::type,
+	E1,E2>::contract(metric_, u, v);
+};
+
+
+
 template <typename data_t, size_t ndim, typename dim_specialization_t> class metric_t {
 public:
   using metric_tensor_t =
@@ -42,27 +67,28 @@ public:
   using shift_t = general_tensor_t<data_t, eulerian_t, 1, std::tuple<upper_t>, 3>; //Note that we are assume a 3+1 split where dim(shift) = 3 always!
 
 
-  metric_tensor_t metric = dim_specialization_t::metric;
-  data_t lapse= dim_specialization_t::lapse;
-  shift_t shift = dim_specialization_t::shift;
+  metric_tensor_t metric;
+  data_t lapse;
+  shift_t shift;
  //The order here matters!
  // Note that variables are initialised in the constructor according to the
  // order of their declaration!
-  data_t sqrtdet = dim_specialization_t::sqrtdet; //Always sqrtdet3 
-  invmetric_tensor_t invmetric = dim_specialization_t::invmetric;
+  data_t sqrtdet;
+  invmetric_tensor_t invmetric;
+
+protected:
+  static constexpr data_t SQ(data_t const & x) {return x*x;};
 
 private:
   // Constructors...
-  inline void compute_inverse_metric(){ return dim_specialization_t::compute_inverse_metric();};
+  inline void compute_inverse_metric(){ return static_cast<dim_specialization_t*>(this)->compute_inverse_metric();};
 
   //NOTE: This has to be stored in sqrtdet! And the derivative has to be taken separately
-  inline void compute_det() { return dim_specialization_t::compute_inverse_metric();};
+  inline data_t compute_det() { return static_cast<dim_specialization_t*>(this)->compute_det();};
   
-  static constexpr data_t SQ(data_t& x) {return x*x;};
 
 
 public:
-  
 
   //! Move constructors
   metric_t(data_t lapse_, shift_t&&  shift_, metric_tensor_t&& metric_, invmetric_tensor_t&& invmetric_,
@@ -72,27 +98,13 @@ public:
   metric_t(data_t lapse_, shift_t&&  shift_, metric_tensor_t&& metric_ ) : lapse(lapse_), metric(std::move(metric_)),
   	   shift(std::move(shift_)) {
 	  
-        compute_det(); //sqrtdet now stores det!!
+        sqrtdet = compute_det(); //sqrtdet now stores det!!
 	compute_inverse_metric();
         //Note also that sqrt(g) = lapse * sqrt(gamma)!
 	//But for consistency we store only sqrt(gamma) here!
 	sqrtdet=sqrt(sqrtdet); //Now we fix this.
   };
   
-  //TODO Do we need more constructors?
-
-  //! Raise index
-  template <size_t i = 0, typename E>
-  decltype(auto) inline raise_index(E const &v) {
-    return metric_contraction_t<i,invmetric_tensor_t, E>(invmetric, v);
-  };
-
-  //! Lower index
-  template <size_t i = 0, typename E>
-  decltype(auto) inline lower_index(E const &v) {
-    return metric_contraction_t<i,metric_tensor_t,E>(metric, v);
-  };
-
   // FIXME maybe we should change the name here, since we also have a
   // metric_contraction_t
   //      for raising and lowering now!
@@ -103,16 +115,18 @@ public:
   template <size_t i1, size_t i2, typename E1, typename E2>
   class metric_contraction<i1,i2, lower_t, lower_t,E1,E2> {
 
-    inline decltype(auto) contract(metric_t const &m, E1 const &u,
+   public:
+    static inline decltype(auto) contract(metric_t const &m, E1 const &u,
                                          E2 const &v) {
-      return tensors::template contract<i1, i2>(u, m.raise_index<i2>(v));
+      return tensors::template contract<i1, i2>(u, raise_index<i2>(m,v));
     };
   };
 
   template <size_t i1, size_t i2, typename E1, typename E2>
   class metric_contraction<i1,i2,upper_t, lower_t,E1,E2> {
 
-    inline decltype(auto) contract(metric_t const &m, E1 const &u,
+   public:
+    static inline decltype(auto) contract(metric_t const &m, E1 const &u,
                                          E2 const &v) {
       return tensors::template contract<i1, i2>(u, v);
     };
@@ -121,7 +135,8 @@ public:
   template <size_t i1, size_t i2, typename E1, typename E2>
   class metric_contraction<i1,i2, lower_t, upper_t,E1,E2> {
 
-    inline decltype(auto) contract(metric_t const &m, E1 const &u,
+   public:
+    static inline decltype(auto) contract(metric_t const &m, E1 const &u,
                                          E2 const &v) {
       return tensors::template contract<i1, i2>(u, v);
     };
@@ -130,12 +145,13 @@ public:
   template <size_t i1, size_t i2, typename E1, typename E2>
   class metric_contraction<i1,i2,upper_t, upper_t,E1,E2> {
 
-    inline decltype(auto) contract(metric_t const &m, E1 const &u,
+   public:
+    static inline decltype(auto) contract(metric_t const &m, E1 const &u,
                                          E2 const &v) {
-      return tensors::template contract<i1, i2>(u, m.lower_index<i2>(v));
+      return tensors::template contract<i1, i2>(u, lower_index<i2>(m,v));
     };
   };
-
+/*
   template <size_t i1, size_t i2, typename E1, typename E2>
   inline decltype(auto) contract(E1 const &u, E2 const &v) {
     return metric_contraction<
@@ -145,6 +161,7 @@ public:
             i1, typename E2::property_t::index_t>::type,
 	E1,E2>::contract(*this, u, v);
   };
+*/
 };
 
 
@@ -168,27 +185,27 @@ public:
   using metric_tensor_t = typename metric_t<data_t,3,metric3_t<data_t>>::metric_tensor_t;
   using shift_t = typename metric_t<data_t,3,metric3_t<data_t>>::shift_t;
 
-  metric_tensor_t metric;
-  data_t lapse;
-  shift_t shift;
+  using super = metric_t<data_t,3,metric3_t<data_t>>;
+/*
+  metric_tensor_t& metric = static_cast<metric3_t<data_t>*>(this)->metric;
+  data_t& lapse = static_cast<metric3_t<data_t>*>(this)->lapse;
+  shift_t& shift= static_cast<metric3_t<data_t>*>(this)->shift;
  //The order here matters!
  // Note that variables are initialised in the constructor according to the
  // order of their declaration!
-  data_t sqrtdet ;
-  invmetric_tensor_t invmetric;
+  data_t& sqrtdet = static_cast<metric3_t<data_t>*>(this)->sqrtdet;
+  invmetric_tensor_t& invmetric = static_cast<metric3_t<data_t>*>(this)->invmetric;
+*/
 
-
-private:
   inline void compute_inverse_metric();
   //NOTE: This has to be stored in sqrtdet! And the derivative has to be taken separately
-  inline void compute_det();
+  inline data_t compute_det();
   
 
 };
 
 template<typename data_t>
 class metric4_t : public metric_t<data_t,4,metric4_t<data_t>>{
-  using metric_t<data_t,4,metric4_t<data_t>>::metric_t; //Inherit constructors
 public:
   using metric_tensor_t = typename metric_t<data_t,4,metric4_t<data_t>>::metric_tensor_t;
   using invmetric_tensor_t = typename metric_t<data_t,4,metric4_t<data_t>>::invmetric_tensor_t;
@@ -199,29 +216,44 @@ public:
   using invmetric_tensor3_t =
       general_tensor_t<data_t, any_frame_t, 2, std::tuple<upper_t, upper_t>, 3>;
 
-  metric_tensor_t metric;
-  data_t lapse;
-  shift_t shift;
+
+  
+  using metric_t<data_t,4,metric4_t<data_t>>::metric_t; //Inherit constructors
+  using super = metric_t<data_t,3,metric3_t<data_t>>;
+/*
+  metric_tensor_t& metric = super::metric;
+  data_t& lapse = super::lapse;
+  shift_t& shift = super::shift;
  //The order here matters!
  // Note that variables are initialised in the constructor according to the
  // order of their declaration!
-  data_t sqrtdet ;
-  invmetric_tensor_t invmetric;
-
+  data_t& sqrtdet =super::sqrtdet;
+  invmetric_tensor_t& invmetric= super::invmetric;
+*/
   //Additional constructor
   metric4_t(data_t lapse_, shift_t&&  shift_, metric_tensor3_t&& metric_ );
 
-  private:
   inline void compute_metric4_from3(metric_tensor3_t& metric3);
   inline void compute_inverse_metric();
   //NOTE: This has to be stored in sqrtdet! And the derivative has to be taken separately
-  inline void compute_det();
+  inline data_t compute_det();
 };
 
 
 
 template<typename data_t>
-inline void metric3_t<data_t>::compute_det(){
+inline data_t metric3_t<data_t>::compute_det(){
+
+  metric_tensor_t& metric = super::metric;
+  data_t& lapse = super::lapse;
+  shift_t& shift = super::shift;
+ //The order here matters!
+ // Note that variables are initialised in the constructor according to the
+ // order of their declaration!
+  data_t& sqrtdet =super::sqrtdet;
+  invmetric_tensor_t& invmetric= super::invmetric;
+
+
 
   constexpr size_t GXX = metric_tensor_t::template compressed_index<0,0>();
   constexpr size_t GXY = metric_tensor_t::template compressed_index<0,1>();
@@ -232,14 +264,25 @@ inline void metric3_t<data_t>::compute_det(){
 
 
     //   We are deliberately storing det in sqrtdet and take the square-root later in the initialisation
-    sqrtdet= -SQ(metric.template evaluate<GXZ>()) * metric.template evaluate<GYY>() +
+    return -this->SQ(metric.template evaluate<GXZ>()) * metric.template evaluate<GYY>() +
            2.0 * metric.template evaluate<GXY>() * metric.template evaluate<GXZ>() * metric.template evaluate<GYZ>() -
-           metric.template evaluate<GXX>() * SQ(metric.template evaluate<GYZ>()) - SQ(metric.template evaluate<GXY>()) * metric.template evaluate<GZZ>() +
+           metric.template evaluate<GXX>() * this->SQ(metric.template evaluate<GYZ>()) - this->SQ(metric.template evaluate<GXY>()) * metric.template evaluate<GZZ>() +
            metric.template evaluate<GXX>() * metric.template evaluate<GYY>() * metric.template evaluate<GZZ>();
   };
 
 template<typename data_t>
-inline void metric4_t<data_t>::compute_det(){
+inline data_t metric4_t<data_t>::compute_det(){
+
+  metric_tensor_t& metric = super::metric;
+  data_t& lapse = super::lapse;
+  shift_t& shift = super::shift;
+ //The order here matters!
+ // Note that variables are initialised in the constructor according to the
+ // order of their declaration!
+  data_t& sqrtdet =super::sqrtdet;
+  invmetric_tensor_t& invmetric= super::invmetric;
+
+
 
   constexpr size_t GXX = metric_tensor_t::template compressed_index<1,1>();
   constexpr size_t GXY = metric_tensor_t::template compressed_index<1,2>();
@@ -251,15 +294,26 @@ inline void metric4_t<data_t>::compute_det(){
 
 
     //   We are deliberately storing det in sqrtdet and take the square-root later in the initialisation
-    sqrtdet= ( -SQ(metric.template evaluate<GXZ>()) * metric.template evaluate<GYY>() +
+    return ( -this->SQ(metric.template evaluate<GXZ>()) * metric.template evaluate<GYY>() +
            2.0 * metric.template evaluate<GXY>() * metric.template evaluate<GXZ>() * metric.template evaluate<GYZ>() -
-           metric.template evaluate<GXX>() * SQ(metric.template evaluate<GYZ>()) - SQ(metric.template evaluate<GXY>()) * metric.template evaluate<GZZ>() +
+           metric.template evaluate<GXX>() * this->SQ(metric.template evaluate<GYZ>()) - this->SQ(metric.template evaluate<GXY>()) * metric.template evaluate<GZZ>() +
            metric.template evaluate<GXX>() * metric.template evaluate<GYY>() * metric.template evaluate<GZZ>());
   };
 
 
 template<typename data_t>
 inline void metric3_t<data_t>::compute_inverse_metric(){
+
+  metric_tensor_t& metric = super::metric;
+  data_t& lapse = super::lapse;
+  shift_t& shift = super::shift;
+ //The order here matters!
+ // Note that variables are initialised in the constructor according to the
+ // order of their declaration!
+  data_t& sqrtdet =super::sqrtdet;
+  invmetric_tensor_t& invmetric= super::invmetric;
+
+
 
   constexpr size_t GXX = metric_tensor_t::template compressed_index<0,0>();
   constexpr size_t GXY = metric_tensor_t::template compressed_index<0,1>();
@@ -272,13 +326,13 @@ inline void metric3_t<data_t>::compute_inverse_metric(){
   constexpr size_t GZZ = metric_tensor_t::template compressed_index<2,2>();
 
     //IMPORTANT:   We are deliberately storing det in sqrtdet and take the square-root later in the initialisation
-    invmetric[GXX] = (-SQ(metric.template evaluate<GYZ>()) + metric.template evaluate<GYY>() * metric.template evaluate<GZZ>()) / sqrtdet;
+    invmetric[GXX] = (-this->SQ(metric.template evaluate<GYZ>()) + metric.template evaluate<GYY>() * metric.template evaluate<GZZ>()) / sqrtdet;
     invmetric[GXY] = ((metric.template evaluate<GYZ>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXY>() * metric.template evaluate<GZZ>()) / sqrtdet;
-    invmetric[GYY] = (-SQ(metric.template evaluate<GXZ>()) + metric.template evaluate<GXX>() * metric.template evaluate<GZZ>()) / sqrtdet;
+    invmetric[GYY] = (-this->SQ(metric.template evaluate<GXZ>()) + metric.template evaluate<GXX>() * metric.template evaluate<GZZ>()) / sqrtdet;
     invmetric[GXZ] =
         (-(metric.template evaluate<GXZ>() * metric.template evaluate<GYY>()) + metric.template evaluate<GXY>() * metric.template evaluate<GYZ>()) / sqrtdet;
     invmetric[GYZ] = ((metric.template evaluate<GXY>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXX>() * metric.template evaluate<GYZ>()) / sqrtdet;
-    invmetric[GZZ] = (-SQ(metric.template evaluate<GXY>()) + metric.template evaluate<GXX>() * metric.template evaluate<GYY>()) / sqrtdet;
+    invmetric[GZZ] = (-this->SQ(metric.template evaluate<GXY>()) + metric.template evaluate<GXX>() * metric.template evaluate<GYY>()) / sqrtdet;
 
     //Symmetrize
     invmetric[GYX] = invmetric.template evaluate<GXY>();
@@ -289,6 +343,17 @@ inline void metric3_t<data_t>::compute_inverse_metric(){
 
 template<typename data_t>
 inline void metric4_t<data_t>::compute_inverse_metric(){
+
+  metric_tensor_t& metric = super::metric;
+  data_t& lapse = super::lapse;
+  shift_t& shift = super::shift;
+ //The order here matters!
+ // Note that variables are initialised in the constructor according to the
+ // order of their declaration!
+  data_t& sqrtdet =super::sqrtdet;
+  invmetric_tensor_t& invmetric= super::invmetric;
+
+
 
   constexpr size_t GTT = metric_tensor_t::template compressed_index<0,0>();
   constexpr size_t GTX = metric_tensor_t::template compressed_index<0,1>();
@@ -309,19 +374,19 @@ inline void metric4_t<data_t>::compute_inverse_metric(){
   constexpr size_t GZZ = metric_tensor_t::template compressed_index<3,3>();
 
  
-    invmetric[GTT] = -1./SQ(lapse);
+    invmetric[GTT] = -1./this->SQ(lapse);
     invmetric[GTX] = -invmetric.template evaluate<GTT>()*shift.template evaluate<0>();
     invmetric[GTY] = -invmetric.template evaluate<GTT>()*shift.template evaluate<1>();
     invmetric[GTZ] = -invmetric.template evaluate<GTT>()*shift.template evaluate<2>();
 
     //IMPORTANT:   We are deliberately storing det in sqrtdet and take the square-root later in the initialisation
-    invmetric[GXX] = (-SQ(metric.template evaluate<GYZ>()) + metric.template evaluate<GYY>() * metric.template evaluate<GZZ>()) / sqrtdet;
+    invmetric[GXX] = (-this->SQ(metric.template evaluate<GYZ>()) + metric.template evaluate<GYY>() * metric.template evaluate<GZZ>()) / sqrtdet;
     invmetric[GXY] = ((metric.template evaluate<GYZ>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXY>() * metric.template evaluate<GZZ>()) / sqrtdet;
-    invmetric[GYY] = (-SQ(metric.template evaluate<GXZ>()) + metric.template evaluate<GXX>() * metric.template evaluate<GZZ>()) / sqrtdet;
+    invmetric[GYY] = (-this->SQ(metric.template evaluate<GXZ>()) + metric.template evaluate<GXX>() * metric.template evaluate<GZZ>()) / sqrtdet;
     invmetric[GXZ] =
         (-(metric.template evaluate<GXZ>() * metric.template evaluate<GYY>()) + metric.template evaluate<GXY>() * metric.template evaluate<GYZ>()) / sqrtdet;
     invmetric[GYZ] = ((metric.template evaluate<GXY>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXX>() * metric.template evaluate<GYZ>()) / sqrtdet;
-    invmetric[GZZ] = (-SQ(metric.template evaluate<GXY>()) + metric.template evaluate<GXX>() * metric.template evaluate<GYY>()) / sqrtdet;
+    invmetric[GZZ] = (-this->SQ(metric.template evaluate<GXY>()) + metric.template evaluate<GXX>() * metric.template evaluate<GYY>()) / sqrtdet;
 
 
     invmetric[GXX] += invmetric[GTT]*shift.template evaluate<0>()*shift.template evaluate<0>();
@@ -348,6 +413,17 @@ inline void metric4_t<data_t>::compute_inverse_metric(){
 
 template<typename data_t>
 inline void metric4_t<data_t>::compute_metric4_from3(metric_tensor3_t& metric3){
+
+  metric_tensor_t& metric = super::metric;
+  data_t& lapse = super::lapse;
+  shift_t& shift = super::shift;
+ //The order here matters!
+ // Note that variables are initialised in the constructor according to the
+ // order of their declaration!
+  data_t& sqrtdet =super::sqrtdet;
+  invmetric_tensor_t& invmetric= super::invmetric;
+
+
 
   constexpr size_t GTT = metric_tensor_t::template compressed_index<0,0>();
   constexpr size_t GTX = metric_tensor_t::template compressed_index<0,1>();
@@ -386,7 +462,7 @@ inline void metric4_t<data_t>::compute_metric4_from3(metric_tensor3_t& metric3){
     metric[GTY] = shift.template evaluate<0>()*metric3.template evaluate<G3XY>() + shift.template evaluate<1>()*metric3.template evaluate<G3YY>() + shift.template evaluate<2>()*metric3.template evaluate<G3YZ>();
     metric[GTZ] = shift.template evaluate<0>()*metric3.template evaluate<G3XZ>() + shift.template evaluate<1>()*metric3.template evaluate<G3YZ>() + shift.template evaluate<2>()*metric3.template evaluate<G3ZZ>();
  
-    invmetric[GTT] = -SQ(lapse) + metric.template evaluate<GTX>()*shift.template evaluate<0>() + metric.template evaluate<GTY>()*shift.template evaluate<1>() + metric.template evaluate<GTZ>()*shift.template evaluate<2>();
+    invmetric[GTT] = -this->SQ(lapse) + metric.template evaluate<GTX>()*shift.template evaluate<0>() + metric.template evaluate<GTY>()*shift.template evaluate<1>() + metric.template evaluate<GTZ>()*shift.template evaluate<2>();
 
     metric[GXX] = metric3.template evaluate<G3XX>();
     metric[GXY] = metric3.template evaluate<G3XY>();
@@ -410,15 +486,15 @@ inline void metric4_t<data_t>::compute_metric4_from3(metric_tensor3_t& metric3){
 
 
 template<typename data_t>
-metric4_t<data_t>::metric4_t(data_t lapse_, shift_t&&  shift_, metric_tensor3_t&& metric_ ) : lapse(lapse_) ,
-  	   shift(std::move(shift_)) {
+metric4_t<data_t>::metric4_t(data_t lapse_, shift_t&&  shift_, metric_tensor3_t&& metric_ ) : super::lapse(lapse_) ,
+  	   super::shift(std::move(shift_)) {
 
 	compute_metric4_from3(metric_);	  
         compute_det(); //sqrtdet now stores det!!
 	compute_inverse_metric();
         //Note also that sqrt(g) = lapse * sqrt(gamma)!
 	//But for consistency we store only sqrt(gamma) here!
-	sqrtdet=sqrt(sqrtdet); //Now we fix this.
+	super::sqrtdet=sqrt(super::sqrtdet); //Now we fix this.
   };
 
 
