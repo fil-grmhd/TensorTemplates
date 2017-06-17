@@ -168,17 +168,19 @@ public:
   }
 
   //! Comparison routine to a tensor of the same kind
+  // This is not optimally optimized, please change if used in non-debugging enviroment
   template<int exponent>
-  inline bool compare_components(this_tensor_t const& t) {
+  inline decltype(auto) compare_components(this_tensor_t const& t) {
     double eps = 1.0/utilities::static_pow<10,exponent>::value;
 
     for(size_t i = 0; i<ndof; ++i) {
-      if(2*std::abs(m_data[i]- t[i])
-         /(std::abs(m_data[i])+std::abs(t[i])) > eps) {
-        return false;
+      double rel_err = 2*std::abs(m_data[i]- t[i])
+                       /(std::abs(m_data[i])+std::abs(t[i]));
+      if(rel_err > eps) {
+        return std::pair<bool,double>(false,rel_err);
       }
     }
-    return true;
+    return std::pair<bool,double>(true,eps);
   }
 
   //! Easy print to out stream, e.g. std::out

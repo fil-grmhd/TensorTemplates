@@ -14,8 +14,8 @@
 
 int main(void) {
   using namespace tensors;
-  constexpr size_t n = 30000000;
-//  constexpr size_t n = 1000;
+//  constexpr size_t n = 30000000;
+  constexpr size_t n = 100000;
 
 
   // init random gens
@@ -71,8 +71,8 @@ int main(void) {
   }
   auto t1 = std::chrono::high_resolution_clock::now();
 
-  std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::seconds>(t1-t0).count()
-            << "s )." << std::endl;
+  std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count()
+            << " ms )." << std::endl;
 
 #ifdef TEMPLATES
 
@@ -108,8 +108,8 @@ int main(void) {
 
   t1 = std::chrono::high_resolution_clock::now();
 
-  std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::seconds>(t1-t0).count()
-            << "s )." << std::endl;
+  std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count()
+            << " ms )." << std::endl;
 
 #endif
 
@@ -189,8 +189,8 @@ int main(void) {
 
   t1 = std::chrono::high_resolution_clock::now();
 
-  std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::seconds>(t1-t0).count()
-            << "s )." << std::endl;
+  std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count()
+            << " ms )." << std::endl;
 #endif
 
 #ifdef COMPARE
@@ -207,18 +207,20 @@ int main(void) {
 
   tensor_field_t<vector_t> array_vector_field(&cx[0],&cy[0],&cz[0]);
 
-  constexpr int exp = 14;
+  constexpr int exp = 15;
 
   for(size_t i = 0; i<n; ++i) {
-    if(!resulting_tensor_t(array_field[i]).compare_components<exp>(contracted_tensors[i])) {
+    if(!resulting_tensor_t(array_field[i]).compare_components<exp>(contracted_tensors[i]).first) {
       std::cout << "Tensors differ at " << i << std::endl;
       std::cout << array_field[i] << std::endl;
       std::cout << contracted_tensors[i] << std::endl;
+      std::cout << resulting_tensor_t(array_field[i]).compare_components<exp>(contracted_tensors[i]).second << std::endl;
     }
-    if(!vector_t(array_vector_field[i]).compare_components<exp>(contracted_vectors[i])) {
+    if(!vector_t(array_vector_field[i]).compare_components<exp>(contracted_vectors[i]).first) {
       std::cout << "Vectors differ at " << i << std::endl;
       std::cout << array_vector_field[i] << std::endl;
       std::cout << contracted_vectors[i] << std::endl;
+      std::cout << vector_t(array_vector_field[i]).compare_components<exp>(contracted_vectors[i]).second << std::endl;
     }
     if(d0[i] != traces[i]) {
       std::cout << "Trace differ at " << i << std::endl;
@@ -229,8 +231,8 @@ int main(void) {
 
   t1 = std::chrono::high_resolution_clock::now();
 
-  std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::seconds>(t1-t0).count()
-            << "s )." << std::endl;
+  std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count()
+            << " ms )." << std::endl;
 
 #endif
 #endif
