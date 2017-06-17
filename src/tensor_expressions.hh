@@ -65,7 +65,7 @@ public:
   //    inline decltype(auto) operator[](size_t i) const { return _u[i] + _v[i];
   //    };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline typename property_t::data_t const evaluate() const {
     return _u.template evaluate<index>() + _v.template evaluate<index>();
   };
 };
@@ -88,7 +88,7 @@ public:
   //    inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i];
   //    };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline typename property_t::data_t const evaluate() const {
     return _u.template evaluate<index>() - _v.template evaluate<index>();
   };
 };
@@ -111,7 +111,7 @@ public:
   operator[](size_t i) const = delete;
   //    inline decltype(auto) operator[](size_t i) const { return _u * _v[i]; };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline typename property_t::data_t const evaluate() const {
     return _v.template evaluate<index>() * _u;
   };
 };
@@ -133,7 +133,7 @@ public:
   operator[](size_t i) const = delete;
   //    inline decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline typename property_t::data_t const evaluate() const {
     return _u.template evaluate<index>() / _v;
   };
 };

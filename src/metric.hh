@@ -35,13 +35,13 @@ namespace tensors {
 
 //! Raise index
 template <size_t i, typename Tmetric, typename E>
-decltype(auto) inline raise_index(Tmetric const& metric_, E const &v) {
+metric_contraction_t<i,typename Tmetric::invmetric_tensor_t, E> const inline raise_index(Tmetric const& metric_, E const &v) {
   return metric_contraction_t<i,typename Tmetric::invmetric_tensor_t, E>(metric_.invmetric, v);
 };
 
 //! Lower index
 template <size_t i, typename Tmetric, typename E>
-decltype(auto) inline lower_index(Tmetric const& metric_, E const &v) {
+metric_contraction_t<i,typename Tmetric::metric_tensor_t, E> const  inline lower_index(Tmetric const& metric_, E const &v) {
   return metric_contraction_t<i,typename Tmetric::metric_tensor_t, E>(metric_.metric, v);
 };
 
