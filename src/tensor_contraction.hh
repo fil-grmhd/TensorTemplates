@@ -59,7 +59,7 @@ public:
                      (index % utilities::static_pow<ndim, i>::value);
   }
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline typename property_t::data_t const evaluate() const {
 
     // TUPLE FREE TENSOR CONTRACTION, fix for problems with intel compiler
     constexpr size_t max_pow_E1 = E1::property_t::rank - 1;
@@ -193,7 +193,7 @@ public:
     };
   };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline typename property_t::data_t const evaluate() const {
     // TUPLE FREE TENSOR CONTRACTION, fix for problems with intel compiler
     constexpr size_t max_pow_E1 = E1::property_t::rank - 1;
 

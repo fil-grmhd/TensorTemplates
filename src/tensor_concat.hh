@@ -26,7 +26,7 @@ public:
                "is UNDEFINED!")]] inline decltype(auto)
   operator[](size_t i) const = delete;
 
-  template <size_t c_index> inline decltype(auto) evaluate() const {
+  template <size_t c_index> inline typename property_t::data_t const evaluate() const {
 
     //      TUPLE FREE TENSOR CONTRACTION      //
     constexpr size_t max_pow_E1 = E1::property_t::rank;
