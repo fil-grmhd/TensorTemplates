@@ -30,7 +30,7 @@ public:
   //! recursion
   template <int N, int stride1, int stride2> struct recursive_contract {
     template <typename A, typename B>
-    static inline typename A::property_t::data_t const contract(A const &_u, B const &_v) {
+    static inline decltype(auto) contract(A const &_u, B const &_v) {
       return recursive_contract<(N - 1), stride1, stride2>::contract(_u, _v) +
              _u.template evaluate<
                  stride1 +
@@ -43,7 +43,7 @@ public:
   template <int stride1, int stride2>
   struct recursive_contract<0, stride1, stride2> {
     template <typename A, typename B>
-    static inline typename A::property_t::data_t const contract(A const &_u, B const &_v) {
+    static inline decltype(auto) contract(A const &_u, B const &_v) {
       return _u.template evaluate<stride1>() * _v.template evaluate<stride2>();
     };
   };
@@ -100,7 +100,7 @@ public:
 //! Helper structure to compute contraction of two vectors by a template recursion
 template <typename E1, typename E2, size_t N>
 struct scalar_contraction_recursion {
-  static inline typename E1::property_t::data_t const contract(E1 const &u, E2 const &v) {
+  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
     return scalar_contraction_recursion<E1,E2,N-1>::contract(u,v)
          + u.template evaluate<N>() * v.template evaluate<N>();
   }
@@ -108,7 +108,7 @@ struct scalar_contraction_recursion {
 // Termination definition of recursion
 template<typename E1, typename E2>
 struct scalar_contraction_recursion<E1,E2,0> {
-  static inline typename E1::property_t::data_t const contract(E1 const &u, E2 const &v) {
+  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
     return u.template evaluate<0>() * v.template evaluate<0>();
   }
 };
@@ -117,8 +117,7 @@ struct scalar_contraction_recursion<E1,E2,0> {
 //  General contraction expression result
 template<typename E1, typename E2, size_t contracted_rank, size_t i1, size_t i2>
 struct contractor_t {
-  static inline tensor_contraction_t<i1, i2, E1, E2>
-                    const contract(E1 const &u, E2 const &v) {
+  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
     // CHECK: should we check here for any index order?
     return tensor_contraction_t<i1, i2, E1, E2>(u, v);
   }
@@ -128,7 +127,7 @@ template<typename E1, typename E2, size_t i1, size_t i2>
 struct contractor_t<E1,E2,0,i1,i2> {
   static_assert(utilities::is_reducible<i1,i2,E1,E2>::value, "Can only contract covariant with contravariant indices!");
 
-  static inline typename E1::property_t::data_t const contract(E1 const &u, E2 const &v) {
+  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
     return scalar_contraction_recursion<E1,E2,E1::property_t::ndim-1>::contract(u,v);
   }
 };
@@ -176,7 +175,7 @@ public:
   //! recursion
   template <int N, int stride1, int stride2> struct recursive_contract {
     template <typename A, typename B>
-    static inline typename A::property_t::data_t const contract(A const &_u, B const &_v) {
+    static inline decltype(auto) contract(A const &_u, B const &_v) {
       return recursive_contract<(N - 1), stride1, stride2>::contract(_u, _v) +
              _u.template evaluate<
                  stride1 +
@@ -189,7 +188,7 @@ public:
   template <int stride1, int stride2>
   struct recursive_contract<0, stride1, stride2> {
     template <typename A, typename B>
-    static inline typename A::property_t::data_t const contract(A const &_u, B const &_v) {
+    static inline decltype(auto) contract(A const &_u, B const &_v) {
       return _u.template evaluate<stride1>() * _v.template evaluate<stride2>();
     };
   };
