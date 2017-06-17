@@ -8,13 +8,14 @@
 
 #define TEMPLATES
 #define ARRAYS
+#define COMPARE
 
 #include "../tensor_templates.hh"
 
 int main(void) {
   using namespace tensors;
-//  constexpr size_t n = 30000000;
-  constexpr size_t n = 1000;
+  constexpr size_t n = 30000000;
+//  constexpr size_t n = 1000;
 
 
   // init random gens
@@ -192,6 +193,7 @@ int main(void) {
             << "s )." << std::endl;
 #endif
 
+#ifdef COMPARE
 #ifdef TEMPLATES
 #ifdef ARRAYS
   std::cout << "Testing equality..." << std::endl;
@@ -230,6 +232,7 @@ int main(void) {
   std::cout << "Finished (~ " << std::chrono::duration_cast<std::chrono::seconds>(t1-t0).count()
             << "s )." << std::endl;
 
+#endif
 #endif
 #endif
 }
