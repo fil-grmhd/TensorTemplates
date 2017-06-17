@@ -13,8 +13,8 @@
 
 int main(void) {
   using namespace tensors;
-  constexpr size_t n = 30000000;
-//  constexpr size_t n = 100000000;
+//  constexpr size_t n = 30000000;
+  constexpr size_t n = 1000;
 
 
   // init random gens
@@ -22,10 +22,8 @@ int main(void) {
 //  std::minstd_rand gen(rd());
   std::mt19937_64 gen(rd());
 
-  // stretch factor for random interval
-  constexpr double stretch = 1e6;
-  // uniform rand in 0,stretch
-  std::uniform_real_distribution<> dist_uni(0,stretch);
+  // uniform random number gen in 0,1
+  std::uniform_real_distribution<> dist_uni(0,1);
 
   // "gridfunctions"
   std::array<double,n> axx;
@@ -76,9 +74,6 @@ int main(void) {
             << "s )." << std::endl;
 
 #ifdef TEMPLATES
-  std::cout << "Computing templates..." << std::endl;
-
-  t0 = std::chrono::high_resolution_clock::now();
 
   using tensor_t = tensor3_t<double,lower_t,upper_t>;
   using resulting_tensor_t = tensor3_t<double,upper_t,lower_t>;
@@ -92,8 +87,13 @@ int main(void) {
   tensor_field_t<tensor_t> tensor_field(&axx[0],&ayx[0],&azx[0],
                                         &axy[0],&ayy[0],&azy[0],
                                         &axz[0],&ayz[0],&azz[0]);
-//  tensor_field_t<tensor3_t<double,lower_t,upper_t>> tensor_field(&axx[0],&axy[0],&axz[0],&ayx[0],&ayy[0],&ayz[0],&azx[0],&azy[0],&azz[0]);
+
   tensor_field_t<vector_t> vector_field(&axx[0],&ayy[0],&azz[0]);
+
+  std::cout << "Computing templates..." << std::endl;
+
+  // start timing
+  t0 = std::chrono::high_resolution_clock::now();
 
   for(size_t i = 0; i<n; ++i) {
     // contracted tensor of dim = 3, rank = 2
@@ -113,10 +113,6 @@ int main(void) {
 #endif
 
 #ifdef ARRAYS
-  std::cout << "Contracting arrays..." << std::endl;
-
-  t0 = std::chrono::high_resolution_clock::now();
-
   // contracted tensor of dim = 3, rank = 2
   std::array<double,n> bxx;
   std::array<double,n> bxy;
@@ -136,36 +132,41 @@ int main(void) {
   // traces of tensors
   std::array<double,n> d0;
 
+  std::cout << "Contracting arrays..." << std::endl;
+
+  // start timing
+  t0 = std::chrono::high_resolution_clock::now();
+
   for(size_t i = 0; i<n; ++i) {
     // contracted tensor components
     bxx[i] = axx[i]*axx[i]
             +ayx[i]*axy[i]
             +azx[i]*axz[i];
-    bxy[i] = axx[i]*axy[i]
+    bxy[i] = axx[i]*ayx[i]
             +ayx[i]*ayy[i]
             +azx[i]*ayz[i];
-    bxz[i] = axx[i]*axz[i]
-            +ayx[i]*ayz[i]
+    bxz[i] = axx[i]*azx[i]
+            +ayx[i]*azy[i]
             +azx[i]*azz[i];
 
     byx[i] = axy[i]*axx[i]
             +ayy[i]*axy[i]
             +azy[i]*axz[i];
-    byy[i] = axy[i]*axy[i]
+    byy[i] = axy[i]*ayx[i]
             +ayy[i]*ayy[i]
             +azy[i]*ayz[i];
-    byz[i] = axy[i]*axz[i]
-            +ayy[i]*ayz[i]
+    byz[i] = axy[i]*azx[i]
+            +ayy[i]*azy[i]
             +azy[i]*azz[i];
 
     bzx[i] = axz[i]*axx[i]
             +ayz[i]*axy[i]
             +azz[i]*axz[i];
-    bzy[i] = axz[i]*axy[i]
+    bzy[i] = axz[i]*ayx[i]
             +ayz[i]*ayy[i]
             +azz[i]*ayz[i];
-    bzz[i] = axz[i]*axz[i]
-            +ayz[i]*ayz[i]
+    bzz[i] = axz[i]*azx[i]
+            +ayz[i]*azy[i]
             +azz[i]*azz[i];
 
     // contracted vector components
@@ -202,7 +203,6 @@ int main(void) {
                                                  &bxy[0],&byy[0],&bzy[0],
                                                  &bxz[0],&byz[0],&bzz[0]);
 
-//  tensor_field_t<tensor3_t<double,upper_t,lower_t>> array_field(&bxx[0],&bxy[0],&bxz[0],&byx[0],&byy[0],&byz[0],&bzx[0],&bzy[0],&bzz[0]);
   tensor_field_t<vector_t> array_vector_field(&cx[0],&cy[0],&cz[0]);
 
   constexpr int exp = 14;

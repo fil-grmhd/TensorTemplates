@@ -182,7 +182,7 @@ public:
 
   //! Easy print to out stream, e.g. std::out
   //  This stream operator is automatically called for any tensor expression,
-  //  since they are implicitly convertable (this_tensor_t constructor from an expression).
+  //  since they are implicitly convertible (this_tensor_t constructor from an expression).
   friend std::ostream& operator<< (std::ostream& stream, const this_tensor_t& t) {
     stream << "[";
     for(size_t i = 0; i<ndof-1; ++i)

@@ -31,13 +31,13 @@ public:
   template <int N, int stride1, int stride2> struct recursive_contract {
     template <typename A, typename B>
     static inline decltype(auto) contract(A const &_u, B const &_v) {
-      return recursive_contract<(N - 1), stride1, stride2>::contract(_u, _v) +
-             _u.template evaluate<
+      return recursive_contract<(N - 1), stride1, stride2>::contract(_u, _v)
+           + _u.template evaluate<
                  stride1 +
-                 N * utilities::static_pow<property_t::ndim, i1>::value>() *
-                 _v.template evaluate<
-                     stride2 +
-                     N * utilities::static_pow<property_t::ndim, i2>::value>();
+                 N * utilities::static_pow<property_t::ndim, i1>::value>()
+           * _v.template evaluate<
+                 stride2 +
+                 N * utilities::static_pow<property_t::ndim, i2>::value>();
     };
   };
   template <int stride1, int stride2>
@@ -90,7 +90,7 @@ public:
         stride_2 >= 0,
         "contraction: stride is less than zero, this shouldn't happen");
 
-    // Compute sum over contracted index for index_r'th component by template
+    // Compute sum over contracted index for index'th component by template
     // recursion
     return recursive_contract<property_t::ndim - 1, stride_1,
                               stride_2>::contract(_u, _v);

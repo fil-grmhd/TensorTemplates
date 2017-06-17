@@ -23,6 +23,8 @@
 namespace tensors {
 namespace utilities {
 
+
+//! Compile-time integer power computation
 template <size_t a, size_t b> struct static_pow {
   static constexpr size_t value = a * static_pow<a, b - 1>::value;
 };
