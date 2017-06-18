@@ -15,7 +15,8 @@
 int main(void) {
   using namespace tensors;
 //  constexpr size_t n = 30000000;
-  constexpr size_t n = 100000;
+  constexpr size_t n = 1000000;
+//  constexpr size_t n = 1000;
 
 
   // init random gens
@@ -80,11 +81,35 @@ int main(void) {
   using resulting_tensor_t = tensor3_t<double,upper_t,lower_t>;
   using vector_t = vector3_t<double>;
 
-  std::array<resulting_tensor_t,n> contracted_tensors;
-  std::array<vector_t,n> contracted_vectors;
+  // test result "gridfunctions"
+  std::array<double,n> trxx;
+  std::array<double,n> trxy;
+  std::array<double,n> trxz;
+  std::array<double,n> tryx;
+  std::array<double,n> tryy;
+  std::array<double,n> tryz;
+  std::array<double,n> trzx;
+  std::array<double,n> trzy;
+  std::array<double,n> trzz;
+
+  std::array<double,n> vrx;
+  std::array<double,n> vry;
+  std::array<double,n> vrz;
+
+  // output tensor fields
+  tensor_field_t<resulting_tensor_t> contracted_tensors(&trxx[0],&tryx[0],&trzx[0],
+                                                        &trxy[0],&tryy[0],&trzy[0],
+                                                        &trxz[0],&tryz[0],&trzz[0]);
+
+  tensor_field_t<vector_t> contracted_vectors(&vrx[0],&vry[0],&vrz[0]);
+
+// these are always (slightly) faster on assignement, probably due to move semantics
+//  std::array<resulting_tensor_t,n> contracted_tensors;
+//  std::array<vector_t,n> contracted_vectors;
 
   std::array<double,n> traces;
 
+  // random input tensor fields
   tensor_field_t<tensor_t> tensor_field(&axx[0],&ayx[0],&azx[0],
                                         &axy[0],&ayy[0],&azy[0],
                                         &axz[0],&ayz[0],&azz[0]);
@@ -98,9 +123,25 @@ int main(void) {
 
   for(size_t i = 0; i<n; ++i) {
     // contracted tensor of dim = 3, rank = 2
-    contracted_tensors[i] = contract<0,1>(tensor_field[i],tensor_field[i]);
+    // evaluation is triggered in set_components
+    auto contracted_tensor = contract<0,1>(tensor_field[i],tensor_field[i]);
+
+// more complicated expression
+//    auto contracted_tensor = contract<0,0>(tensor_field[i],
+//                                           contract<0,1>(tensor_field[i],
+//                                                         tensor_field[i]));
+
+    contracted_tensors.set_components(i,contracted_tensor);
+
+// slightly faster, prob move semantics
+//    contracted_tensors[i] = contract<0,1>(tensor_field[i],tensor_field[i]);
+
     // contracted vector of dim = 3
-    contracted_vectors[i] = contract<0,0>(tensor_field[i],vector_field[i]);
+    // evaluation is triggered in set_components
+    auto contracted_vector = contract<0,0>(tensor_field[i],vector_field[i]);
+    contracted_vectors.set_components(i,contracted_vector);
+// slightly faster, prob move semantics
+//    contracted_vectors[i] = contract<0,0>(tensor_field[i],vector_field[i]);
 
     // traces of rank = 2 tensors
     traces[i] = trace<0,1>(tensor_field[i]);

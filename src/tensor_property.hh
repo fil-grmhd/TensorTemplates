@@ -97,6 +97,8 @@ public:
   // two indices are removed by this expression
   static constexpr size_t rank =
       E1::property_t::rank + E2::property_t::rank - 2;
+  //! Number of degrees of freedom
+  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
 
   // static compile-time routine to get index_t, doesn't work, see generator above
   // static inline constexpr decltype(auto) get_index_t(){}
@@ -141,6 +143,9 @@ class trace_property_t {
     static constexpr size_t ndim = E::property_t::ndim;
     // two indices are removed by a trace
     static constexpr size_t rank = E::property_t::rank - 2;
+    //! Number of degrees of freedom
+    static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+
 
     // static compile-time routine to get index_t, doesn't work, see above
     //static inline constexpr decltype(auto) get_index_t(){}
@@ -175,6 +180,8 @@ public:
   static constexpr size_t ndim = E2::property_t::ndim;
   // two indices are removed by this expression
   static constexpr size_t rank = E2::property_t::rank;
+  //! Number of degrees of freedom
+  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
 
   // static compile-time routine to get index_t
   // static inline constexpr decltype(auto) get_index_t(){}
@@ -231,6 +238,8 @@ public:
   static constexpr size_t ndim = E2::property_t::ndim;
   // two indices are removed by this expression
   static constexpr size_t rank = E2::property_t::rank + E1::property_t::rank;
+  //! Number of degrees of freedom
+  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
 
   // static compile-time routine to get index_t
   // static inline constexpr decltype(auto) get_index_t(){}

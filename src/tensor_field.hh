@@ -49,6 +49,31 @@ class tensor_field_t {
     //! Storage for ndof pointers
     std::array<data_t*,ndof> ptr_array;
 
+    // Template recursion to set components, fastest for chained expressions
+    template<size_t N, typename E>
+    struct setter_t {
+      static inline void set(size_t const i, E const& e, decltype(ptr_array) const & arr) {
+        arr[N][i] = e.template evaluate<N>();
+        setter_t<N-1,E>::set(i,e,arr);
+      }
+    };
+    template<typename E>
+    struct setter_t<0,E> {
+      static inline void set(size_t const i, E const& e, decltype(ptr_array) const & arr) {
+        arr[0][i] = e.template evaluate<0>();
+      }
+    };
+/*
+    // works but shouldn't be used (much slower)
+    template<size_t... I, typename E>
+    inline void set_component_impl(size_t const i, E const &e, std::index_sequence<I...>) {
+      // dirty trick to get unpacking and assignment working
+      // temporary array should be compiled away
+      // see https://stackoverflow.com/questions/25680461/variadic-template-pack-expansion
+      using expander = int[];
+      (void) expander { 0, ((ptr_array[I][i] = e.template evaluate<I>()), 0)... };
+    }
+*/
   public:
     //! Constructor from pointer parameters
     template <typename... TArgs>
@@ -63,9 +88,25 @@ class tensor_field_t {
     }
 
     //! Set the tensor field components at (pointer) index i
-    inline void set_components(size_t const i, T const &t) {
+    template<typename E>
+    inline void set_components(size_t const i, E const &e) {
+      // this only a check of compatibility of T and E
+      using property_check = arithmetic_expression_property_t<T,E>;
+      // evaluate expression for every component
+      // and set GFs at index i to that value
+      setter_t<property_check::ndof-1,E>::set(i,e,ptr_array);
+
+/*      // calling this is slightly slower
+      set_component_impl(i,e,Indices{});
+*/
+
+/*      // slower than recursion for chained expressions, for whatever reason
+
+      // Create a tensor, triggers evaluation of any expression and does type checks
+      T t(e);
       for(size_t k = 0; k<ndof; ++k)
         ptr_array[k][i] = t[k];
+*/
     }
 };
 
