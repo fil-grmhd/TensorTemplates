@@ -32,6 +32,9 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     inline data_t const & evaluate() const {
       return ptr_array[index][ptr_index];
     }
+
+    template<typename E>
+    inline void operator=(E const &e);
 };
 
 //! Template for generic tensor field
@@ -49,6 +52,7 @@ class tensor_field_t {
     //! Storage for ndof pointers
     std::array<data_t*,ndof> ptr_array;
 
+  public:
     // Template recursion to set components, fastest for chained expressions
     template<size_t N, typename E>
     struct setter_t {
@@ -74,7 +78,6 @@ class tensor_field_t {
       (void) expander { 0, ((ptr_array[I][i] = e.template evaluate<I>()), 0)... };
     }
 */
-  public:
     //! Constructor from pointer parameters
     template <typename... TArgs>
     tensor_field_t(data_t * first_elem, TArgs... elem)
@@ -109,6 +112,18 @@ class tensor_field_t {
 */
     }
 };
+
+
+template<typename T>
+template<typename E>
+inline void tensor_field_expression_t<T>::operator=(E const &e){
+      // this only a check of compatibility of T and E
+      using property_check = arithmetic_expression_property_t<T,E>;
+      // evaluate expression for every component
+      // and set GFs at index i to that value
+      tensor_field_t<T>::template setter_t<property_check::ndof-1,E>::set(ptr_index,e,ptr_array);
+};
+
 
 }
 #endif
