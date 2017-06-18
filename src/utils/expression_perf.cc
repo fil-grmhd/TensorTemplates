@@ -5,6 +5,7 @@
 #include <vector>
 #include <array>
 #include <chrono>
+#include <memory>
 
 #define TEMPLATES
 #define ARRAYS
@@ -15,7 +16,7 @@
 int main(void) {
   using namespace tensors;
 //  constexpr size_t n = 30000000;
-  constexpr size_t n = 1000000;
+  constexpr size_t n = 100000;
 //  constexpr size_t n = 1000;
 
 
@@ -28,15 +29,15 @@ int main(void) {
   std::uniform_real_distribution<> dist_uni(0,1);
 
   // "gridfunctions"
-  std::array<double,n> axx;
-  std::array<double,n> axy;
-  std::array<double,n> axz;
-  std::array<double,n> ayx;
-  std::array<double,n> ayy;
-  std::array<double,n> ayz;
-  std::array<double,n> azx;
-  std::array<double,n> azy;
-  std::array<double,n> azz;
+  auto axx = std::make_unique<double[]>(n);
+  auto axy = std::make_unique<double[]>(n);
+  auto axz = std::make_unique<double[]>(n);
+  auto ayx = std::make_unique<double[]>(n);
+  auto ayy = std::make_unique<double[]>(n);
+  auto ayz = std::make_unique<double[]>(n);
+  auto azx = std::make_unique<double[]>(n);
+  auto azy = std::make_unique<double[]>(n);
+  auto azz = std::make_unique<double[]>(n);
 
   std::cout << "Filling GFs..." << std::endl;
 
@@ -82,19 +83,20 @@ int main(void) {
   using vector_t = vector3_t<double>;
 
   // test result "gridfunctions"
-  std::array<double,n> trxx;
-  std::array<double,n> trxy;
-  std::array<double,n> trxz;
-  std::array<double,n> tryx;
-  std::array<double,n> tryy;
-  std::array<double,n> tryz;
-  std::array<double,n> trzx;
-  std::array<double,n> trzy;
-  std::array<double,n> trzz;
+  auto trxx = std::make_unique<double[]>(n);
+  auto trxy = std::make_unique<double[]>(n);
+  auto trxz = std::make_unique<double[]>(n);
+  auto tryx = std::make_unique<double[]>(n);
+  auto tryy = std::make_unique<double[]>(n);
+  auto tryz = std::make_unique<double[]>(n);
+  auto trzx = std::make_unique<double[]>(n);
+  auto trzy = std::make_unique<double[]>(n);
+  auto trzz = std::make_unique<double[]>(n);
 
-  std::array<double,n> vrx;
-  std::array<double,n> vry;
-  std::array<double,n> vrz;
+
+  auto vrx = std::make_unique<double[]>(n);
+  auto vry = std::make_unique<double[]>(n);
+  auto vrz = std::make_unique<double[]>(n);
 
   // output tensor fields
   tensor_field_t<resulting_tensor_t> contracted_tensors(&trxx[0],&tryx[0],&trzx[0],
@@ -158,20 +160,21 @@ int main(void) {
 
 #ifdef ARRAYS
   // contracted tensor of dim = 3, rank = 2
-  std::array<double,n> bxx;
-  std::array<double,n> bxy;
-  std::array<double,n> bxz;
-  std::array<double,n> byx;
-  std::array<double,n> byy;
-  std::array<double,n> byz;
-  std::array<double,n> bzx;
-  std::array<double,n> bzy;
-  std::array<double,n> bzz;
+  auto bxx = std::make_unique<double[]>(n);
+  auto bxy = std::make_unique<double[]>(n);
+  auto bxz = std::make_unique<double[]>(n);
+  auto byx = std::make_unique<double[]>(n);
+  auto byy = std::make_unique<double[]>(n);
+  auto byz = std::make_unique<double[]>(n);
+  auto bzx = std::make_unique<double[]>(n);
+  auto bzy = std::make_unique<double[]>(n);
+  auto bzz = std::make_unique<double[]>(n);
 
   // contracted vector of dim = 3
-  std::array<double,n> cx;
-  std::array<double,n> cy;
-  std::array<double,n> cz;
+
+  auto cx = std::make_unique<double[]>(n);
+  auto cy = std::make_unique<double[]>(n);
+  auto cz = std::make_unique<double[]>(n);
 
   // traces of tensors
   std::array<double,n> d0;
