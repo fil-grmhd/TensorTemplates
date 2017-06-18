@@ -131,7 +131,8 @@ int main(void) {
 //                                           contract<0,1>(tensor_field[i],
 //                                                         tensor_field[i]));
 
-    contracted_tensors.set_components(i,contracted_tensor);
+  //  contracted_tensors.set_components(i,contracted_tensor);
+    contracted_tensors[i] = contracted_tensor;
 
 // slightly faster, prob move semantics
 //    contracted_tensors[i] = contract<0,1>(tensor_field[i],tensor_field[i]);
@@ -139,7 +140,8 @@ int main(void) {
     // contracted vector of dim = 3
     // evaluation is triggered in set_components
     auto contracted_vector = contract<0,0>(tensor_field[i],vector_field[i]);
-    contracted_vectors.set_components(i,contracted_vector);
+    //contracted_vectors.set_components(i,contracted_vector);
+    contracted_vectors[i] = contracted_vector;
 // slightly faster, prob move semantics
 //    contracted_vectors[i] = contract<0,0>(tensor_field[i],vector_field[i]);
 
