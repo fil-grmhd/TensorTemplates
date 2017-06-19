@@ -5,6 +5,7 @@
 ###############################################################################
 
 STORAGE: rhs_scon
+STORAGE: rhs_tau
 
 SCHEDULE THC_GRSource IN HydroBase_RHS AFTER THC_InitSource
 {

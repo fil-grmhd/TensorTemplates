@@ -23,6 +23,7 @@
 
 #include "finite_difference.h"
 #include "utils.hh"
+#include "tensor_templates.hh"
 
 #define SQ(X) ((X)*(X))
 
@@ -30,17 +31,38 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
     DECLARE_CCTK_ARGUMENTS
     DECLARE_CCTK_PARAMETERS
 
-    CCTK_INFO("THC_GRSource_orig");
+    CCTK_INFO("THC_GRSource_templates");
 
     constexpr int fd_order = 4;
+    constexpr size_t exp = 4;
 
     int const gsiz = UTILS_GFSIZE(cctkGH);
+
+    CCTK_REAL * velx = &vel[0*gsiz];
+    CCTK_REAL * vely = &vel[1*gsiz];
+    CCTK_REAL * velz = &vel[2*gsiz];
+
+/* tensor field is not compatible with const pointers (yet)
+    // should use const tensor_field_t instead
     CCTK_REAL const * velx = &vel[0*gsiz];
     CCTK_REAL const * vely = &vel[1*gsiz];
     CCTK_REAL const * velz = &vel[2*gsiz];
+*/
     CCTK_REAL * rhs_sconx  = &rhs_scon[0*gsiz];
     CCTK_REAL * rhs_scony  = &rhs_scon[1*gsiz];
     CCTK_REAL * rhs_sconz  = &rhs_scon[2*gsiz];
+
+
+    using namespace tensors;
+    tensor_field_t<vector3_t<CCTK_REAL>> vel(velx,vely,velz);
+    tensor_field_t<vector3_t<CCTK_REAL>> beta(betax,betay,betaz);
+
+    // dont know type yet
+    tensor_field_t<covector3_t<CCTK_REAL>> r_scon(rhs_sconx,rhs_scony,rhs_sconz);
+
+    tensor_field_t<tensor3_t<CCTK_REAL,lower_t,lower_t>> metric(gxx,gxy,gxz,
+                                                                gxy,gyy,gyz,
+                                                                gxz,gyz,gzz);
 
     CCTK_REAL const dx  = CCTK_DELTA_SPACE(0);
     CCTK_REAL const dy  = CCTK_DELTA_SPACE(1);
@@ -51,12 +73,13 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
 
 #pragma omp parallel
     {
-        UTILS_LOOP3(thc_grsource_orig,
+        UTILS_LOOP3(thc_grsource_templates,
                 k, cctk_nghostzones[2], cctk_lsh[2]-cctk_nghostzones[2],
                 j, cctk_nghostzones[1], cctk_lsh[1]-cctk_nghostzones[1],
                 i, cctk_nghostzones[0], cctk_lsh[0]-cctk_nghostzones[0]) {
             int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
 
+            // use metric_t for the following?
             CCTK_REAL const det = utils::metric::spatial_det(gxx[ijk],
                     gxy[ijk], gxz[ijk], gyy[ijk], gyz[ijk], gzz[ijk]);
             CCTK_REAL const sqrt_det = std::sqrt(det);
@@ -65,6 +88,10 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
                     gyy[ijk], gyz[ijk], gzz[ijk], &uxx, &uxy, &uxz, &uyy,
                     &uyz, &uzz);
 
+            tensor3_t<CCTK_REAL,lower_t,lower_t> inv_metric(uxx,uxy,uxz,
+                                                            uxy,uyy,uyz,
+                                                            uxz,uyz,uzz);
+
             CCTK_REAL const rho_h_W2 = (rho[ijk]*(1. + eps[ijk]) + press[ijk])*
                 SQ(w_lorentz[ijk]);
 
@@ -72,12 +99,32 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
             CCTK_REAL const velyshift = vely[ijk] - betay[ijk]/alp[ijk];
             CCTK_REAL const velzshift = velz[ijk] - betaz[ijk]/alp[ijk];
 
+            auto velshift = vel[ijk] - beta[ijk]/alp[ijk];
+
+            vector3_t<CCTK_REAL> velshift_orig(velxshift,
+                                               velyshift,
+                                               velzshift);
+            auto comparison = velshift_orig.compare_components<exp>(velshift);
+
+            if(!comparison.first)
+              CCTK_VInfo(CCTK_THORNSTRING,"velshift differs (ijk = %i): %e.",ijk,comparison.second);
+
             CCTK_REAL const vlowx = gxx[ijk]*velx[ijk] + gxy[ijk]*vely[ijk] +
                 gxz[ijk]*velz[ijk];
             CCTK_REAL const vlowy = gxy[ijk]*velx[ijk] + gyy[ijk]*vely[ijk] +
                 gyz[ijk]*velz[ijk];
             CCTK_REAL const vlowz = gxz[ijk]*velx[ijk] + gyz[ijk]*vely[ijk] +
                 gzz[ijk]*velz[ijk];
+
+            auto vel_low = contract<0,0>(metric[ijk],vel[ijk])
+
+            covector3_t<CCTK_REAL> vel_low_orig(vlowx,
+                                                vlowy,
+                                                vlowz);
+            comparison = vel_low_orig.compare_components<exp>(vel_low);
+
+            if(!comparison.first)
+              CCTK_VInfo(CCTK_THORNSTRING,"lower vel differs (ijk = %i): %e.",ijk,comparison.second);
 
             // Contravariant components of the stress-energy tensor
             CCTK_REAL const T00 = (rho_h_W2 - press[ijk])/SQ(alp[ijk]);
@@ -102,13 +149,83 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
             CCTK_REAL const Tzz = rho_h_W2*velzshift*velzshift +
                 press[ijk]*(uzz - betaz[ijk]*betaz[ijk]/SQ(alp[ijk]));
 
+
+            // this is not optimal, em_tensor should be constructed directly to values below
+            // implicitly setting tensor components to zero on construction
+            tensor4_t<CCTK_REAL, lower_t, lower_t> em_tensor;
+            // this is really ugly, we should implement (i,j,k,...) operator
+            em_tensor<0,0>() = (rho_h_W2 - press[ijk])/SQ(alp[ijk]);
+
+            em_tensor<0,1>() = rho_h_W2*velxshift/alp[ijk] +
+                               press[ijk]*betax[ijk]/SQ(alp[ijk]);
+            em_tensor<0,2>() = rho_h_W2*velyshift/alp[ijk] +
+                               press[ijk]*betay[ijk]/SQ(alp[ijk]);
+            em_tensor<0,3>() = rho_h_W2*velzshift/alp[ijk] +
+                               press[ijk]*betaz[ijk]/SQ(alp[ijk]);
+
+            em_tensor<1,1>() = rho_h_W2*velxshift*velxshift +
+                               press[ijk]*(uxx - betax[ijk]*betax[ijk]/SQ(alp[ijk]));
+            em_tensor<1,2>() = rho_h_W2*velxshift*velyshift +
+                               press[ijk]*(uxy - betax[ijk]*betay[ijk]/SQ(alp[ijk]));
+            em_tensor<1,3>() = rho_h_W2*velxshift*velzshift +
+                               press[ijk]*(uxz - betax[ijk]*betaz[ijk]/SQ(alp[ijk]));
+            em_tensor<2,2>() = rho_h_W2*velyshift*velyshift +
+                               press[ijk]*(uyy - betay[ijk]*betay[ijk]/SQ(alp[ijk]));
+            em_tensor<2,3>() = rho_h_W2*velyshift*velzshift +
+                               press[ijk]*(uyz - betay[ijk]*betaz[ijk]/SQ(alp[ijk]));
+            em_tensor<3,3>() = rho_h_W2*velzshift*velzshift +
+                               press[ijk]*(uzz - betaz[ijk]*betaz[ijk]/SQ(alp[ijk]));
+            // we need to manually symmetrize, we should write at least a member automating this over two indices
+            em_tensor<1,0>() = em_tensor<0,1>();
+            em_tensor<2,0>() = em_tensor<0,2>();
+            em_tensor<3,0>() = em_tensor<0,3>();
+
+            em_tensor<2,1>() = em_tensor<1,2>();
+            em_tensor<3,1>() = em_tensor<1,3>();
+
+            em_tensor<3,2>() = em_tensor<2,3>();
+
+            tensor4_t<CCTK_REAL, lower_t, lower_t> em_tensor_orig(T00,T0x,T0y,T0z,
+                                                                  T0x,Txx,Txy,Txz,
+                                                                  T0y,Txy,Tyy,Tyz,
+                                                                  T0z,Txz,Tyz,Tzz);
+            comparison = em_tensor_orig.compare_components<exp>(em_tensor);
+
+            if(!comparison.first)
+              CCTK_VInfo(CCTK_THORNSTRING,"em tensor differs (ijk = %i): %e.",ijk,comparison.second);
+
             // Derivatives of the lapse, metric and shift
             CCTK_REAL const dx_alp = idx*cdiff_x(cctkGH, alp, i, j, k, fd_order);
             CCTK_REAL const dy_alp = idy*cdiff_y(cctkGH, alp, i, j, k, fd_order);
             CCTK_REAL const dz_alp = idz*cdiff_z(cctkGH, alp, i, j, k, fd_order);
 
+            covector3_t<CCTK_REAL> dalp;
+
+            dalp<0>() = idx*cdiff_x(cctkGH, alp, i, j, k, fd_order);
+            dalp<1>() = idy*cdiff_y(cctkGH, alp, i, j, k, fd_order);
+            dalp<2>() = idz*cdiff_z(cctkGH, alp, i, j, k, fd_order);
+
+            covector3_t<CCTK_REAL> dalp_orig(dx_alp,dy_alp,dz_alp);
+
+            comparison = dalp_orig.compare_components<exp>(dalp);
+
+            if(!comparison.first)
+              CCTK_VInfo(CCTK_THORNSTRING,"dalp differs (ijk = %i): %e.",ijk,comparison.second);
+
             CCTK_REAL const dx_betax = idx*cdiff_x(cctkGH, betax, i, j, k, fd_order);
             CCTK_REAL const dx_betay = idx*cdiff_x(cctkGH, betay, i, j, k, fd_order);
+            CCTK_REAL const dx_betaz = idx*cdiff_x(cctkGH, betaz, i, j, k, fd_order);
+            CCTK_REAL const dy_betax = idy*cdiff_y(cctkGH, betax, i, j, k, fd_order);
+            CCTK_REAL const dy_betay = idy*cdiff_y(cctkGH, betay, i, j, k, fd_order);
+            CCTK_REAL const dy_betaz = idy*cdiff_y(cctkGH, betaz, i, j, k, fd_order);
+            CCTK_REAL const dz_betax = idz*cdiff_z(cctkGH, betax, i, j, k, fd_order);
+            CCTK_REAL const dz_betay = idz*cdiff_z(cctkGH, betay, i, j, k, fd_order);
+            CCTK_REAL const dz_betaz = idz*cdiff_z(cctkGH, betaz, i, j, k, fd_order);
+
+            tensor3_t<CCTK_REAL, upper_t, lower_t> dbeta;
+
+            dbeta<0,0>() = idx*cdiff_x(cctkGH, betax, i, j, k, fd_order);
+            dbeta<0,1>() = idx*cdiff_x(cctkGH, betay, i, j, k, fd_order);
             CCTK_REAL const dx_betaz = idx*cdiff_x(cctkGH, betaz, i, j, k, fd_order);
             CCTK_REAL const dy_betax = idy*cdiff_y(cctkGH, betax, i, j, k, fd_order);
             CCTK_REAL const dy_betay = idy*cdiff_y(cctkGH, betay, i, j, k, fd_order);
@@ -214,7 +331,6 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
             rhs_scony[ijk] = alp[ijk] * sqrt_det * sy_source;
             rhs_sconz[ijk] = alp[ijk] * sqrt_det * sz_source;
 
-            rhs_tau[ijk] = alp[ijk]*sqrt_det*tau_source;
-        } UTILS_ENDLOOP3(thc_grsource_orig);
+        } UTILS_ENDLOOP3(thc_grsource_templates);
     }
 }

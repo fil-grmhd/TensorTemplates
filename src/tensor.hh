@@ -77,8 +77,8 @@ public:
                    std::index_sequence<I...>)
       : m_data({tensor_expression.template evaluate<I>()...}) {
 
-    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
-                  "Frame types don't match!");
+//    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
+//                  "Frame types don't match!");
 
     static_assert(ndim == E::property_t::ndim, "Dimensions don't match!");
 
