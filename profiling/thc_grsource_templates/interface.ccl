@@ -1,0 +1,12 @@
+# Interface definition for thorn THC_Core
+IMPLEMENTS:     THC_grsource_templates
+INHERITS:       Grid HydroBase HRSCCore Time TmunuBase
+
+USES INCLUDE: finite_difference.h
+USES INCLUDE: utils.hh
+USES INCLUDE: tensor_templates.hh
+
+PUBLIC:
+
+CCTK_REAL rhs_scon[3] TYPE=GF TAGS='Prolongation="None"' "scon[3] right hand side"
+

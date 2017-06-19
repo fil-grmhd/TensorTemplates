@@ -93,7 +93,7 @@ class tensor_field_t {
     //! Set the tensor field components at (pointer) index i
     template<typename E>
     inline void set_components(size_t const i, E const &e) {
-      // this only a check of compatibility of T and E
+      // this is only a check of compatibility of T and E
       using property_check = arithmetic_expression_property_t<T,E>;
       // evaluate expression for every component
       // and set GFs at index i to that value

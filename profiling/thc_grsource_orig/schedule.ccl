@@ -1,0 +1,12 @@
+# Schedule definitions for thorn THC_grsource_orig
+
+###############################################################################
+# Storage
+###############################################################################
+
+STORAGE: rhs_scon
+
+SCHEDULE THC_GRSource IN HydroBase_RHS AFTER THC_InitSource
+{
+    LANG: C
+} "Computes the geometric source terms"

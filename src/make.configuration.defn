@@ -1,1 +1,1 @@
-ALL_UTILS += tensor_templates_test
+ALL_UTILS += expression_perf

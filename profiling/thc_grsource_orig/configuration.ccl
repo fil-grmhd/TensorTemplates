@@ -1,0 +1,6 @@
+REQUIRES CPPUtils FDCore
+PROVIDES THC_grsource_orig
+{
+    SCRIPT
+    LANG
+}

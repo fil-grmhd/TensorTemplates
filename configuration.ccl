@@ -1,5 +1,3 @@
-REQUIRES Boost FDCore CPPUtils
-
 PROVIDES TensorTemplates
 {
     SCRIPT

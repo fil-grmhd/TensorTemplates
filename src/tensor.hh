@@ -149,7 +149,7 @@ public:
   template <size_t a, size_t... indices> inline T &operator()() {
     static_assert(sizeof...(indices) + 1 == rank,
                   "Number of indices must match rank.");
-	return m_data[compressed_index<a,indices...>()];
+  	return m_data[compressed_index<a,indices...>()];
   }
 
   //! Access the components of a tensor using the natural indices
