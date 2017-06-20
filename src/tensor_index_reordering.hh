@@ -62,8 +62,8 @@ public:
 };
 
 //! Contraction "operator" for two tensor expressions
-template <size_t... Indices>
-tensor_reorder_index_t<E1, Indices...> const inline reorder_index(tensor_expression_t const &u){
+template <size_t... Indices,typename E1>
+tensor_reorder_index_t<E1, Indices...> const inline reorder_index(E1 const &u){
   return tensor_reorder_index_t<E1, Indices...>(u);
 };
 
