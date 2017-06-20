@@ -86,76 +86,167 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
             // Derivatives of the lapse, metric and shift
             covector3_t<CCTK_REAL> dalp;
 
-            dalp<0>() = idx*cdiff_x(cctkGH, alp, i, j, k, fd_order);
-            dalp<1>() = idy*cdiff_y(cctkGH, alp, i, j, k, fd_order);
-            dalp<2>() = idz*cdiff_z(cctkGH, alp, i, j, k, fd_order);
+            dalp(0) = idx*cdiff_x(cctkGH, alp, i, j, k, fd_order);
+            dalp(1) = idy*cdiff_y(cctkGH, alp, i, j, k, fd_order);
+            dalp(2) = idz*cdiff_z(cctkGH, alp, i, j, k, fd_order);
 
             tensor3_t<CCTK_REAL, upper_t, lower_t> dbeta;
 
-            dbeta<0,0>() = idx*cdiff_x(cctkGH, betax, i, j, k, fd_order);
-            dbeta<1,0>() = idx*cdiff_x(cctkGH, betay, i, j, k, fd_order);
-            dbeta<2,0>() = idx*cdiff_x(cctkGH, betaz, i, j, k, fd_order);
-            dbeta<0,1>() = idy*cdiff_y(cctkGH, betax, i, j, k, fd_order);
-            dbeta<1,1>() = idy*cdiff_y(cctkGH, betay, i, j, k, fd_order);
-            dbeta<2,1>() = idy*cdiff_y(cctkGH, betaz, i, j, k, fd_order);
-            dbeta<0,2>() = idz*cdiff_z(cctkGH, betax, i, j, k, fd_order);
-            dbeta<1,2>() = idz*cdiff_z(cctkGH, betay, i, j, k, fd_order);
-            dbeta<2,2>() = idz*cdiff_z(cctkGH, betaz, i, j, k, fd_order);
+            dbeta(0,0) = idx*cdiff_x(cctkGH, betax, i, j, k, fd_order);
+            dbeta(1,0) = idx*cdiff_x(cctkGH, betay, i, j, k, fd_order);
+            dbeta(2,0) = idx*cdiff_x(cctkGH, betaz, i, j, k, fd_order);
+            dbeta(0,1) = idy*cdiff_y(cctkGH, betax, i, j, k, fd_order);
+            dbeta(1,1) = idy*cdiff_y(cctkGH, betay, i, j, k, fd_order);
+            dbeta(2,1) = idy*cdiff_y(cctkGH, betaz, i, j, k, fd_order);
+            dbeta(0,2) = idz*cdiff_z(cctkGH, betax, i, j, k, fd_order);
+            dbeta(1,2) = idz*cdiff_z(cctkGH, betay, i, j, k, fd_order);
+            dbeta(2,2) = idz*cdiff_z(cctkGH, betaz, i, j, k, fd_order);
 
             tensor3_t<CCTK_REAL, lower_t, lower_t, lower_t> dgamma;
 
             // we need a derivative expression...
-            dgamma<0,0,0>() = idx*cdiff_x(cctkGH, gxx, i, j, k, fd_order);
-            dgamma<0,1,0>() = idx*cdiff_x(cctkGH, gxy, i, j, k, fd_order);
-            dgamma<0,2,0>() = idx*cdiff_x(cctkGH, gxz, i, j, k, fd_order);
-            dgamma<1,1,0>() = idx*cdiff_x(cctkGH, gyy, i, j, k, fd_order);
-            dgamma<1,2,0>() = idx*cdiff_x(cctkGH, gyz, i, j, k, fd_order);
-            dgamma<2,2,0>() = idx*cdiff_x(cctkGH, gzz, i, j, k, fd_order);
-            dgamma<0,0,1>() = idy*cdiff_y(cctkGH, gxx, i, j, k, fd_order);
-            dgamma<0,1,1>() = idy*cdiff_y(cctkGH, gxy, i, j, k, fd_order);
-            dgamma<0,2,1>() = idy*cdiff_y(cctkGH, gxz, i, j, k, fd_order);
-            dgamma<1,1,1>() = idy*cdiff_y(cctkGH, gyy, i, j, k, fd_order);
-            dgamma<1,2,1>() = idy*cdiff_y(cctkGH, gyz, i, j, k, fd_order);
-            dgamma<2,2,1>() = idy*cdiff_y(cctkGH, gzz, i, j, k, fd_order);
-            dgamma<0,0,2>() = idz*cdiff_z(cctkGH, gxx, i, j, k, fd_order);
-            dgamma<0,1,2>() = idz*cdiff_z(cctkGH, gxy, i, j, k, fd_order);
-            dgamma<0,2,2>() = idz*cdiff_z(cctkGH, gxz, i, j, k, fd_order);
-            dgamma<1,1,2>() = idz*cdiff_z(cctkGH, gyy, i, j, k, fd_order);
-            dgamma<1,2,2>() = idz*cdiff_z(cctkGH, gyz, i, j, k, fd_order);
-            dgamma<2,2,2>() = idz*cdiff_z(cctkGH, gzz, i, j, k, fd_order);
+            dgamma(0,0,0) = idx*cdiff_x(cctkGH, gxx, i, j, k, fd_order);
+            dgamma(0,1,0) = idx*cdiff_x(cctkGH, gxy, i, j, k, fd_order);
+            dgamma(0,2,0) = idx*cdiff_x(cctkGH, gxz, i, j, k, fd_order);
+            dgamma(1,1,0) = idx*cdiff_x(cctkGH, gyy, i, j, k, fd_order);
+            dgamma(1,2,0) = idx*cdiff_x(cctkGH, gyz, i, j, k, fd_order);
+            dgamma(2,2,0) = idx*cdiff_x(cctkGH, gzz, i, j, k, fd_order);
+            dgamma(0,0,1) = idy*cdiff_y(cctkGH, gxx, i, j, k, fd_order);
+            dgamma(0,1,1) = idy*cdiff_y(cctkGH, gxy, i, j, k, fd_order);
+            dgamma(0,2,1) = idy*cdiff_y(cctkGH, gxz, i, j, k, fd_order);
+            dgamma(1,1,1) = idy*cdiff_y(cctkGH, gyy, i, j, k, fd_order);
+            dgamma(1,2,1) = idy*cdiff_y(cctkGH, gyz, i, j, k, fd_order);
+            dgamma(2,2,1) = idy*cdiff_y(cctkGH, gzz, i, j, k, fd_order);
+            dgamma(0,0,2) = idz*cdiff_z(cctkGH, gxx, i, j, k, fd_order);
+            dgamma(0,1,2) = idz*cdiff_z(cctkGH, gxy, i, j, k, fd_order);
+            dgamma(0,2,2) = idz*cdiff_z(cctkGH, gxz, i, j, k, fd_order);
+            dgamma(1,1,2) = idz*cdiff_z(cctkGH, gyy, i, j, k, fd_order);
+            dgamma(1,2,2) = idz*cdiff_z(cctkGH, gyz, i, j, k, fd_order);
+            dgamma(2,2,2) = idz*cdiff_z(cctkGH, gzz, i, j, k, fd_order);
 
             // we need a symmetrizer / symmetric type
-            dgamma<1,0,0>() = dgamma<0,1,0>();
-            dgamma<2,0,0>() = dgamma<0,2,0>();
-            dgamma<2,1,0>() = dgamma<1,2,0>();
+            dgamma(1,0,0) = dgamma(0,1,0);
+            dgamma(2,0,0) = dgamma(0,2,0);
+            dgamma(2,1,0) = dgamma(1,2,0);
 
-            dgamma<1,0,1>() = dgamma<0,1,1>();
-            dgamma<2,0,1>() = dgamma<0,2,1>();
-            dgamma<2,1,1>() = dgamma<1,2,1>();
+            dgamma(1,0,1) = dgamma(0,1,1);
+            dgamma(2,0,1) = dgamma(0,2,1);
+            dgamma(2,1,1) = dgamma(1,2,1);
 
-            dgamma<1,0,2>() = dgamma<0,1,2>();
-            dgamma<2,0,2>() = dgamma<0,2,2>();
-            dgamma<2,1,2>() = dgamma<1,2,2>();
+            dgamma(1,0,2) = dgamma(0,1,2);
+            dgamma(2,0,2) = dgamma(0,2,2);
+            dgamma(2,1,2) = dgamma(1,2,2);
+
+            // helpers to construct four metric derivative
+            covector3_t<CCTK_REAL> g00i = - 2*dalp
+                                          + 2*contract<0,0>(dbeta,contract<0,0>(gamma[ijk],beta[ijk]))
+                                          + contract<0,0>(beta[ijk],contract<0,0>(beta[ijk],dgamma));
+
+            tensor3_t<CCTK_REAL, lower_t, lower_t> g0ji = contract<0,0>(gamma[ijk],dbeta)
+                                                        + contract<0,0>(dgamma,beta[ijk]);
+            // gj0i is the same due to symmetry
+            // gjki is dgamma
+
+            // four metric derivative, here some type of collective component set would be useful
+            // initialized to zero
+            tensor4_t<CCTK_REAL, lower_t, lower_t, lower_t> dmetric;
+
+            // g00,i
+            dmetric(0,0,1) = g00i(0);
+            dmetric(0,0,2) = g00i(1);
+            dmetric(0,0,3) = g00i(2);
+
+            // g0j,i
+            dmetric(0,1,1) = g0ji(0,0);
+            dmetric(0,1,2) = g0ji(0,1);
+            dmetric(0,1,3) = g0ji(0,2);
+
+            dmetric(0,2,1) = g0ji(1,0);
+            dmetric(0,2,2) = g0ji(1,1);
+            dmetric(0,2,3) = g0ji(1,2);
+
+            dmetric(0,3,1) = g0ji(2,0);
+            dmetric(0,3,2) = g0ji(2,1);
+            dmetric(0,3,3) = g0ji(2,2);
+
+            // gj0,i
+            dmetric(1,0,1) = g0ji(0,0);
+            dmetric(1,0,2) = g0ji(0,1);
+            dmetric(1,0,3) = g0ji(0,2);
+
+            dmetric(2,0,1) = g0ji(1,0);
+            dmetric(2,0,2) = g0ji(1,1);
+            dmetric(2,0,3) = g0ji(1,2);
+
+            dmetric(3,0,1) = g0ji(2,0);
+            dmetric(3,0,2) = g0ji(2,1);
+            dmetric(3,0,3) = g0ji(2,2);
+
+            // gjk,i
+            dmetric(1,1,1) = dgamma(0,0,0);
+            dmetric(1,1,2) = dgamma(0,0,1);
+            dmetric(1,1,3) = dgamma(0,0,2);
+
+            dmetric(1,2,1) = dgamma(0,1,0);
+            dmetric(1,2,2) = dgamma(0,1,1);
+            dmetric(1,2,3) = dgamma(0,1,2);
+
+            dmetric(1,3,1) = dgamma(0,2,0);
+            dmetric(1,3,2) = dgamma(0,2,1);
+            dmetric(1,3,3) = dgamma(0,2,2);
+
+            dmetric(2,1,1) = dgamma(1,0,0);
+            dmetric(2,1,2) = dgamma(1,0,1);
+            dmetric(2,1,3) = dgamma(1,0,2);
+
+            dmetric(2,2,1) = dgamma(1,1,0);
+            dmetric(2,2,2) = dgamma(1,1,1);
+            dmetric(2,2,3) = dgamma(1,1,2);
+
+            dmetric(2,3,1) = dgamma(1,2,0);
+            dmetric(2,3,2) = dgamma(1,2,1);
+            dmetric(2,3,3) = dgamma(1,2,2);
+
+            dmetric(3,1,1) = dgamma(2,0,0);
+            dmetric(3,1,2) = dgamma(2,0,1);
+            dmetric(3,1,3) = dgamma(2,0,2);
+
+            dmetric(3,2,1) = dgamma(2,1,0);
+            dmetric(3,2,2) = dgamma(2,1,1);
+            dmetric(3,2,3) = dgamma(2,1,2);
+
+            dmetric(3,3,1) = dgamma(2,2,0);
+            dmetric(3,3,2) = dgamma(2,2,1);
+            dmetric(3,3,3) = dgamma(2,2,2);
+
 
             // four metric
-            metric4_t<CCTK_REAL> g4(alp[ijk],beta[ijk],metric_tensor_t<double,3>(gamma[i]));
+            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],metric_tensor_t<double,3>(gamma[i]));
 
             // four velocity
             const auto u0 =  w_lorentz[ijk]/alp[ijk];
             auto u = vector4_t<CCTK_REAL> (u0,
-                                          (g4.lapse*velx[ijk] - betax[ijk])*u0,
-                                          (g4.lapse*vely[ijk] - betay[ijk])*u0,
-                                          (g4.lapse*velz[ijk] - betaz[ijk])*u0);
+                                          (alp[ijk]*velx[ijk] - betax[ijk])*u0,
+                                          (alp[ijk]*vely[ijk] - betay[ijk])*u0,
+                                          (alp[ijk]*velz[ijk] - betaz[ijk])*u0);
 
             // rank-2 tensor through tensor product
             auto uu = tensor_cat(u,u);
 
             // construct em tensor
-            tensor4_t<CCTK_REAL, lower_t, lower_t> em_tensor = (rho[ijk]*(1+eps[ijk])+press[ijk])*uu
-                                                             +  press[ijk]*g4.invmetric;
+            tensor4_t<CCTK_REAL, upper_t, upper_t> em_tensor = (rho[ijk]*(1+eps[ijk])+press[ijk])*uu
+                                                             +  press[ijk]*metric4d.invmetric;
 
-            r_scon[ijk] = 0.5*alp[ijk]*g4.sqrtdet*contract<0,0>(contract<0,0>());
+            // metric4d.sqrtdet is actually sqrt(det(gamma))
+            covector4_t<CCTK_REAL> rhs_scon_vec = 0.5*alp[ijk]*metric4d.sqrtdet*trace<0,1>(contract<0,0>(em_tensor,dmetric));
+            //auto rhs_scon_vec = 0.5*alp[ijk]*metric4d.sqrtdet*trace<0,1>(contract<0,0>(em_tensor,dmetric));
 
+            // can't do this, because there is no subtensor expression
+            // r_scon[ijk] = rhs_scon_vec;
+
+            rhs_sconx[ijk] = rhs_scon_vec(1);
+            rhs_scony[ijk] = rhs_scon_vec(2);
+            rhs_sconz[ijk] = rhs_scon_vec(3);
 
         } UTILS_ENDLOOP3(thc_grsource_templates);
     }

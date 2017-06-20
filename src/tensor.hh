@@ -142,9 +142,24 @@ public:
     return m_data[index];
   }
 
-  // CHECK: element access is only possible with compile-time constants
-  //        we should add (i,j,k,...) operator also to the class
+  //! Access the components of a tensor using the natural indices
+  template<typename... indices_t>
+  inline T & operator()(size_t const a, indices_t... indices) {
+      static_assert(sizeof...(indices)+1 == rank,
+          "Number of indices must match rank when using (i,j,k,...) operator.");
 
+      return this->operator[](compress_indices<ndim>(a,indices...));
+  }
+  //! Access the components of a tensor using the natural indices
+  template<typename... indices_t>
+  inline T const & operator()(size_t const a, indices_t... indices) const {
+      static_assert(sizeof...(indices)+1 == rank,
+          "Number of indices must match rank when using (i,j,k,...) operator.");
+
+      return this->operator[](compress_indices<ndim>(a,indices...));
+  }
+
+/* THIS DOESN'T MAKE ANY SENSE, only if you call it as "tensor.operator()<a,b,c,...>()"
   //! Access the components of a tensor using the natural indices
   template <size_t a, size_t... indices> inline T &operator()() {
     static_assert(sizeof...(indices) + 1 == rank,
@@ -159,7 +174,7 @@ public:
 
     return evaluate<compressed_index<a, indices...>()>();
   }
-
+*/
   //! Sets tensor to zero for all components
   inline void zero() {
     for (size_t i = 0; i < ndof; ++i) {

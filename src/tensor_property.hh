@@ -157,7 +157,7 @@ class trace_property_t {
     // Do some compile time checks of the expression properties
 
     // check if someone tries to trace a vector
-    static_assert(E::rank > 1, "You cannot trace a vector, this is undefined!");
+    static_assert(E::property_t::rank > 1, "You cannot trace a vector, this is undefined!");
     // check if trace indices bounds are violated
     static_assert((i1 < E::property_t::rank) && (i2 < E::property_t::rank),
                   "Traced indices are out of bound, i.e. i1,i2 >= rank.");
