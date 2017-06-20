@@ -28,6 +28,7 @@
 #include "tensor_contraction.hh"
 #include "tensor_trace.hh"
 #include "tensor_concat.hh"
+#include "tensor_index_reordering.hh"
 #include "metric.hh"
 
 //! main namespace
