@@ -236,7 +236,7 @@ public:
   using data_t = typename E2::property_t::data_t;
   using frame_t = typename E2::property_t::frame_t; //Might need to be changed to any_frame_t
   static constexpr size_t ndim = E2::property_t::ndim;
-  // two indices are removed by this expression
+  // two indices are "added" by this expression
   static constexpr size_t rank = E2::property_t::rank + E1::property_t::rank;
   //! Number of degrees of freedom
   static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;

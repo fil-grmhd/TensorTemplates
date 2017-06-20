@@ -1,6 +1,6 @@
 # Interface definition for thorn THC_Core
 IMPLEMENTS:     THC_grsource_templates
-INHERITS:       Grid HydroBase HRSCCore Time TmunuBase
+INHERITS:       Grid HydroBase HRSCCore Time TmunuBase thc_grsource_orig
 
 USES INCLUDE: finite_difference.h
 USES INCLUDE: utils.hh

@@ -7,7 +7,12 @@
 STORAGE: rhs_scon
 STORAGE: rhs_tau
 
-SCHEDULE THC_GRSource IN HydroBase_RHS AFTER THC_InitSource
+SCHEDULE THC_GRSource_temp IN GRSOURCE_COMP
 {
     LANG: C
 } "Computes the geometric source terms"
+
+#SCHEDULE THC_GRSource_comparison IN HydroBase_RHS AFTER GRSOURCE_COMP
+#{
+#    LANG: C
+#} "Compares results"

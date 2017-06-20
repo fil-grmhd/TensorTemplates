@@ -28,12 +28,12 @@ namespace tensors {
  *  The data is stored in a column major format
  */
 template<size_t ndim>
-inline size_t compress_indices(size_t const a) {
-    return a;
+constexpr inline size_t compress_indices(size_t const a) {
+  return a;
 }
 template<size_t ndim, typename... indices_t>
-inline size_t compress_indices(size_t const a, indices_t... indices) {
-    return a + compress_indices<ndim>(indices...)*ndim;
+constexpr inline size_t compress_indices(size_t const a, indices_t... indices) {
+  return a + compress_indices<ndim>(indices...)*ndim;
 }
 
 //! Computes the compressed index given template parameter indices (in column-major format)

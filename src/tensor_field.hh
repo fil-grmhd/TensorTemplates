@@ -18,16 +18,21 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     std::array<data_t*,ndof> const & ptr_array;
 
     //! Internal (pointer) index
-    size_t ptr_index;
+    size_t const ptr_index;
 
   public:
     //! Contructor (called from a tensor field)
     tensor_field_expression_t(std::array<data_t*,ndof> const & arr, size_t const index)
         : ptr_array(arr), ptr_index(index) {}
 
+
     [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
     inline decltype(auto) operator[](size_t i) const = delete;
-
+/*
+    inline decltype(auto) operator[](size_t i) const {
+      return ptr_array[i][ptr_index];
+    }
+*/
     template<size_t index>
     inline data_t const & evaluate() const {
       return ptr_array[index][ptr_index];

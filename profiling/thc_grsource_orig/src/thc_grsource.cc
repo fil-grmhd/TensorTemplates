@@ -30,17 +30,15 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
     DECLARE_CCTK_ARGUMENTS
     DECLARE_CCTK_PARAMETERS
 
-    CCTK_INFO("THC_GRSource_orig");
-
     constexpr int fd_order = 4;
 
     int const gsiz = UTILS_GFSIZE(cctkGH);
     CCTK_REAL const * velx = &vel[0*gsiz];
     CCTK_REAL const * vely = &vel[1*gsiz];
     CCTK_REAL const * velz = &vel[2*gsiz];
-    CCTK_REAL * rhs_sconx  = &rhs_scon[0*gsiz];
-    CCTK_REAL * rhs_scony  = &rhs_scon[1*gsiz];
-    CCTK_REAL * rhs_sconz  = &rhs_scon[2*gsiz];
+    CCTK_REAL * rhs_sconx  = &rhs_scon_orig[0*gsiz];
+    CCTK_REAL * rhs_scony  = &rhs_scon_orig[1*gsiz];
+    CCTK_REAL * rhs_sconz  = &rhs_scon_orig[2*gsiz];
 
     CCTK_REAL const dx  = CCTK_DELTA_SPACE(0);
     CCTK_REAL const dy  = CCTK_DELTA_SPACE(1);
@@ -214,7 +212,7 @@ extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
             rhs_scony[ijk] = alp[ijk] * sqrt_det * sy_source;
             rhs_sconz[ijk] = alp[ijk] * sqrt_det * sz_source;
 
-            rhs_tau[ijk] = alp[ijk]*sqrt_det*tau_source;
+            rhs_tau_orig[ijk] = alp[ijk]*sqrt_det*tau_source;
         } UTILS_ENDLOOP3(thc_grsource_orig);
     }
 }
