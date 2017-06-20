@@ -8,7 +8,7 @@ namespace tensors {
 //! Expression template for generic tensor contractions
 template <class E1, size_t... Ind>
 class tensor_reorder_index_t
-    : public tensor_expression_t<tensor_reorder_index_t<E1>> {
+    : public tensor_expression_t<tensor_reorder_index_t<E1,Ind...>> {
   // references to both tensors
   E1 const &_u;
 
@@ -37,6 +37,7 @@ public:
                "is UNDEFINED!")]] inline decltype(auto)
   operator[](size_t i) const = delete;
 
+
   template <size_t c_index ,size_t ind0, size_t... Indices>
   struct compute_new_cindex{
     static constexpr size_t value = compute_new_cindex<c_index,Indices...>::value
@@ -47,12 +48,16 @@ public:
 		            E1::property_t::rank -sizeof...(Indices)-1>::value);
   };
 
+
   template <size_t c_index, size_t ind0>
-  struct compute_new_cindex<E1::property_t::ndim,c_index,ind0>{
+  struct compute_new_cindex<c_index,ind0>{
     static constexpr size_t value = uncompress_index_t<E1::property_t::ndim, 
 		     		      ind0,c_index>::value
 				    *(utilities::static_pow<E1::property_t::ndim,E1::property_t::rank-1>::value);
   };
+
+
+
 
 
   template <size_t c_index> inline typename property_t::data_t const evaluate() const {
@@ -62,8 +67,9 @@ public:
 };
 
 //! Contraction "operator" for two tensor expressions
-template <size_t... Indices,typename E1>
-tensor_reorder_index_t<E1, Indices...> const inline reorder_index(E1 const &u){
+template <size_t ...Indices, typename E1>
+tensor_reorder_index_t<E1, Indices... > const inline reorder_index(E1 const &u){
+  static_assert(sizeof...(Indices) == E1::property_t::rank, "You must specify as many indices as the rank!");
   return tensor_reorder_index_t<E1, Indices...>(u);
 };
 

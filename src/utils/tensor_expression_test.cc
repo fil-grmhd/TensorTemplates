@@ -108,6 +108,10 @@ int main(){
     std::cout<<std::endl;
   }
 
+  tensor3_t<double,lower_t,upper_t> D_T = reorder_index<1,0>(D);
+  std::cout << "D " << D <<std::endl;
+  std::cout << "D reordered" << D_T <<std::endl;
+
   tensor3_t<double,upper_t,upper_t> ab = tensor_cat(a,b);
   std::cout << "Concatenating a and b: " << ab << std::endl;
 
