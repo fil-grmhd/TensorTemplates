@@ -3,6 +3,11 @@
 
 namespace tensors {
 
+// forward declaration
+template<typename T>
+class tensor_field_t;
+
+
 //! Template for generic tensor field expression
 //! This represents a tensor at a specific grid position
 template<typename T>
@@ -15,14 +20,14 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 
   private:
     //! Reference to pointer array of underlying tensor field
-    std::array<data_t*,ndof> const & ptr_array;
+    std::array<data_t * const,ndof> const & ptr_array;
 
     //! Internal (pointer) index
     size_t const ptr_index;
 
   public:
     //! Contructor (called from a tensor field)
-    tensor_field_expression_t(std::array<data_t*,ndof> const & arr, size_t const index)
+    tensor_field_expression_t(decltype(ptr_array) const & arr, size_t const index)
         : ptr_array(arr), ptr_index(index) {}
 
 
@@ -39,7 +44,13 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     }
 
     template<typename E>
-    inline void operator=(E const &e);
+    inline void operator=(E const &e) {
+      // this only a check of compatibility of T and E
+      using property_check = arithmetic_expression_property_t<T,E>;
+      // evaluate expression for every component
+      // and set GFs at index i to that value
+      tensor_field_t<T>::template setter_t<property_check::ndof-1,E>::set(ptr_index,e,ptr_array);
+    }
 };
 
 //! Template for generic tensor field
@@ -55,7 +66,7 @@ class tensor_field_t {
 
   private:
     //! Storage for ndof pointers
-    std::array<data_t*,ndof> ptr_array;
+    const std::array<data_t * const,ndof> ptr_array;
 
   public:
     // Template recursion to set components, fastest for chained expressions
@@ -85,7 +96,7 @@ class tensor_field_t {
 */
     //! Constructor from pointer parameters
     template <typename... TArgs>
-    tensor_field_t(data_t * first_elem, TArgs... elem)
+    tensor_field_t(data_t * const first_elem, TArgs... elem)
         : ptr_array({first_elem, elem...}) {
       static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
     };
@@ -117,18 +128,6 @@ class tensor_field_t {
 */
     }
 };
-
-
-template<typename T>
-template<typename E>
-inline void tensor_field_expression_t<T>::operator=(E const &e){
-      // this only a check of compatibility of T and E
-      using property_check = arithmetic_expression_property_t<T,E>;
-      // evaluate expression for every component
-      // and set GFs at index i to that value
-      tensor_field_t<T>::template setter_t<property_check::ndof-1,E>::set(ptr_index,e,ptr_array);
-};
-
 
 }
 #endif
