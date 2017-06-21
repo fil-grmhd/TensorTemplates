@@ -61,7 +61,7 @@ public:
   }
 };
 
-template <size_t ...Indices, typename E1>
+template <typename E1>
 tensor_spatial_sub_t<E1> const inline spatial_part(E1 const &u){
   return tensor_spatial_sub_t<E1>(u);
 };

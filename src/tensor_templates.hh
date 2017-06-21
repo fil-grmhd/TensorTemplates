@@ -30,6 +30,7 @@
 #include "tensor_concat.hh"
 #include "tensor_index_reordering.hh"
 #include "tensor_spatial_subt.hh"
+#include "tensor_slice.hh"
 #include "metric.hh"
 
 //! main namespace

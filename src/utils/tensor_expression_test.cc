@@ -118,9 +118,19 @@ int main(){
   }
 
 
+  std::cout<<std::endl;
   tensor3_t<double,lower_t,upper_t> D_T = reorder_index<1,0>(D);
   std::cout << "D " << D <<std::endl;
+  std::cout<<std::endl;
   std::cout << "D reordered" << D_T <<std::endl;
+
+  std::cout<<std::endl;
+  std::cout << "D -1 0 slice" << evaluate(slice<-1,0>(D)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout<<std::endl;
+  std::cout << "D 0 -1 slice" << evaluate(slice<0,-1>(D)) << std::endl;
+  std::cout<<std::endl;
 
   tensor3_t<double,upper_t,upper_t> ab = tensor_cat(a,b);
   std::cout << "Concatenating a and b: " << ab << std::endl;
