@@ -108,6 +108,16 @@ int main(){
     std::cout<<std::endl;
   }
 
+  auto D_spatial = evaluate(spatial_part(D));
+
+  std::cout << "D_sub = " << std::endl;
+  for(int i=0; i<2; ++i){
+    for(int j=0; j<2; ++j)
+      std::cout << " "<< D_spatial[i+2*j] << " ";
+    std::cout<<std::endl;
+  }
+
+
   tensor3_t<double,lower_t,upper_t> D_T = reorder_index<1,0>(D);
   std::cout << "D " << D <<std::endl;
   std::cout << "D reordered" << D_T <<std::endl;

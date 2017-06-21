@@ -211,6 +211,12 @@ public:
 
 };
 
+template<typename E>
+typename E::property_t::this_tensor_t const evaluate(E const & u){
+   return typename E::property_t::this_tensor_t(u);
+}
+
+
 } // namespace tensors
 
 #endif
