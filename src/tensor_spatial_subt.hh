@@ -22,7 +22,14 @@ public:
                "is UNDEFINED!")]] inline decltype(auto)
   operator[](size_t i) const = delete;
 
-  // this needs more comments
+  // Note: The spatial tensor has ndim -> ndim -1
+  // So when we want to translate the index we need to bare in mind that
+  // for this spatial part we have i_j*(ndim-1)^j with (i_j < ndim-1)
+  // whereas the full tensor has k_j*(ndim)^j with (k_j < ndim)
+  // So we need to a) account for the shift from i to k, i.e.
+  // k_j = i_j +1 (since we always cut out the 0th component)
+  // and b) that we uncompress with ndim - 1 but compress again
+  // with ndim. 
   template <size_t c_index, size_t ind0, size_t... Indices>
   struct compute_new_cindex {
     static constexpr size_t value =
