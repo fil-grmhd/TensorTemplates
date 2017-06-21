@@ -1,15 +1,13 @@
 #ifndef TENSOR_SPATIAL_HH
 #define TENSOR_SPATIAL_HH
 
-#include <cassert>
-
 namespace tensors {
 
-//! Expression template for generic tensor contractions
+//! Expression template for a spatial subtensor expression
 template <class E1>
 class tensor_spatial_sub_t
     : public tensor_expression_t<tensor_spatial_sub_t<E1>> {
-  // references to both tensors
+  // references to full tensor expression
   E1 const &_u;
 
 public:
@@ -24,19 +22,19 @@ public:
                "is UNDEFINED!")]] inline decltype(auto)
   operator[](size_t i) const = delete;
 
+  // this needs more comments
   template <size_t c_index, size_t ind0, size_t... Indices>
   struct compute_new_cindex {
     static constexpr size_t value =
         compute_new_cindex<c_index, Indices...>::value +
-        (uncompress_index_t<E1::property_t::ndim - 1, ind0, c_index>::value +
+        (uncompress_index_t<property_t::ndim, ind0, c_index>::value +
          1) *
             (utilities::static_pow<E1::property_t::ndim, ind0>::value);
   };
-
   template <size_t c_index, size_t ind0>
   struct compute_new_cindex<c_index, ind0> {
     static constexpr size_t value =
-        (uncompress_index_t<E1::property_t::ndim - 1, ind0, c_index>::value +
+        (uncompress_index_t<property_t::ndim, ind0, c_index>::value +
          1) *
         (utilities::static_pow<E1::property_t::ndim, ind0>::value);
   };
@@ -48,7 +46,7 @@ public:
   }
 
   template <size_t c_index,
-            typename Indices = std::make_index_sequence<E1::property_t::rank>>
+            typename Indices = std::make_index_sequence<property_t::rank>>
   inline typename property_t::data_t const evaluate() const {
 
     return _u

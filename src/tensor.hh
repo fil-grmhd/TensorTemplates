@@ -159,22 +159,6 @@ public:
       return this->operator[](compress_indices<ndim>(a,indices...));
   }
 
-/* THIS DOESN'T MAKE ANY SENSE, only if you call it as "tensor.operator()<a,b,c,...>()"
-  //! Access the components of a tensor using the natural indices
-  template <size_t a, size_t... indices> inline T &operator()() {
-    static_assert(sizeof...(indices) + 1 == rank,
-                  "Number of indices must match rank.");
-  	return m_data[compressed_index<a,indices...>()];
-  }
-
-  //! Access the components of a tensor using the natural indices
-  template <size_t a, size_t... indices> inline T const &operator()() {
-    static_assert(sizeof...(indices) + 1 == rank,
-                  "Number of indices must match rank.");
-
-    return evaluate<compressed_index<a, indices...>()>();
-  }
-*/
   //! Sets tensor to zero for all components
   inline void zero() {
     for (size_t i = 0; i < ndof; ++i) {
@@ -183,7 +167,7 @@ public:
   }
 
   //! Comparison routine to a tensor of the same kind
-  // This is not optimally optimized, please change if used in non-debugging enviroment
+  // This is not optimally optimized, please change if used in non-debugging environment
   template<int exponent>
   inline decltype(auto) compare_components(this_tensor_t const& t) {
     double eps = 1.0/utilities::static_pow<10,exponent>::value;
@@ -203,8 +187,11 @@ public:
   //  since they are implicitly convertible (this_tensor_t constructor from an expression).
   friend std::ostream& operator<< (std::ostream& stream, const this_tensor_t& t) {
     stream << "[";
-    for(size_t i = 0; i<ndof-1; ++i)
+    for(size_t i = 0; i<ndof-1; ++i) {
+    //  if((i != 0) && (i % ndim == 0))
+    //    stream << std::endl;
       stream << t[i] << " ";
+    }
     stream << t[ndof-1] << "]";
     return stream;
   }

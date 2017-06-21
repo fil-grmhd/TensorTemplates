@@ -1,8 +1,6 @@
 #ifndef TENSOR_CONTRACT_HH
 #define TENSOR_CONTRACT_HH
 
-#include <cassert>
-
 namespace tensors {
 
 //! Expression template for generic tensor contractions

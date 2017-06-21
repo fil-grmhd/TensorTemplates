@@ -1,14 +1,12 @@
 #ifndef TENSOR_SLICE_HH
 #define TENSOR_SLICE_HH
 
-#include <cassert>
-
 namespace tensors {
 
-//! Expression template for generic tensor contractions
+//! Expression template for generic tensor expression slice
 template <typename E1, int... Ind>
 class tensor_slice_t : public tensor_expression_t<tensor_slice_t<E1, Ind...>> {
-  // references to both tensors
+  // references to sliced expression
   E1 const &_u;
 
 public:
@@ -19,18 +17,19 @@ public:
                 "slice and -1 to indicate a free index");
 
   // Count number of free indices
-  template <int i0, int... Indices> struct count_free_indices {
+  template <int i0, int... Indices>
+  struct count_free_indices {
     static constexpr size_t value =
         (i0 == -1) + count_free_indices<Indices...>::value;
   };
-
-  template <int i0> struct count_free_indices<i0> {
+  template <int i0>
+  struct count_free_indices<i0> {
     static constexpr size_t value = (i0 == -1);
   };
 
   static constexpr size_t rank = count_free_indices<Ind...>::value;
 
-  // Count number of free indices
+  // The following needs some comments
   template <size_t N, size_t N_count, int i0, int... Indices>
   struct get_free_indices {
     static constexpr size_t value =
@@ -79,12 +78,12 @@ public:
   struct compute_new_cindex {
     static constexpr size_t value =
         (ind0 >= 0) * ind0 *
-            utilities::static_pow<E1::property_t::ndim,
+            utilities::static_pow<property_t::ndim,
                                   E1::property_t::rank - sizeof...(Indices) -
                                       1>::value +
         (ind0 == -1) *
             (uncompress_index_t<property_t::ndim, N_slice, c_index>::value) *
-            (utilities::static_pow<E1::property_t::ndim,
+            (utilities::static_pow<property_t::ndim,
                                    E1::property_t::rank - sizeof...(Indices) -
                                        1>::value)
         // Recursion
@@ -96,19 +95,24 @@ public:
   struct compute_new_cindex<c_index, N_slice, ind0> {
     static constexpr size_t value =
         (ind0 >= 0) * ind0 *
-            utilities::static_pow<E1::property_t::ndim,
+            utilities::static_pow<property_t::ndim,
                                   E1::property_t::rank - 1>::value +
         (ind0 == -1) *
             (uncompress_index_t<property_t::ndim, N_slice, c_index>::value) *
-            (utilities::static_pow<E1::property_t::ndim,
+            (utilities::static_pow<property_t::ndim,
                                    E1::property_t::rank - 1>::value);
   };
 
   template <size_t c_index>
   inline typename property_t::data_t const evaluate() const {
 
-    return _u
-        .template evaluate<compute_new_cindex<c_index, 0, Ind...>::value>();
+    return _u.template evaluate<
+                         compute_new_cindex<
+                           c_index,
+                           0,
+                           Ind...
+                         >::value
+                       >();
   }
 };
 
