@@ -13,58 +13,52 @@ class tensor_spatial_sub_t
   E1 const &_u;
 
 public:
-
   using property_t = general_tensor_property_t<general_tensor_t<
-    		     typename E1::property_t::data_t,
-    		     typename E1::property_t::frame_t,
-    		     E1::property_t::rank,
-		     typename E1::property_t::index_t,
-    		     E1::property_t::ndim-1>>;
-    		     
+      typename E1::property_t::data_t, typename E1::property_t::frame_t,
+      E1::property_t::rank, typename E1::property_t::index_t,
+      E1::property_t::ndim - 1>>;
 
-  tensor_spatial_sub_t(E1 const &u) : _u(u) {};
+  tensor_spatial_sub_t(E1 const &u) : _u(u){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
                "is UNDEFINED!")]] inline decltype(auto)
   operator[](size_t i) const = delete;
 
-
-  template <size_t c_index ,size_t ind0, size_t... Indices>
-  struct compute_new_cindex{
-    static constexpr size_t value = compute_new_cindex<c_index,Indices...>::value
-      		  + (uncompress_index_t<E1::property_t::ndim-1,
-      				      ind0,
-				      c_index>::value +1 ) * 
-		           (utilities::static_pow<E1::property_t::ndim,ind0>::value);
+  template <size_t c_index, size_t ind0, size_t... Indices>
+  struct compute_new_cindex {
+    static constexpr size_t value =
+        compute_new_cindex<c_index, Indices...>::value +
+        (uncompress_index_t<E1::property_t::ndim - 1, ind0, c_index>::value +
+         1) *
+            (utilities::static_pow<E1::property_t::ndim, ind0>::value);
   };
-
 
   template <size_t c_index, size_t ind0>
-  struct compute_new_cindex<c_index,ind0>{
-    static constexpr size_t value = (uncompress_index_t<E1::property_t::ndim-1, 
-		     		      ind0,c_index>::value +1)
-				    *(utilities::static_pow<E1::property_t::ndim,ind0>::value);
+  struct compute_new_cindex<c_index, ind0> {
+    static constexpr size_t value =
+        (uncompress_index_t<E1::property_t::ndim - 1, ind0, c_index>::value +
+         1) *
+        (utilities::static_pow<E1::property_t::ndim, ind0>::value);
   };
 
-
-
-  template<size_t c_index,size_t... Indices>
-  static constexpr size_t compute_new_cindex_wrapper( std::index_sequence<Indices...>){
-     return compute_new_cindex<c_index,Indices...>::value;
+  template <size_t c_index, size_t... Indices>
+  static constexpr size_t
+  compute_new_cindex_wrapper(std::index_sequence<Indices...>) {
+    return compute_new_cindex<c_index, Indices...>::value;
   }
 
-
-  template <size_t c_index, typename Indices=std::make_index_sequence<E1::property_t::rank>> 
+  template <size_t c_index,
+            typename Indices = std::make_index_sequence<E1::property_t::rank>>
   inline typename property_t::data_t const evaluate() const {
 
-    return _u.template evaluate<compute_new_cindex_wrapper<c_index>(Indices{})>();
+    return _u
+        .template evaluate<compute_new_cindex_wrapper<c_index>(Indices{})>();
   }
 };
 
 template <typename E1>
-tensor_spatial_sub_t<E1> const inline spatial_part(E1 const &u){
+tensor_spatial_sub_t<E1> const inline spatial_part(E1 const &u) {
   return tensor_spatial_sub_t<E1>(u);
 };
-
 }
 #endif
