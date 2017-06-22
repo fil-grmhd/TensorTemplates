@@ -41,6 +41,13 @@ public:
     return static_cast<E const &>(*this).template evaluate<index>();
   };
 
+  //! Natural index access of tensor expression E
+  //  Doesn't work for expression where [] operator is deleted
+  template <size_t... Ind>
+  inline decltype(auto) c() {
+    return static_cast<E &>(*this)[compressed_index_t<E::property_t::ndim, Ind...>::value];
+  };
+
   //! Conversion operator to reference of tensor expression E
   operator E &() { return static_cast<E &>(*this); };
   //! Conversion operator to constant reference of tensor expression E
