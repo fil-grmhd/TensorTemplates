@@ -1,6 +1,7 @@
 ActiveThorns = "
     thc_grsource_orig
     thc_grsource_templates
+    thc_grsource_comparison
     ADMBase
     ADMCoupling
     ADMMacros

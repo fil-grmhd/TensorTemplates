@@ -1,0 +1,10 @@
+# Schedule definitions for thorn THC_grsource_comparison
+
+###############################################################################
+# Storage
+###############################################################################
+
+SCHEDULE THC_GRSource_comparison IN HydroBase_RHS AFTER GRSOURCE_COMP
+{
+    LANG: C
+} "Compares results"

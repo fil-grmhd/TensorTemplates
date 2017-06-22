@@ -1,0 +1,8 @@
+# Interface definition for thorn THC_Core
+IMPLEMENTS:     THC_grsource_comparison
+INHERITS:       Grid thc_grsource_orig thc_grsource_templates
+
+USES INCLUDE: tensor_templates.hh
+USES INCLUDE: utils.hh
+
+PUBLIC:

@@ -1,0 +1,6 @@
+REQUIRES TensorTemplates CPPUtils
+PROVIDES THC_grsource_comparison
+{
+    SCRIPT
+    LANG
+}

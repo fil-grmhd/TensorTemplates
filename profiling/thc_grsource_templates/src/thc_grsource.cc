@@ -51,9 +51,13 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
 
     using namespace tensors;
-    tensor_field_t<vector3_t<CCTK_REAL>> beta(betax,betay,betaz);
+    tensor_field_t<vector3_t<CCTK_REAL>> beta(betax,
+                                              betay,
+                                              betaz);
 
-    tensor_field_t<covector3_t<CCTK_REAL>> r_scon(rhs_sconx,rhs_scony,rhs_sconz);
+    tensor_field_t<covector3_t<CCTK_REAL>> r_scon(rhs_sconx,
+                                                  rhs_scony,
+                                                  rhs_sconz);
 
     tensor_field_t<metric_tensor_t<double,3>> gamma(gxx,gxy,gxz,
                                                     gxy,gyy,gyz,
@@ -138,12 +142,10 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             dgamma.c<2,1,2>() = dgamma.c<1,2,2>();
 
             // helpers to construct four metric derivative
-//            covector3_t<CCTK_REAL> g00i = - 2*dalp
             auto g00i = - 2*dalp
                         + 2*contract<0,0>(dbeta,contract<0,0>(gamma[ijk],beta[ijk]))
                         + contract<0,0>(beta[ijk],contract<0,0>(beta[ijk],dgamma));
 
-//            tensor3_t<CCTK_REAL, lower_t, lower_t> g0ji = contract<0,0>(gamma[ijk],dbeta)
             auto g0ji = contract<0,0>(gamma[ijk],dbeta)
                       + contract<0,0>(dgamma,beta[ijk]);
 
@@ -157,82 +159,15 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
             // g00,i
             dg.set<0,0,-2>(g00i);
-/*
-            dg(0,0,1) = g00i(0);
-            dg(0,0,2) = g00i(1);
-            dg(0,0,3) = g00i(2);
-*/
+
             // g0j,i
             dg.set<0,-2,-2>(g0ji);
 
-/*
-            dg(0,1,1) = g0ji(0,0);
-            dg(0,1,2) = g0ji(0,1);
-            dg(0,1,3) = g0ji(0,2);
-
-            dg(0,2,1) = g0ji(1,0);
-            dg(0,2,2) = g0ji(1,1);
-            dg(0,2,3) = g0ji(1,2);
-
-            dg(0,3,1) = g0ji(2,0);
-            dg(0,3,2) = g0ji(2,1);
-            dg(0,3,3) = g0ji(2,2);
-*/
-
             // gj0,i
             dg.set<-2,0,-2>(g0ji);
-/*
-            dg(1,0,1) = g0ji(0,0);
-            dg(1,0,2) = g0ji(0,1);
-            dg(1,0,3) = g0ji(0,2);
 
-            dg(2,0,1) = g0ji(1,0);
-            dg(2,0,2) = g0ji(1,1);
-            dg(2,0,3) = g0ji(1,2);
-
-            dg(3,0,1) = g0ji(2,0);
-            dg(3,0,2) = g0ji(2,1);
-            dg(3,0,3) = g0ji(2,2);
-*/
             // gjk,i
             dg.set<-2,-2,-2>(dgamma);
-/*
-            dg(1,1,1) = dgamma(0,0,0);
-            dg(1,1,2) = dgamma(0,0,1);
-            dg(1,1,3) = dgamma(0,0,2);
-
-            dg(1,2,1) = dgamma(0,1,0);
-            dg(1,2,2) = dgamma(0,1,1);
-            dg(1,2,3) = dgamma(0,1,2);
-
-            dg(1,3,1) = dgamma(0,2,0);
-            dg(1,3,2) = dgamma(0,2,1);
-            dg(1,3,3) = dgamma(0,2,2);
-
-            dg(2,1,1) = dgamma(1,0,0);
-            dg(2,1,2) = dgamma(1,0,1);
-            dg(2,1,3) = dgamma(1,0,2);
-
-            dg(2,2,1) = dgamma(1,1,0);
-            dg(2,2,2) = dgamma(1,1,1);
-            dg(2,2,3) = dgamma(1,1,2);
-
-            dg(2,3,1) = dgamma(1,2,0);
-            dg(2,3,2) = dgamma(1,2,1);
-            dg(2,3,3) = dgamma(1,2,2);
-
-            dg(3,1,1) = dgamma(2,0,0);
-            dg(3,1,2) = dgamma(2,0,1);
-            dg(3,1,3) = dgamma(2,0,2);
-
-            dg(3,2,1) = dgamma(2,1,0);
-            dg(3,2,2) = dgamma(2,1,1);
-            dg(3,2,3) = dgamma(2,1,2);
-
-            dg(3,3,1) = dgamma(2,2,0);
-            dg(3,3,2) = dgamma(2,2,1);
-            dg(3,3,3) = dgamma(2,2,2);
-*/
 
             // four velocity
             const auto u0 =  w_lorentz[ijk]/alp[ijk];
@@ -246,7 +181,9 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
                                                      +  press[ijk]*metric4d.invmetric;
 
             // slice expression to contain only the spatial components
-            auto rhs_scon_vec = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet*(trace<0,1>(contract<0,0>(T,dg))));
+            auto rhs_scon_vec = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet*(trace<0,1>(
+                                                                           contract<0,0>(T,dg)
+                                                                         )));
 
             r_scon[ijk] = rhs_scon_vec;
 
@@ -258,68 +195,16 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             rhs_tau[ijk] = alp[ijk] * metric4d.sqrtdet
                          * (trace<0,1>(
                               contract<0,0>(
-                                T.c<0,0>()*tensor_cat(beta[ijk],
-                                beta[ijk])
-                              + 2 * tensor_cat(T0i,beta[ijk]) + Tij, K[ijk]))
+                                T.c<0,0>()*tensor_cat(beta[ijk],beta[ijk]) + 2 * tensor_cat(T0i,beta[ijk]) + Tij,
+                                K[ijk]
+                              )
+                            )
                           - contract(
                               T.c<0,0>()*beta[ijk] + T0i,
-                              dalp));
+                              dalp
+                            )
+                           );
 
         } UTILS_ENDLOOP3(thc_grsource_templates);
     }
-}
-
-
-extern "C" void THC_GRSource_comparison(CCTK_ARGUMENTS) {
-    DECLARE_CCTK_ARGUMENTS
-    DECLARE_CCTK_PARAMETERS
-
-    using namespace tensors;
-
-    constexpr size_t exp = 10;
-    constexpr double eps_err = 1.0/utilities::static_pow<10,exp>::value;
-
-    int const gsiz = UTILS_GFSIZE(cctkGH);
-
-    CCTK_REAL * rhs_sconx  = &rhs_scon[0*gsiz];
-    CCTK_REAL * rhs_scony  = &rhs_scon[1*gsiz];
-    CCTK_REAL * rhs_sconz  = &rhs_scon[2*gsiz];
-
-    CCTK_REAL * rhs_sconx_orig  = &rhs_scon_orig[0*gsiz];
-    CCTK_REAL * rhs_scony_orig  = &rhs_scon_orig[1*gsiz];
-    CCTK_REAL * rhs_sconz_orig  = &rhs_scon_orig[2*gsiz];
-
-#pragma omp parallel
-    {
-        UTILS_LOOP3(thc_grsource_templates,
-                k, cctk_nghostzones[2], cctk_lsh[2]-cctk_nghostzones[2],
-                j, cctk_nghostzones[1], cctk_lsh[1]-cctk_nghostzones[1],
-                i, cctk_nghostzones[0], cctk_lsh[0]-cctk_nghostzones[0]) {
-
-            int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
-            vector3_t<CCTK_REAL> rhs_scon_temp(rhs_sconx[ijk],
-                                               rhs_scony[ijk],
-                                               rhs_sconz[ijk]);
-            vector3_t<CCTK_REAL> rhs_scon_orig(rhs_sconx_orig[ijk],
-                                               rhs_scony_orig[ijk],
-                                               rhs_sconz_orig[ijk]);
-
-            auto compare_scon = rhs_scon_temp.compare_components<exp>(rhs_scon_orig);
-            if(!compare_scon.first)
-              CCTK_VInfo(CCTK_THORNSTRING,"rhs scon differ at (%i): [%e,%e,%e] != [%e,%e,%e]",ijk,
-                                           rhs_scon_temp(0),
-                                           rhs_scon_temp(1),
-                                           rhs_scon_temp(2),
-                                           rhs_scon_orig(0),
-                                           rhs_scon_orig(1),
-                                           rhs_scon_orig(2));
-
-            double rel_err_tau = 2*std::abs(rhs_tau[ijk]- rhs_tau_orig[ijk])
-                                 /(std::abs(rhs_tau[ijk])+std::abs(rhs_tau_orig[ijk]));
-            if(rel_err_tau > eps_err)
-              CCTK_VInfo(CCTK_THORNSTRING,"rhs tau differ at (%i): [%e] != [%e]",ijk,rhs_tau[ijk],rhs_tau_orig[ijk]);
-
-        } UTILS_ENDLOOP3(thc_grsource_templates);
-    }
-
 }
