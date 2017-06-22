@@ -161,10 +161,6 @@ int main(){
   std::cout<<std::endl;
 
   std::cout << "D -2 -2 slice" << evaluate(slice<-2,-2>(D)) << std::endl;
-  std::cout << free_index_shift<-2,-2>::value << std::endl;
-  using slice_type = decltype(slice<-2,-2>(D));
-  std::cout << slice_type::property_t::ndim << std::endl;
-  std::cout << slice_type::property_t::rank << std::endl;
   std::cout<<std::endl;
 
   tensor3_t<double, upper_t, lower_t> E(D);
