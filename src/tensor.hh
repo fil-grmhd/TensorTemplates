@@ -159,6 +159,62 @@ public:
       return this->operator[](compress_indices<ndim>(a,indices...));
   }
 
+  // Template recursion to set components, fastest for chained expressions
+  template<typename E, size_t N, int... Ind>
+  struct setter_t {
+    static inline void set(E const& e, this_tensor_t & t) {
+      // computes (shifted) compressed index of t,
+      // corresponding to compressed index of e
+      constexpr size_t c_index = compute_unsliced_cindex<
+                                   this_tensor_t,
+                                   E,
+                                   N,
+                                   0,
+                                   Ind...
+                                 >::value;
+
+      t[c_index] = e.template evaluate<N>();
+      setter_t<E,N-1,Ind...>::set(e,t);
+    }
+  };
+  template<typename E, int... Ind>
+  struct setter_t<E,0,Ind...> {
+    static inline void set(E const& e, this_tensor_t & t) {
+      constexpr size_t c_index = compute_unsliced_cindex<
+                                   this_tensor_t,
+                                   E,
+                                   0,
+                                   0,
+                                   Ind...
+                                 >::value;
+
+      t[c_index] = e.template evaluate<0>();
+    }
+  };
+
+
+  //! Set (part) of the tensor to the given expression
+  template<int... Ind, typename E>
+  inline void set(E const &e) {
+    // count free indices
+    constexpr size_t num_free_indices = count_free_indices<Ind...>::value;
+    constexpr size_t max_shift = (property_t::ndim - E::property_t::ndim);
+
+    static_assert(sizeof...(Ind) == property_t::rank, "You need to specify rank indices.");
+    static_assert(num_free_indices == E::property_t::rank, "You need to specify rank free indices.");
+    static_assert(utilities::all_true<
+                    ((Ind >= -static_cast<int>(max_shift + 1)) &&
+                     (Ind < static_cast<int>(property_t::ndim)))...
+                  >::value,
+                  "Indices out of range. Use 0..ndim-1 to fix indices "
+                  "and -1...-(ndim - ndim_in)-1 to indicate a (shifted) free index.");
+    static_assert(E::property_t::ndim <= property_t::ndim, "Can't set a lower dim tensor to a higher dim.");
+
+    // recursion over all ndof of e, sets all matching components of *this
+    setter_t<E,E::property_t::ndof-1,Ind...>::set(e,*this);
+  }
+
+
   //! Sets tensor to zero for all components
   inline void zero() {
     for (size_t i = 0; i < ndof; ++i) {
@@ -187,9 +243,10 @@ public:
   //  since they are implicitly convertible (this_tensor_t constructor from an expression).
   friend std::ostream& operator<< (std::ostream& stream, const this_tensor_t& t) {
     stream << "[";
+//    stream << std::endl << "[";
     for(size_t i = 0; i<ndof-1; ++i) {
-    //  if((i != 0) && (i % ndim == 0))
-    //    stream << std::endl;
+//      if((i != 0) && (i % ndim == 0))
+//        stream << std::endl;
       stream << t[i] << " ";
     }
     stream << t[ndof-1] << "]";

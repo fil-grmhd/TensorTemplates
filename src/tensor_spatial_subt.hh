@@ -26,17 +26,15 @@ public:
   template <size_t c_index, size_t ind0, size_t... Indices>
   struct compute_new_cindex {
     static constexpr size_t value =
-        compute_new_cindex<c_index, Indices...>::value +
-        (uncompress_index_t<property_t::ndim, ind0, c_index>::value +
-         1) *
-            (utilities::static_pow<E1::property_t::ndim, ind0>::value);
+        compute_new_cindex<c_index, Indices...>::value
+       +(uncompress_index_t<property_t::ndim, ind0, c_index>::value + 1)
+       *(utilities::static_pow<E1::property_t::ndim, ind0>::value);
   };
   template <size_t c_index, size_t ind0>
   struct compute_new_cindex<c_index, ind0> {
     static constexpr size_t value =
-        (uncompress_index_t<property_t::ndim, ind0, c_index>::value +
-         1) *
-        (utilities::static_pow<E1::property_t::ndim, ind0>::value);
+        (uncompress_index_t<property_t::ndim, ind0, c_index>::value + 1)
+       *(utilities::static_pow<E1::property_t::ndim, ind0>::value);
   };
 
   template <size_t c_index, size_t... Indices>
@@ -49,8 +47,9 @@ public:
             typename Indices = std::make_index_sequence<property_t::rank>>
   inline typename property_t::data_t const evaluate() const {
 
-    return _u
-        .template evaluate<compute_new_cindex_wrapper<c_index>(Indices{})>();
+    return _u.template evaluate<
+                         compute_new_cindex_wrapper<c_index>(Indices{})
+                       >();
   }
 };
 

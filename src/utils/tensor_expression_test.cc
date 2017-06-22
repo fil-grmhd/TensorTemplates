@@ -108,6 +108,16 @@ int main(){
     std::cout<<std::endl;
   }
 
+  D = tensor3_t<double, upper_t, lower_t>(11,21,31,
+                                          12,22,32,
+                                          13,23,33);
+  std::cout << "D = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< D[i+3*j] << " ";
+    std::cout<<std::endl;
+  }
+
   auto D_spatial = evaluate(spatial_part(D));
 
   std::cout << "D_sub = " << std::endl;
@@ -129,8 +139,72 @@ int main(){
   std::cout<<std::endl;
 
   std::cout<<std::endl;
-  std::cout << "D 0 -1 slice" << evaluate(slice<0,-1>(D)) << std::endl;
+  std::cout << "D -1 1 slice" << evaluate(slice<-1,1>(D)) << std::endl;
   std::cout<<std::endl;
+
+  std::cout<<std::endl;
+  std::cout << "D -1 -1 slice" << evaluate(slice<-1,-1>(D)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout<<std::endl;
+  std::cout << "D -1 2 slice" << evaluate(slice<-1,2>(D)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout<<std::endl;
+  std::cout << "D -2 0 slice" << evaluate(slice<-2,0>(D)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout << "D 2 -1 slice" << evaluate(slice<2,-1>(D)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout << "D 0 -2 slice" << evaluate(slice<0,-2>(D)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout << "D -2 -2 slice" << evaluate(slice<-2,-2>(D)) << std::endl;
+  std::cout << free_index_shift<-2,-2>::value << std::endl;
+  using slice_type = decltype(slice<-2,-2>(D));
+  std::cout << slice_type::property_t::ndim << std::endl;
+  std::cout << slice_type::property_t::rank << std::endl;
+  std::cout<<std::endl;
+
+  tensor3_t<double, upper_t, lower_t> E(D);
+  E.set<0,-1>(a);
+
+  std::cout << "E = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< E[i+3*j] << " ";
+    std::cout<<std::endl;
+  }
+
+  E.set<-1,2>(a);
+
+  std::cout << "E = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< E[i+3*j] << " ";
+    std::cout<<std::endl;
+  }
+
+  tensor4_t<double, upper_t, lower_t> F;
+
+  std::cout << "F = " << std::endl;
+  for(int i=0; i<4; ++i){
+    for(int j=0; j<4; ++j)
+      std::cout << " "<< F[i+4*j] << " ";
+    std::cout<<std::endl;
+  }
+
+//  F.set<-1,-1>(E);
+//  F.set<-2,-2>(E);
+  F.set<-1,-2>(E);
+
+  std::cout << "F = " << std::endl;
+  for(int i=0; i<4; ++i){
+    for(int j=0; j<4; ++j)
+      std::cout << " "<< F[i+4*j] << " ";
+    std::cout<<std::endl;
+  }
 
   tensor3_t<double,upper_t,upper_t> ab = tensor_cat(a,b);
   std::cout << "Concatenating a and b: " << ab << std::endl;

@@ -79,6 +79,12 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
                 i, cctk_nghostzones[0], cctk_lsh[0]-cctk_nghostzones[0]) {
             int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
 
+
+            // contruct four metric and inverse
+//            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],gamma[ijk]);
+            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],metric_tensor_t<double,3>(gamma[ijk]));
+
+
             // Derivatives of the lapse, metric and shift
             covector3_t<CCTK_REAL> dalp(idx*cdiff_x(cctkGH, alp, i, j, k, fd_order),
                                         idy*cdiff_y(cctkGH, alp, i, j, k, fd_order),
@@ -226,9 +232,6 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             dg(3,3,2) = dgamma(2,2,1);
             dg(3,3,3) = dgamma(2,2,2);
 
-
-            // four metric
-            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],metric_tensor_t<double,3>(gamma[i]));
 
             // four velocity
             const auto u0 =  w_lorentz[ijk]/alp[ijk];

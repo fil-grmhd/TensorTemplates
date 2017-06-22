@@ -71,6 +71,74 @@ struct uncompress_index_t {
       ndim;
 };
 
+// Count number of free indices, defined by an index < 0
+template <int i0, int... Indices>
+struct count_free_indices {
+  static constexpr size_t value =
+      (i0 < 0) + count_free_indices<Indices...>::value;
+};
+template <int i0>
+struct count_free_indices<i0> {
+  static constexpr size_t value = (i0 < 0);
+};
+
+// Pick shift from first free index
+template <int i0, int... Indices>
+struct free_index_shift {
+  static constexpr int value = (i0 < 0)*(-(i0 + 1)) + (i0 >= 0)*free_index_shift<Indices...>::value;
+};
+template <int i0>
+struct free_index_shift<i0> {
+  static constexpr int value = (i0 < 0)*(-(i0 + 1));
+};
+
+// transforms the compressed index of a slice
+// to a compressed index of the underlying expression
+template <typename E, typename E_sliced, size_t c_index, size_t N_slice, int ind0, int... Indices>
+struct compute_unsliced_cindex {
+  static constexpr size_t shift = static_cast<size_t>(-ind0) - 1;
+  static constexpr size_t value =
+      (ind0 >= 0) * ind0
+                  * utilities::static_pow<
+                      E::property_t::ndim,
+                      E::property_t::rank - sizeof...(Indices) - 1
+                    >::value
+     + (ind0 < 0) * (uncompress_index_t<
+                       E_sliced::property_t::ndim,
+                       N_slice,
+                       c_index
+                     >::value + shift)
+                  * utilities::static_pow<
+                      E::property_t::ndim,
+                      E::property_t::rank - sizeof...(Indices) - 1
+                    >::value
+      // Recursion
+   + compute_unsliced_cindex<E, E_sliced, c_index, N_slice + (ind0 < 0), Indices...>::value;
+};
+template <typename E, typename E_sliced, size_t c_index, size_t N_slice, int ind0>
+struct compute_unsliced_cindex<E,E_sliced,c_index,N_slice,ind0> {
+  static constexpr size_t shift = static_cast<size_t>(-ind0) - 1;
+  static constexpr size_t value =
+      (ind0 >= 0) * ind0
+                  * utilities::static_pow<
+                      E::property_t::ndim,
+                      E::property_t::rank - 1
+                    >::value
+     + (ind0 < 0) * (uncompress_index_t<
+                       E_sliced::property_t::ndim,
+                       N_slice,
+                       c_index
+                     >::value + shift)
+                  * utilities::static_pow<
+                      E::property_t::ndim,
+                      E::property_t::rank - 1
+                    >::value;
+};
+
+
+// The following stuff doesn't work with intel compiler 17.0
+// https://software.intel.com/en-us/forums/intel-c-compiler/topic/737195
+
 template <size_t ndim, size_t c_index, std::size_t... I>
 constexpr decltype(auto) uncompress_index_impl(std::index_sequence<I...>) {
   // creates a tuple of uncompressed indices for index 0,...,rank-1
