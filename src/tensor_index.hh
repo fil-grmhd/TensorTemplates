@@ -23,20 +23,6 @@
 
 namespace tensors {
 
-//! Computes the compressed index associated with the given indices
-/*!
- *  The data is stored in a column major format
- *  This is not as efficient as the compressed_index_t below
- */
-template<size_t ndim>
-constexpr inline size_t compress_indices(size_t const a) {
-  return a;
-}
-template<size_t ndim, typename... indices_t>
-constexpr inline size_t compress_indices(size_t const a, indices_t... indices) {
-  return a + compress_indices<ndim>(indices...)*ndim;
-}
-
 //! Computes the compressed index given template parameter indices (in column-major format)
 template <size_t ndim, size_t a, size_t... indices>
 struct compressed_index_t {

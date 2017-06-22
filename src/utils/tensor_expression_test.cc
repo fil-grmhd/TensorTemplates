@@ -202,6 +202,12 @@ int main(){
     std::cout<<std::endl;
   }
 
+  std::cout << "F(1,2) = " << F.c<1,2>() << std::endl;
+
+  auto G = evaluate(slice<-1,1>(F));
+  G.c<1>() = 1337;
+  std::cout << "G(1) = " << G.c<1>() << std::endl;
+
   tensor3_t<double,upper_t,upper_t> ab = tensor_cat(a,b);
   std::cout << "Concatenating a and b: " << ab << std::endl;
 

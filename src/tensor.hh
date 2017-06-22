@@ -142,23 +142,6 @@ public:
     return m_data[index];
   }
 
-  //! Access the components of a tensor using the natural indices
-  template<typename... indices_t>
-  inline T & operator()(size_t const a, indices_t... indices) {
-      static_assert(sizeof...(indices)+1 == rank,
-          "Number of indices must match rank when using (i,j,k,...) operator.");
-
-      return this->operator[](compress_indices<ndim>(a,indices...));
-  }
-  //! Access the components of a tensor using the natural indices
-  template<typename... indices_t>
-  inline T const & operator()(size_t const a, indices_t... indices) const {
-      static_assert(sizeof...(indices)+1 == rank,
-          "Number of indices must match rank when using (i,j,k,...) operator.");
-
-      return this->operator[](compress_indices<ndim>(a,indices...));
-  }
-
   // Template recursion to set components, fastest for chained expressions
   template<typename E, size_t N, int... Ind>
   struct setter_t {
@@ -256,7 +239,7 @@ public:
 };
 
 template<typename E>
-typename E::property_t::this_tensor_t const evaluate(E const & u){
+typename E::property_t::this_tensor_t evaluate(E const & u){
    return typename E::property_t::this_tensor_t(u);
 }
 
