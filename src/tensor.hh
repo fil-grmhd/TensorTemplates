@@ -197,12 +197,21 @@ public:
     setter_t<E,E::property_t::ndof-1,Ind...>::set(e,*this);
   }
 
-
   //! Sets tensor to zero for all components
   inline void zero() {
     for (size_t i = 0; i < ndof; ++i) {
       m_data[i] = 0;
     }
+  }
+
+  //! Compute the Frobenius norm
+  //  should be converted to a template recursion
+  inline data_t norm() {
+      data_t squared_sum = 0;
+      for(size_t i = 0; i<ndof; ++i) {
+        squared_sum += m_data[i]*m_data[i];
+      }
+      return std::sqrt(squared_sum);
   }
 
   //! Comparison routine to a tensor of the same kind
