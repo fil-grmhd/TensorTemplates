@@ -28,16 +28,16 @@ public:
   // We encode the slice by <0 -1 2> which would be equivalent
   // to A_{0 \mu 2} (note that -1 refers to a free index)
   // The compressed index for this is 1d i.e. i_j but
-  // the compressed index of the full tensor requires us to insert 
+  // the compressed index of the full tensor requires us to insert
   // 0 and 2 and to add i_j with the correct power of ndim according to
   // it's position.
   // This happens here: N is Nth -1 index in the parameter pack.
-  // to get the position of this Nth index in the parameter pack, e.g. 1 
+  // to get the position of this Nth index in the parameter pack, e.g. 1
   // in the above example, we count count upwards until it has been found.
   // The number of free indices is encoded in N_count. If we exceed N,
   // we must not increment the index further in the recursion, hence the
   // conditionals.
-  
+
   template <size_t N, size_t N_count, int i0, int... Indices>
   struct get_free_indices {
     static constexpr size_t value =
@@ -88,7 +88,7 @@ public:
     return _u.template evaluate<
                          compute_unsliced_cindex<
                            E,
-                           E,
+                           typename property_t::this_tensor_t,
                            c_index,
                            0,
                            Ind...
