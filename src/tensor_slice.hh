@@ -101,5 +101,6 @@ template <int... Indices, typename E>
 tensor_slice_t<E, Indices...> const inline slice(E const &u) {
   return tensor_slice_t<E, Indices...>(u);
 };
+
 }
 #endif

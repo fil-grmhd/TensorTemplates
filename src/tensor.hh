@@ -26,10 +26,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "tensor_defs.hh"
-#include "tensor_expressions.hh"
-#include "utilities.hh"
-
 namespace tensors {
 
 template <typename T, typename frame_t_, size_t rank_, typename index_t_,
@@ -47,11 +43,18 @@ public:
   using frame_t = frame_t_;
 
   //! Rank of the tensor
-  static size_t constexpr rank = rank_; // std::tuple_size<index_t>::value;
+  static constexpr size_t rank = rank_; // std::tuple_size<index_t>::value;
   //! Number of dimensions
-  static size_t constexpr ndim = ndim_;
+  static constexpr size_t ndim = ndim_;
+
+  //! This tensor has no symmetry
+  // SYM: should be template param
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
+
   //! Number of degrees of freedom
-  static size_t constexpr ndof = utilities::static_pow<ndim, rank>::value;
+  static constexpr size_t ndof = symmetry_t::ndof;
+  //! Number of components (disregarding any symmetries)
+  static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
   //! This tensor type
   using this_tensor_t = general_tensor_t<T, frame_t_, rank_, index_t, ndim_>;
@@ -75,7 +78,8 @@ public:
   template <typename E, std::size_t... I>
   general_tensor_t(tensor_expression_t<E> const &tensor_expression,
                    std::index_sequence<I...>)
-      : m_data({tensor_expression.template evaluate<I>()...}) {
+      : m_data({tensor_expression.template evaluate<
+                  symmetry_t::template transform_index<I>::value>()...}) {
 
 //    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
 //                  "Frame types don't match!");
@@ -88,7 +92,7 @@ public:
                   "Data types don't match!");
 
     static_assert(
-        utilities::compare_index<index_t, typename E::property_t::index_t,
+        compare_index_types<index_t, typename E::property_t::index_t,
                                  rank>(),
         "Index types do not match (e.g. lower_t != upper_t)!");
   };
@@ -118,13 +122,15 @@ public:
     static_assert(utilities::all_true<(indices < ndim)...>::value,
                   "Trying to access index > ndim!");
 
-    return compressed_index_t<ndim, a, indices...>::value;
+    return symmetry_t::template compressed_index<a, indices...>::value;
   }
 
+/* doesn't work with intel
   template <typename tuple_t>
   static inline constexpr size_t compressed_index(tuple_t t) {
     return compressed_index_tuple<ndim>(t);
   }
+*/
 
   //! Access the components of a tensor using a compressed index
   /*!
@@ -139,44 +145,11 @@ public:
 
   //! Evaluation routine for expression templates
   template <size_t index> inline T const & evaluate() const {
-    return m_data[index];
+    return m_data[symmetry_t::template transform_index<index>::value];
   }
 
-  // Template recursion to set components, fastest for chained expressions
-  template<typename E, size_t N, int... Ind>
-  struct setter_t {
-    static inline void set(E const& e, this_tensor_t & t) {
-      // computes (shifted) compressed index of t,
-      // corresponding to compressed index of e
-      constexpr size_t c_index = compute_unsliced_cindex<
-                                   this_tensor_t,
-                                   E,
-                                   N,
-                                   0,
-                                   Ind...
-                                 >::value;
-
-      t[c_index] = e.template evaluate<N>();
-      setter_t<E,N-1,Ind...>::set(e,t);
-    }
-  };
-  template<typename E, int... Ind>
-  struct setter_t<E,0,Ind...> {
-    static inline void set(E const& e, this_tensor_t & t) {
-      constexpr size_t c_index = compute_unsliced_cindex<
-                                   this_tensor_t,
-                                   E,
-                                   0,
-                                   0,
-                                   Ind...
-                                 >::value;
-
-      t[c_index] = e.template evaluate<0>();
-    }
-  };
-
-
   //! Set (part) of the tensor to the given expression
+  // SYM: still not optimal
   template<int... Ind, typename E>
   inline void set(E const &e) {
     // count free indices
@@ -193,8 +166,8 @@ public:
                   "and -1...-(ndim - ndim_in)-1 to indicate a (shifted) free index.");
     static_assert(E::property_t::ndim <= property_t::ndim, "Can't set a lower dim tensor to a higher dim.");
 
-    // recursion over all ndof of e, sets all matching components of *this
-    setter_t<E,E::property_t::ndof-1,Ind...>::set(e,*this);
+    // recursion over all components of e, sets all matching components of *this
+    setter_t<E,this_tensor_t,E::property_t::ncomp-1,Ind...>::set(e,*this);
   }
 
   //! Sets tensor to zero for all components
@@ -205,13 +178,9 @@ public:
   }
 
   //! Compute the Frobenius norm
-  //  should be converted to a template recursion
   inline data_t norm() {
-      data_t squared_sum = 0;
-      for(size_t i = 0; i<ndof; ++i) {
-        squared_sum += m_data[i]*m_data[i];
-      }
-      return std::sqrt(squared_sum);
+    data_t squared_sum = sum_squares<this_tensor_t,ncomp-1>::sum(*this);
+    return std::sqrt(squared_sum);
   }
 
   //! Comparison routine to a tensor of the same kind
@@ -220,6 +189,7 @@ public:
   inline decltype(auto) compare_components(this_tensor_t const& t) {
     double eps = 1.0/utilities::static_pow<10,exponent>::value;
 
+    // SYM: need num_comp loop, only works if t is symmetric by definition
     for(size_t i = 0; i<ndof; ++i) {
       double rel_err = 2*std::abs(m_data[i]- t[i])
                        /(std::abs(m_data[i])+std::abs(t[i]));
@@ -235,10 +205,7 @@ public:
   //  since they are implicitly convertible (this_tensor_t constructor from an expression).
   friend std::ostream& operator<< (std::ostream& stream, const this_tensor_t& t) {
     stream << "[";
-//    stream << std::endl << "[";
     for(size_t i = 0; i<ndof-1; ++i) {
-//      if((i != 0) && (i % ndim == 0))
-//        stream << std::endl;
       stream << t[i] << " ";
     }
     stream << t[ndof-1] << "]";
@@ -247,6 +214,7 @@ public:
 
 };
 
+// SYM: doesnt respect symmetry
 template<typename E>
 typename E::property_t::this_tensor_t evaluate(E const & u){
    return typename E::property_t::this_tensor_t(u);

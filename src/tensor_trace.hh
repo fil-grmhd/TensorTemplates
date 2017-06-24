@@ -58,15 +58,6 @@ class tensor_trace_t : public tensor_expression_t<tensor_trace_t<i1,i2,E> > {
       static_assert(stride >= 0,
                     "trace: stride is less than zero, this shouldn't happen");
 
-/* debugging code
-      constexpr auto ids = uncompress_index<ndim,property_t::rank,index>();
-
-      std::cout << "Computing traced component ";
-      utilities::print_tuple(ids);
-      std::cout << std::endl;
-      std::cout << "stride_1=" << stride_1 << ", stride_2=" << stride_2 << ", stride_3=" << stride_3<< ", stride=" << stride << std::endl;
-*/
-
       // Compute sum over traced indices for index in a template recursion
       return recursive_component_trace<property_t::ndim-1,stride>::trace(_u);
     }
@@ -77,7 +68,9 @@ template <typename E, size_t N>
 struct scalar_trace_recursion {
   static inline decltype(auto) trace(E const &u) {
     return scalar_trace_recursion<E,N-1>::trace(u)
-         + u.template evaluate<compressed_index_t<E::property_t::ndim,N,N>::value>();
+         + u.template evaluate<E::property_t
+                                ::symmerty_t
+                                ::template compressed_index_t<N,N>::value>();
   }
 };
 // Termination definition of recursion
@@ -100,7 +93,7 @@ struct tracer_t {
 // Scalar trace result (for E::rank == 2)
 template<typename E, size_t i1, size_t i2>
 struct tracer_t<E,2,i1,i2> {
-  static_assert(utilities::is_reducible<i1,i2,E,E>::value, "Can only contract covariant with contravariant indices!");
+  static_assert(is_reducible<i1,i2,E,E>::value, "Can only contract covariant with contravariant indices!");
 
   static inline decltype(auto) trace(E const &u) {
     return scalar_trace_recursion<E,E::property_t::ndim-1>::trace(u);

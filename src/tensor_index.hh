@@ -23,18 +23,6 @@
 
 namespace tensors {
 
-//! Computes the compressed index given template parameter indices (in column-major format)
-template <size_t ndim, size_t a, size_t... indices>
-struct compressed_index_t {
-  static constexpr size_t value =
-      compressed_index_t<ndim, indices...>::value * ndim + a;
-};
-// termination definition of recursion
-template <size_t ndim, size_t a>
-struct compressed_index_t<ndim, a> {
-  static constexpr size_t value = a;
-};
-
 //! Computes the compressed index of a tuple of indices
 template <size_t ndim, typename tuple_t,
           size_t N = std::tuple_size<tuple_t>::value - 1>
@@ -47,6 +35,7 @@ static inline constexpr size_t compressed_index_tuple(tuple_t t) {
                             (N > 0)>(t);
 }
 
+/*
 //! Uncompresses single index of position index_pos from compressed index
 //! c_index
 template <size_t ndim, size_t index_pos, size_t c_index>
@@ -56,6 +45,7 @@ struct uncompress_index_t {
                           utilities::static_pow<ndim, index_pos>::value) %
       ndim;
 };
+*/
 
 // Count number of free indices, defined by an index < 0
 template <int i0, int... Indices>
@@ -89,11 +79,11 @@ struct compute_unsliced_cindex {
                       E::property_t::ndim,
                       E::property_t::rank - sizeof...(Indices) - 1
                     >::value
-     + (ind0 < 0) * (uncompress_index_t<
-                       E_sliced::property_t::ndim,
-                       N_slice,
-                       c_index
-                     >::value + shift)
+     + (ind0 < 0) * (generic_symmetry_t<E_sliced::property_t::ndim,E_sliced::property_t::rank>
+                       ::template uncompress_index<
+                         N_slice,
+                         c_index
+                       >::value + shift)
                   * utilities::static_pow<
                       E::property_t::ndim,
                       E::property_t::rank - sizeof...(Indices) - 1
@@ -110,11 +100,11 @@ struct compute_unsliced_cindex<E,E_sliced,c_index,N_slice,ind0> {
                       E::property_t::ndim,
                       E::property_t::rank - 1
                     >::value
-     + (ind0 < 0) * (uncompress_index_t<
-                       E_sliced::property_t::ndim,
-                       N_slice,
-                       c_index
-                     >::value + shift)
+     + (ind0 < 0) * (generic_symmetry_t<E_sliced::property_t::ndim,E_sliced::property_t::rank>
+                       ::template uncompress_index<
+                         N_slice,
+                         c_index
+                       >::value + shift)
                   * utilities::static_pow<
                       E::property_t::ndim,
                       E::property_t::rank - 1
@@ -125,6 +115,8 @@ struct compute_unsliced_cindex<E,E_sliced,c_index,N_slice,ind0> {
 // The following stuff doesn't work with intel compiler 17.0
 // https://software.intel.com/en-us/forums/intel-c-compiler/topic/737195
 
+/*
+// SYM: would need to call uncompress from sym
 template <size_t ndim, size_t c_index, std::size_t... I>
 constexpr decltype(auto) uncompress_index_impl(std::index_sequence<I...>) {
   // creates a tuple of uncompressed indices for index 0,...,rank-1
@@ -140,6 +132,8 @@ constexpr decltype(auto) uncompress_index() {
   return uncompress_index_impl<ndim, c_index>(Indices{});
 };
 
+*/
+
 template <size_t offset, typename tuple_t, size_t... I>
 constexpr decltype(auto) get_subtuple_impl(const tuple_t &t,
                                            std::index_sequence<I...>) {
@@ -153,6 +147,46 @@ template <size_t begin, size_t end, typename tuple_t,
 constexpr decltype(auto) get_subtuple(const tuple_t &t) {
   return get_subtuple_impl<begin>(t, Indices{});
 };
+
+//! Cumulative type check of index types
+template <typename I1, typename I2, size_t... I>
+constexpr bool compare_index_impl(std::index_sequence<I...>) {
+  using namespace utilities;
+  return all_true<
+      std::is_same<std::remove_cv_t<typename std::tuple_element<I, I1>::type>,
+                   std::remove_cv_t<typename std::tuple_element<I, I2>::type>>::
+          value...>::value;
 };
+template <typename I1, typename I2, size_t ndim,
+          typename Indices = std::make_index_sequence<ndim>>
+constexpr bool compare_index_types() {
+  return compare_index_impl<I1, I2>(Indices{});
+}
+
+//! Check if index combination is reducible
+template<size_t i1, size_t i2, typename E1, typename E2>
+struct is_reducible {
+  static constexpr bool value = std::is_same<
+                                  typename std::conditional<
+                                    std::is_same<
+                                      typename std::tuple_element<i1,typename E1::property_t::index_t>::type,
+                                      lower_t
+                                    >::value,
+                                    lower_t,
+                                    upper_t
+                                  >::type,
+                                  typename std::conditional<
+                                    std::is_same<
+                                      typename std::tuple_element<i2,typename E2::property_t::index_t>::type,
+                                      upper_t
+                                    >::value,
+                                    lower_t,
+                                    upper_t
+                                  >::type
+                                >::value;
+};
+} // namespace tensors
+
+
 
 #endif

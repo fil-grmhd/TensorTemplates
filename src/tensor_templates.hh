@@ -18,18 +18,20 @@
 #ifndef TENSORS_HH
 #define TENSORS_HH
 
-#include "tensor_defs.hh"
 #include "utilities.hh"
-#include "tensor_index.hh"
+#include "tensor_core_types.hh"
+#include "tensor_symmetry.hh"
 #include "tensor_types.hh"
+#include "tensor_index.hh"
 #include "tensor_property.hh"
+#include "tensor_expressions.hh"
+#include "tensor_helpers.hh"
 #include "tensor.hh"
 #include "tensor_field.hh"
 #include "tensor_contraction.hh"
 #include "tensor_trace.hh"
 #include "tensor_concat.hh"
 #include "tensor_index_reordering.hh"
-#include "tensor_spatial_subt.hh"
 #include "tensor_slice.hh"
 #include "metric.hh"
 

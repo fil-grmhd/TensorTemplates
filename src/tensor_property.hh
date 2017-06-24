@@ -28,12 +28,16 @@ public:
   using data_t = typename E::data_t;
   //! Frame in which this tensor is defined
   using frame_t = typename E::frame_t;
+  //! Symmetry type of this tensor
+  using symmetry_t = typename E::symmetry_t;
   //! Number of dimensions
   static constexpr size_t ndim = E::ndim;
   //! Rank of the tensor (i.e. number of indices)
   static constexpr size_t rank = E::rank;
   //! Number of degrees of freedom
-  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  static constexpr size_t ndof = symmetry_t::ndof;
+  //! Number of components (disregarding any symmetries)
+  static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
   //! Type of tensor indices (e.g. tuple of upper/lower_t)
   using index_t = typename E::index_t;
@@ -66,9 +70,9 @@ class arithmetic_expression_property_t
                 "Data types don't match!");
 
   // CHECK: is this really useful in tensor arithmetic expressions?
-  static_assert(utilities::compare_index<typename E1::property_t::index_t,
-                                         typename E2::property_t::index_t,
-                                         E1::property_t::rank>(),
+  static_assert(compare_index_types<typename E1::property_t::index_t,
+                                    typename E2::property_t::index_t,
+                                    E1::property_t::rank>(),
                 "Index types do not match (e.g. lower_t != upper_t)!");
 };
 
@@ -99,6 +103,8 @@ public:
       E1::property_t::rank + E2::property_t::rank - 2;
   //! Number of degrees of freedom
   static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  //! Number of components (disregarding any symmetries)
+  static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
   // static compile-time routine to get index_t, doesn't work, see generator above
   // static inline constexpr decltype(auto) get_index_t(){}
@@ -107,6 +113,9 @@ public:
       decltype(index_reduction_generator_t<i1, i2, E1, E2>::get_contraction_index_t());
 
   using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
+
+  //! Symmetry type of this tensor
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
 
   // Do some compile time checks of the expression properties
 
@@ -127,7 +136,7 @@ public:
                              typename E2::property_t::data_t>::value,
                 "Data types don't match!");
 
-  static_assert(utilities::is_reducible<i1,i2,E1,E2>::value,"Can only contract covariant with contravariant indices!");
+  static_assert(is_reducible<i1,i2,E1,E2>::value,"Can only contract covariant with contravariant indices!");
 
   static_assert(rank == std::tuple_size<index_t>::value,
                 "Index tuple size != rank, this should not happen");
@@ -136,37 +145,41 @@ public:
 //! Property class holding data and types defining a tensor resulting from a trace
 template<size_t i1, size_t i2, typename E>
 class trace_property_t {
-  public:
+public:
 
-    using data_t = typename E::property_t::data_t;
-    using frame_t = typename E::property_t::frame_t;
-    static constexpr size_t ndim = E::property_t::ndim;
-    // two indices are removed by a trace
-    static constexpr size_t rank = E::property_t::rank - 2;
-    //! Number of degrees of freedom
-    static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  using data_t = typename E::property_t::data_t;
+  using frame_t = typename E::property_t::frame_t;
+  static constexpr size_t ndim = E::property_t::ndim;
+  // two indices are removed by a trace
+  static constexpr size_t rank = E::property_t::rank - 2;
+  //! Number of degrees of freedom
+  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  //! Number of components (disregarding any symmetries)
+  static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
+  // static compile-time routine to get index_t, doesn't work, see above
+  //static inline constexpr decltype(auto) get_index_t(){}
 
-    // static compile-time routine to get index_t, doesn't work, see above
-    //static inline constexpr decltype(auto) get_index_t(){}
+  using index_t = decltype(index_reduction_generator_t<i1,i2,E,E>::get_trace_index_t());
 
-    using index_t = decltype(index_reduction_generator_t<i1,i2,E,E>::get_trace_index_t());
+  using this_tensor_t = general_tensor_t<data_t,frame_t,rank,index_t,ndim>;
 
-    using this_tensor_t = general_tensor_t<data_t,frame_t,rank,index_t,ndim>;
+  //! Symmetry type of this tensor
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
 
-    // Do some compile time checks of the expression properties
+  // Do some compile time checks of the expression properties
 
-    // check if someone tries to trace a vector
-    static_assert(E::property_t::rank > 1, "You cannot trace a vector, this is undefined!");
-    // check if trace indices bounds are violated
-    static_assert((i1 < E::property_t::rank) && (i2 < E::property_t::rank),
-                  "Traced indices are out of bound, i.e. i1,i2 >= rank.");
-    // check if someone tries to trace an index with itself
-    static_assert(i1 != i2, "You cannot trace an index with itself, i.e. make sure that i1 != i2");
-    // this can only trigger if tensor_trace_t is created manually, see below in trace "operator"
-    static_assert(i1 < i2, "Please make sure that traced indices are in ascending order, i.e. i1 < i2");
+  // check if someone tries to trace a vector
+  static_assert(E::property_t::rank > 1, "You cannot trace a vector, this is undefined!");
+  // check if trace indices bounds are violated
+  static_assert((i1 < E::property_t::rank) && (i2 < E::property_t::rank),
+                "Traced indices are out of bound, i.e. i1,i2 >= rank.");
+  // check if someone tries to trace an index with itself
+  static_assert(i1 != i2, "You cannot trace an index with itself, i.e. make sure that i1 != i2");
+  // this can only trigger if tensor_trace_t is created manually, see below in trace "operator"
+  static_assert(i1 < i2, "Please make sure that traced indices are in ascending order, i.e. i1 < i2");
 
-    static_assert(utilities::is_reducible<i1,i2,E,E>::value,"Can only contract covariant with contravariant indices!");
+  static_assert(is_reducible<i1,i2,E,E>::value,"Can only contract covariant with contravariant indices!");
 };
 
 
@@ -182,6 +195,9 @@ public:
   static constexpr size_t rank = E2::property_t::rank;
   //! Number of degrees of freedom
   static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  //! Number of components (disregarding any symmetries)
+  static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
+
 
   // static compile-time routine to get index_t
   // static inline constexpr decltype(auto) get_index_t(){}
@@ -190,6 +206,9 @@ public:
       decltype(index_reduction_generator_t<i2,i2,E1,E2>::get_metric_contraction_index_t());
 
   using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
+
+  //! Symmetry type of this tensor
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
 
   //    static_assert(std::is_same<typename E1::property_t::frame_t, typename
   //    E2::property_t::frame_t>::value,
@@ -240,6 +259,8 @@ public:
   static constexpr size_t rank = E2::property_t::rank + E1::property_t::rank;
   //! Number of degrees of freedom
   static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  //! Number of components (disregarding any symmetries)
+  static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
   // static compile-time routine to get index_t
   // static inline constexpr decltype(auto) get_index_t(){}
@@ -248,6 +269,9 @@ public:
       decltype(index_reduction_generator_t<0,0,E1,E2>::get_concat_index_t());
 
   using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
+
+  //! Symmetry type of this tensor
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
 
   static_assert(
       std::is_same<typename E1::property_t::frame_t,

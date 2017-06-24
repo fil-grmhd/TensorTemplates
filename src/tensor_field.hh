@@ -49,6 +49,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
       using property_check = arithmetic_expression_property_t<T,E>;
       // evaluate expression for every component
       // and set GFs at index i to that value
+      // SYM: this will fail if E is non-symmetric but T is
       tensor_field_t<T>::template setter_t<property_check::ndof-1,E>::set(ptr_index,e,ptr_array);
     }
 };
@@ -113,6 +114,7 @@ class tensor_field_t {
       using property_check = arithmetic_expression_property_t<T,E>;
       // evaluate expression for every component
       // and set GFs at index i to that value
+      // SYM: this will fail if E is non-symmtric but T is
       setter_t<property_check::ndof-1,E>::set(i,e,ptr_array);
 
 /*      // calling this is slightly slower

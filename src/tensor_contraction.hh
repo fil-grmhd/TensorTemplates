@@ -123,7 +123,7 @@ struct contractor_t {
 // Scalar contraction result (for E1,2::rank == 1)
 template<typename E1, typename E2, size_t i1, size_t i2>
 struct contractor_t<E1,E2,0,i1,i2> {
-  static_assert(utilities::is_reducible<i1,i2,E1,E2>::value, "Can only contract covariant with contravariant indices!");
+  static_assert(is_reducible<i1,i2,E1,E2>::value, "Can only contract covariant with contravariant indices!");
 
   static inline decltype(auto) contract(E1 const &u, E2 const &v) {
     return scalar_contraction_recursion<E1,E2,E1::property_t::ndim-1>::contract(u,v);

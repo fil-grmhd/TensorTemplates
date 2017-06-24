@@ -118,7 +118,7 @@ int main(){
     std::cout<<std::endl;
   }
 
-  auto D_spatial = evaluate(spatial_part(D));
+  auto D_spatial = evaluate(slice<-2,-2>(D));
 
   std::cout << "D_sub = " << std::endl;
   for(int i=0; i<2; ++i){

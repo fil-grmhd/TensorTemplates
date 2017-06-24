@@ -22,14 +22,15 @@ public:
                "is UNDEFINED!")]] inline decltype(auto)
   operator[](size_t i) const = delete;
 
-  template <size_t c_index> inline typename property_t::data_t const evaluate() const {
+  template <size_t index>
+  inline typename property_t::data_t const evaluate() const {
     constexpr size_t max_pow_E1 = E1::property_t::rank;
 
     constexpr size_t ndim = E1::property_t::ndim;
 
     constexpr size_t index_part_E1 =
-        c_index % (utilities::static_pow<ndim, max_pow_E1>::value);
-    constexpr size_t index_part_E2 = c_index - index_part_E1;
+        index % (utilities::static_pow<ndim, max_pow_E1>::value);
+    constexpr size_t index_part_E2 = index - index_part_E1;
 
     constexpr size_t index_part_E2_n =
         index_part_E2 / utilities::static_pow<ndim, max_pow_E1>::value;

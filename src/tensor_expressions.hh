@@ -45,7 +45,9 @@ public:
   //  Doesn't work for expression where [] operator is deleted
   template <size_t... Ind>
   inline decltype(auto) c() {
-    return static_cast<E &>(*this)[compressed_index_t<E::property_t::ndim, Ind...>::value];
+    return static_cast<E &>(*this)[E::property_t
+                                    ::symmetry_t
+                                    ::template compressed_index<Ind...>::value];
   };
 
   //! Conversion operator to reference of tensor expression E

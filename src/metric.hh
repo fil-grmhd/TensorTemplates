@@ -26,11 +26,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "tensor.hh"
-#include "tensor_defs.hh"
-#include "tensor_expressions.hh"
-#include "utilities.hh"
-
 namespace tensors {
 
 //! Raise index
