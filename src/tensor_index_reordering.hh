@@ -17,13 +17,17 @@ public:
 
   using index_t = std::tuple<typename std::tuple_element<Ind,typename E::property_t::index_t>::type...>;
 
+  static constexpr size_t ndim = E::property_t::ndim;
+  static constexpr size_t rank = E::property_t::rank;
+
   using property_t = general_tensor_property_t<
                        general_tensor_t<
                          typename E::property_t::data_t,
     		                 typename E::property_t::frame_t,
-    		                 E::property_t::rank,
+    		                 generic_symmetry_t<ndim,rank>,
+    		                 rank,
 		                     index_t,
-    		                 E::property_t::ndim
+    		                 ndim
     		               >
     		             >;
 

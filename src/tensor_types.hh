@@ -23,13 +23,14 @@
 namespace tensors {
 
 // forward decleration of general tensor class
-template <typename T, typename frame_t_, size_t rank_, typename index_t_,
+template <typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typename index_t_,
           size_t ndim_>
 class general_tensor_t;
 
 // Tensor of ranks index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
-using tensor_t = general_tensor_t<T, frame_t_, sizeof...(ranks),
+using tensor_t = general_tensor_t<T, frame_t_, generic_symmetry_t<ndim_,sizeof...(ranks)>,
+                                  sizeof...(ranks),
                                   std::tuple<ranks...>, ndim_>;
 
 template <typename T, size_t ndim_, typename frame_t_>
@@ -67,12 +68,13 @@ using cm_tensor4_t = tensor_t<T, 4, comoving_t, ranks...>;
 
 
 //metric
+// SYM: make this symmetric
 template<typename data_t, size_t ndim>
 using metric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, 2, std::tuple<lower_t, lower_t>, ndim>;
+      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<ndim,2>, 2, std::tuple<lower_t, lower_t>, ndim>;
 template<typename data_t, size_t ndim>
 using invmetric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, 2, std::tuple<upper_t, upper_t>, ndim>;
+      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<ndim,2>, 2, std::tuple<upper_t, upper_t>, ndim>;
 
 } // namespace tensors
 

@@ -28,11 +28,11 @@
 
 namespace tensors {
 
-template <typename T, typename frame_t_, size_t rank_, typename index_t_,
+template <typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typename index_t_,
           size_t ndim_>
 class general_tensor_t
     : public tensor_expression_t<
-          general_tensor_t<T, frame_t_, rank_, index_t_, ndim_>> {
+          general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_>> {
 public:
   //! Data type
   using data_t = T;
@@ -49,7 +49,7 @@ public:
 
   //! This tensor has no symmetry
   // SYM: should be template param
-  using symmetry_t = generic_symmetry_t<ndim,rank>;
+  using symmetry_t = symmetry_t_;
 
   //! Number of degrees of freedom
   static constexpr size_t ndof = symmetry_t::ndof;
@@ -57,7 +57,7 @@ public:
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
   //! This tensor type
-  using this_tensor_t = general_tensor_t<T, frame_t_, rank_, index_t, ndim_>;
+  using this_tensor_t = general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t, ndim_>;
 
   //! Fill property type with constexpr and types above (used in expressions)
   using property_t = general_tensor_property_t<this_tensor_t>;

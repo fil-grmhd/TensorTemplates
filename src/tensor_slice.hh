@@ -73,7 +73,8 @@ public:
   };
 
   using property_t = general_tensor_property_t<general_tensor_t<
-      typename E::property_t::data_t, typename E::property_t::frame_t, rank,
+      typename E::property_t::data_t, typename E::property_t::frame_t,
+      generic_symmetry_t<ndim,rank>, rank,
       decltype(slice_index_t_wrapper_wrapper()), ndim>>;
 
   tensor_slice_t(E const &u) : _u(u){};

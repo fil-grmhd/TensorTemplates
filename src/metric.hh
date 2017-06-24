@@ -55,11 +55,12 @@ inline decltype(auto) contract( Tmetric const & metric_, E1 const &u, E2 const &
 
 template <typename data_t, size_t ndim, typename dim_specialization_t> class metric_t {
 public:
+  // SYM: make these symmetric
   using metric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, 2, std::tuple<lower_t, lower_t>, ndim>;
+      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<ndim,2>, 2, std::tuple<lower_t, lower_t>, ndim>;
   using invmetric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, 2, std::tuple<upper_t, upper_t>, ndim>;
-  using shift_t = general_tensor_t<data_t, eulerian_t, 1, std::tuple<upper_t>, 3>; //Note that we are assume a 3+1 split where dim(shift) = 3 always!
+      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<ndim,2>, 2, std::tuple<upper_t, upper_t>, ndim>;
+  using shift_t = vector3_t<data_t>; //Note that we are assume a 3+1 split where dim(shift) = 3 always!
 
 
   metric_tensor_t metric;
@@ -190,10 +191,11 @@ public:
   using invmetric_tensor_t = typename metric_t<data_t,4,metric4_t<data_t>>::invmetric_tensor_t;
   using shift_t = typename metric_t<data_t,4,metric4_t<data_t>>::shift_t;
 
+  // SYM: make these symmetric
   using metric_tensor3_t =
-      general_tensor_t<data_t, any_frame_t, 2, std::tuple<lower_t, lower_t>, 3>;
+      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<3,2>, 2, std::tuple<lower_t, lower_t>, 3>;
   using invmetric_tensor3_t =
-      general_tensor_t<data_t, any_frame_t, 2, std::tuple<upper_t, upper_t>, 3>;
+      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<3,2>, 2, std::tuple<upper_t, upper_t>, 3>;
 
   using metric_t<data_t,4,metric4_t<data_t>>::metric_t; //Inherit constructors
   using super = metric_t<data_t,4,metric4_t<data_t>>;

@@ -69,8 +69,8 @@ struct scalar_trace_recursion {
   static inline decltype(auto) trace(E const &u) {
     return scalar_trace_recursion<E,N-1>::trace(u)
          + u.template evaluate<E::property_t
-                                ::symmerty_t
-                                ::template compressed_index_t<N,N>::value>();
+                                ::symmetry_t
+                                ::template compressed_index<N,N>::value>();
   }
 };
 // Termination definition of recursion

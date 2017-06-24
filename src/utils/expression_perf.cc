@@ -16,8 +16,8 @@
 int main(void) {
   using namespace tensors;
 //  constexpr size_t n = 30000000;
-  constexpr size_t n = 100000;
-//  constexpr size_t n = 1000;
+//  constexpr size_t n = 100000;
+  constexpr size_t n = 1000;
 
 
   // init random gens

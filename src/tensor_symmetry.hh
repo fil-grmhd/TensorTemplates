@@ -52,7 +52,6 @@ struct generic_symmetry_t {
         ndim;
   };
 
-
   //! Index transformation given an generic compressed index
   //  Does nothing, index is already a generic compressed index
   template <size_t index>
@@ -60,6 +59,12 @@ struct generic_symmetry_t {
     static constexpr size_t value = index;
   };
 
+  //! Returns true if reduction of index i_red preserves this symmetry
+  //  In this case there is no symmetry, thus it is always preserved
+  template <size_t i_red>
+  struct is_reduction_symmetric {
+    static constexpr bool value = true;
+  };
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,6 +189,12 @@ struct sym2_symmetry_t {
   template <size_t index>
   struct transform_index {
     static constexpr size_t value = transform_impl<rank-1,index>::value;
+  };
+
+  //! Returns true if reduction of index i_red preserves this symmetry
+  template <size_t i_red>
+  struct is_reduction_symmetric {
+    static constexpr bool value = (i_red != i0) && (i_red != i1);
   };
 };
 

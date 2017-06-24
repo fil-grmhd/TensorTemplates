@@ -21,6 +21,8 @@
 
 namespace tensors {
 
+// SYM: check if property classes could forward / preserve symmetry
+
 //! Property class holding data and types defining a specific tensor
 template <typename E> class general_tensor_property_t {
 public:
@@ -97,12 +99,16 @@ class contraction_property_t {
 public:
   using data_t = typename E1::property_t::data_t;
   using frame_t = typename E1::property_t::frame_t;
+
   static constexpr size_t ndim = E1::property_t::ndim;
   // two indices are removed by this expression
   static constexpr size_t rank =
       E1::property_t::rank + E2::property_t::rank - 2;
+
+  //! Symmetry type of this tensor
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
   //! Number of degrees of freedom
-  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  static constexpr size_t ndof = symmetry_t::ndof;
   //! Number of components (disregarding any symmetries)
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
@@ -112,10 +118,8 @@ public:
   using index_t =
       decltype(index_reduction_generator_t<i1, i2, E1, E2>::get_contraction_index_t());
 
-  using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
+  using this_tensor_t = general_tensor_t<data_t, frame_t, symmetry_t, rank, index_t, ndim>;
 
-  //! Symmetry type of this tensor
-  using symmetry_t = generic_symmetry_t<ndim,rank>;
 
   // Do some compile time checks of the expression properties
 
@@ -152,8 +156,11 @@ public:
   static constexpr size_t ndim = E::property_t::ndim;
   // two indices are removed by a trace
   static constexpr size_t rank = E::property_t::rank - 2;
+
+  //! Symmetry type of this tensor
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
   //! Number of degrees of freedom
-  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  static constexpr size_t ndof = symmetry_t::ndof;
   //! Number of components (disregarding any symmetries)
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
@@ -162,10 +169,7 @@ public:
 
   using index_t = decltype(index_reduction_generator_t<i1,i2,E,E>::get_trace_index_t());
 
-  using this_tensor_t = general_tensor_t<data_t,frame_t,rank,index_t,ndim>;
-
-  //! Symmetry type of this tensor
-  using symmetry_t = generic_symmetry_t<ndim,rank>;
+  using this_tensor_t = general_tensor_t<data_t,frame_t,symmetry_t,rank,index_t,ndim>;
 
   // Do some compile time checks of the expression properties
 
@@ -193,8 +197,11 @@ public:
   static constexpr size_t ndim = E2::property_t::ndim;
   // two indices are removed by this expression
   static constexpr size_t rank = E2::property_t::rank;
+
+  //! Symmetry type of this tensor
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
   //! Number of degrees of freedom
-  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  static constexpr size_t ndof = symmetry_t::ndof;
   //! Number of components (disregarding any symmetries)
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
@@ -205,10 +212,7 @@ public:
   using index_t =
       decltype(index_reduction_generator_t<i2,i2,E1,E2>::get_metric_contraction_index_t());
 
-  using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
-
-  //! Symmetry type of this tensor
-  using symmetry_t = generic_symmetry_t<ndim,rank>;
+  using this_tensor_t = general_tensor_t<data_t, frame_t, symmetry_t, rank, index_t, ndim>;
 
   //    static_assert(std::is_same<typename E1::property_t::frame_t, typename
   //    E2::property_t::frame_t>::value,
@@ -257,8 +261,11 @@ public:
   static constexpr size_t ndim = E2::property_t::ndim;
   // two indices are "added" by this expression
   static constexpr size_t rank = E2::property_t::rank + E1::property_t::rank;
+
+  //! Symmetry type of this tensor
+  using symmetry_t = generic_symmetry_t<ndim,rank>;
   //! Number of degrees of freedom
-  static constexpr size_t ndof = utilities::static_pow<ndim,rank>::value;
+  static constexpr size_t ndof = symmetry_t::ndof;
   //! Number of components (disregarding any symmetries)
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
@@ -268,10 +275,7 @@ public:
   using index_t =
       decltype(index_reduction_generator_t<0,0,E1,E2>::get_concat_index_t());
 
-  using this_tensor_t = general_tensor_t<data_t, frame_t, rank, index_t, ndim>;
-
-  //! Symmetry type of this tensor
-  using symmetry_t = generic_symmetry_t<ndim,rank>;
+  using this_tensor_t = general_tensor_t<data_t, frame_t, symmetry_t, rank, index_t, ndim>;
 
   static_assert(
       std::is_same<typename E1::property_t::frame_t,

@@ -35,18 +35,6 @@ static inline constexpr size_t compressed_index_tuple(tuple_t t) {
                             (N > 0)>(t);
 }
 
-/*
-//! Uncompresses single index of position index_pos from compressed index
-//! c_index
-template <size_t ndim, size_t index_pos, size_t c_index>
-struct uncompress_index_t {
-  static constexpr size_t value =
-      static_cast<size_t>(c_index /
-                          utilities::static_pow<ndim, index_pos>::value) %
-      ndim;
-};
-*/
-
 // Count number of free indices, defined by an index < 0
 template <int i0, int... Indices>
 struct count_free_indices {
