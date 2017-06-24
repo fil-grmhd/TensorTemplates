@@ -123,6 +123,33 @@ struct sym2_symmetry_t {
                                     );
   };
 
+
+
+
+
+
+
+  // this is still producing wrong results
+  template <size_t uncomp_index, size_t ind0, size_t ind1, size_t index_pos>
+  struct compressed_index_impl_test {
+  private:
+    static constexpr bool asc = ind0 < ind1;
+    static constexpr size_t c_ind0 = (!asc) * ind0 +   asc  * (ind0 * (ndim - (ind0 + 1) / 2));
+    static constexpr size_t c_ind1 =   asc  * ind1 + (!asc) * (ind1 * (ndim - (ind1 + 1) / 2));
+  public:
+    static constexpr size_t value = (i0 == index_pos)
+                                   *(c_ind0)
+                                  + (i1 == index_pos)
+                                   *(c_ind1)
+                                  + ((i0 != index_pos) && (i1 != index_pos))
+                                   *(uncomp_index * (ndim*(ndim+1)/2)
+                                   * utilities::static_pow<ndim,index_pos - (index_pos > i0) - (index_pos > i1)>::value);
+  };
+
+
+
+
+
   //! Computes the compressed index given template parameter indices
   template <size_t a, size_t... indices>
   struct compressed_index {
@@ -193,12 +220,29 @@ struct sym2_symmetry_t {
   //! Template recursion to transform from symmetric compressed to generic compressed index
   template <size_t index_pos, size_t index>
   struct transform_gen_impl {
-    static constexpr size_t value = generic_symmetry_t<ndim,rank>
-                                      ::template uncompress_index<index_pos,index>::value;
-                                      // SYM: this is a bit more difficult
+  private:
+    static constexpr size_t ind0 = generic_symmetry_t<ndim,rank>
+                                      ::template uncompress_index<i0,index>::value;
+    static constexpr size_t ind1 = generic_symmetry_t<ndim,rank>
+                                      ::template uncompress_index<i1,index>::value;
+    static constexpr size_t uncomp_index = generic_symmetry_t<ndim,rank>
+                                             ::template uncompress_index<index_pos,index>::value;
+  public:
+    static constexpr size_t value =  compressed_index_impl_test<uncomp_index,ind0,ind1,index_pos>::value
+                                   + transform_gen_impl<index_pos-1,index>::value;
+  };
+
   template <size_t index>
   struct transform_gen_impl<0,index> {
-    static constexpr size_t value = 0; // SYM: end here
+  private:
+    static constexpr size_t ind0 = generic_symmetry_t<ndim,rank>
+                                      ::template uncompress_index<i0,index>::value;
+    static constexpr size_t ind1 = generic_symmetry_t<ndim,rank>
+                                      ::template uncompress_index<i1,index>::value;
+    static constexpr size_t uncomp_index = generic_symmetry_t<ndim,rank>
+                                             ::template uncompress_index<0,index>::value;
+  public:
+    static constexpr size_t value = compressed_index_impl_test<uncomp_index,ind0,ind1,0>::value;
   };
 
   //! Index transformation given an compressed index of this type,

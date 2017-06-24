@@ -25,6 +25,44 @@ int main(){
 
   using namespace tensors;
 
+  using gen_t = generic_symmetry_t<5,4>;
+  using sym_t = sym2_symmetry_t<5,4,0,1>;
+
+  constexpr size_t gen_ndof = gen_t::ndof;
+  constexpr size_t sym_ndof = sym_t::ndof;
+
+  std::cout << "4,4,4,4" << std::endl;
+  constexpr size_t gen_index = gen_t::compressed_index<4,4,4,4>::value;
+  constexpr size_t gen_index_flip = gen_t::compressed_index<4,2,1,0>::value;
+  constexpr size_t sym_index = sym_t::compressed_index<4,4,4,4>::value;
+
+  constexpr size_t gen_trans_gen = gen_t::index_from_generic<gen_index>::value;
+  constexpr size_t gen_trans_sym = gen_t::index_to_generic<gen_index>::value;
+
+  constexpr size_t sym_trans_gen = sym_t::index_from_generic<gen_index>::value;
+  constexpr size_t sym_trans_sym = sym_t::index_to_generic<sym_index>::value;
+
+  constexpr size_t gen0 = gen_t::uncompress_index<0,gen_index>::value;
+  constexpr size_t gen1 = gen_t::uncompress_index<1,gen_index>::value;
+  constexpr size_t gen2 = gen_t::uncompress_index<2,gen_index>::value;
+  constexpr size_t gen3 = gen_t::uncompress_index<3,gen_index>::value;
+
+  constexpr size_t sym0 = sym_t::uncompress_index<0,sym_index>::value;
+  constexpr size_t sym1 = sym_t::uncompress_index<1,sym_index>::value;
+  constexpr size_t sym2 = sym_t::uncompress_index<2,sym_index>::value;
+  constexpr size_t sym3 = sym_t::uncompress_index<3,sym_index>::value;
+
+  std::cout << "Ndof: " << gen_ndof << " , " << sym_ndof << std::endl;
+
+  std::cout << "Compressed: " << gen_index << " , " << gen_index_flip << " , " << sym_index << std::endl;
+
+  std::cout << "Generic trafo: " << gen_trans_gen << " , " << gen_trans_sym << std::endl;
+  std::cout << "Symmetric trafo: " << sym_trans_gen << " , " << sym_trans_sym << std::endl;
+
+  std::cout << "Generic uncompressed: " << gen0 << " , " << gen1 << " , " << gen2 << " , " << gen3 << std::endl;
+  std::cout << "Symmetric uncompressed: " << sym0 << " , " << sym1 << " , " << sym2 << " , " << sym3 << std::endl;
+
+
   vector3_t<double> a; a[0] =1; a[1] =2; a[2]=3;
   vector3_t<double> b; b[0] =3; b[1]= 2; b[2] =1;
 
