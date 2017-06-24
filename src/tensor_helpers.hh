@@ -34,7 +34,7 @@ struct setter_t {
                                  Ind...
                                >::value;
 
-    t[T::symmetry_t::template transform_index<c_index>::value] = e.template evaluate<N>();
+    t[T::symmetry_t::template index_from_generic<c_index>::value] = e.template evaluate<N>();
     setter_t<E,T,N-1,Ind...>::set(e,t);
   }
 };
@@ -49,7 +49,7 @@ struct setter_t<E,T,0,Ind...> {
                                  Ind...
                                >::value;
 
-    t[T::symmetry_t::template transform_index<c_index>::value] = e.template evaluate<0>();
+    t[T::symmetry_t::template index_from_generic<c_index>::value] = e.template evaluate<0>();
   }
 };
 

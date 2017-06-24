@@ -48,7 +48,6 @@ public:
   static constexpr size_t ndim = ndim_;
 
   //! This tensor has no symmetry
-  // SYM: should be template param
   using symmetry_t = symmetry_t_;
 
   //! Number of degrees of freedom
@@ -79,7 +78,7 @@ public:
   general_tensor_t(tensor_expression_t<E> const &tensor_expression,
                    std::index_sequence<I...>)
       : m_data({tensor_expression.template evaluate<
-                  symmetry_t::template transform_index<I>::value>()...}) {
+                  symmetry_t::template index_to_generic<I>::value>()...}) {
 
 //    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
 //                  "Frame types don't match!");
@@ -104,6 +103,7 @@ public:
       : this_tensor_t(tensor_expression, Indices{}){};
 
   //! Constructor from parameters
+  // SYM: this is in weird order for sym2 and rank > 2, first sym indices than rest
   template <typename... TArgs>
   general_tensor_t(data_t first_elem, TArgs... elem)
       : m_data({first_elem, static_cast<data_t>(elem)...}) {
@@ -145,7 +145,7 @@ public:
 
   //! Evaluation routine for expression templates
   template <size_t index> inline T const & evaluate() const {
-    return m_data[symmetry_t::template transform_index<index>::value];
+    return m_data[symmetry_t::template index_from_generic<index>::value];
   }
 
   //! Set (part) of the tensor to the given expression
