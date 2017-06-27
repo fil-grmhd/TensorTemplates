@@ -24,6 +24,7 @@ namespace tensors {
 //! Generic tensor symmetry type
 //
 //  Represents no symmetry
+//  All of its members should be defined by any new symmetry type
 ///////////////////////////////////////////////////////////////////////////////
 template<size_t ndim, size_t rank>
 struct generic_symmetry_t {
@@ -84,10 +85,34 @@ struct sym2_symmetry_t {
   //! Compile-time constant ndof
   static constexpr size_t ndof = utilities::static_pow<ndim,rank-1>::value*(ndim+1)/2;
 
+  static_assert(rank > 1,
+                "Symmetric tensor in two indices of rank = 1 is a contradiction.");
   static_assert((i0 < rank) && (i1 < rank),
                 "One or both symmetry indices are out of bound, i.e. i0,i1 >= rank");
   static_assert(i0 < i1,
                 "Make sure that symmetric indices are in ascending order and not equal");
+
+
+
+  // Internal compressed index transformation, based on symmetric index positions.
+  // i0 and i1 are (internally) always shifted to be the first two indices
+  // and sorted to ascending order.
+  // This computes the compressed index part of one uncomp_index at index_pos.
+  template <size_t uncomp_index, size_t ind0, size_t ind1, size_t index_pos>
+  struct compress_single_index {
+  private:
+    static constexpr bool asc = ind0 < ind1;
+    static constexpr size_t c_ind0 =  !(asc) ? ind0 : (ind0 * ndim - ind0*(ind0 + 1) / 2);
+    static constexpr size_t c_ind1 =   asc ? ind1  : (ind1 * ndim - ind1*(ind1 + 1) / 2);
+  public:
+    static constexpr size_t value = (i0 == index_pos)
+                                   *(c_ind0)
+                                  + (i1 == index_pos)
+                                   *(c_ind1)
+                                  + ((i0 != index_pos) && (i1 != index_pos))
+                                   *(uncomp_index * (ndim*(ndim+1)/2)
+                                   * utilities::static_pow<ndim,index_pos - (index_pos > i0) - (index_pos > i1)>::value);
+  };
 
   // Internal compressed index transformation, based on symmetric index positions
   // i0 and i1 are (internally) always shifted to be the first two indices
@@ -122,33 +147,6 @@ struct sym2_symmetry_t {
                                      *(i0_val*ndim-i0_val*(i0_val+1)/2+i1_val)
                                     );
   };
-
-
-
-
-
-
-
-  // this is still producing wrong results
-  template <size_t uncomp_index, size_t ind0, size_t ind1, size_t index_pos>
-  struct compressed_index_impl_test {
-  private:
-    static constexpr bool asc = ind0 < ind1;
-    static constexpr size_t c_ind0 = (!asc) * ind0 +   asc  * (ind0 * (ndim - (ind0 + 1) / 2));
-    static constexpr size_t c_ind1 =   asc  * ind1 + (!asc) * (ind1 * (ndim - (ind1 + 1) / 2));
-  public:
-    static constexpr size_t value = (i0 == index_pos)
-                                   *(c_ind0)
-                                  + (i1 == index_pos)
-                                   *(c_ind1)
-                                  + ((i0 != index_pos) && (i1 != index_pos))
-                                   *(uncomp_index * (ndim*(ndim+1)/2)
-                                   * utilities::static_pow<ndim,index_pos - (index_pos > i0) - (index_pos > i1)>::value);
-  };
-
-
-
-
 
   //! Computes the compressed index given template parameter indices
   template <size_t a, size_t... indices>
@@ -228,10 +226,9 @@ struct sym2_symmetry_t {
     static constexpr size_t uncomp_index = generic_symmetry_t<ndim,rank>
                                              ::template uncompress_index<index_pos,index>::value;
   public:
-    static constexpr size_t value =  compressed_index_impl_test<uncomp_index,ind0,ind1,index_pos>::value
+    static constexpr size_t value =  compress_single_index<uncomp_index,ind0,ind1,index_pos>::value
                                    + transform_gen_impl<index_pos-1,index>::value;
   };
-
   template <size_t index>
   struct transform_gen_impl<0,index> {
   private:
@@ -242,7 +239,7 @@ struct sym2_symmetry_t {
     static constexpr size_t uncomp_index = generic_symmetry_t<ndim,rank>
                                              ::template uncompress_index<0,index>::value;
   public:
-    static constexpr size_t value = compressed_index_impl_test<uncomp_index,ind0,ind1,0>::value;
+    static constexpr size_t value = compress_single_index<uncomp_index,ind0,ind1,0>::value;
   };
 
   //! Index transformation given an compressed index of this type,

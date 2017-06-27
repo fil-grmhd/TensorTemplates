@@ -18,6 +18,8 @@
 
 #include<iostream>
 #include<typeinfo>
+
+#define TENSORS_DEBUGGING
 #include "../tensor_templates.hh"
 
 
@@ -26,15 +28,15 @@ int main(){
   using namespace tensors;
 
   using gen_t = generic_symmetry_t<5,4>;
-  using sym_t = sym2_symmetry_t<5,4,0,1>;
+  using sym_t = sym2_symmetry_t<5,4,1,3>;
 
   constexpr size_t gen_ndof = gen_t::ndof;
   constexpr size_t sym_ndof = sym_t::ndof;
 
-  std::cout << "4,4,4,4" << std::endl;
-  constexpr size_t gen_index = gen_t::compressed_index<4,4,4,4>::value;
-  constexpr size_t gen_index_flip = gen_t::compressed_index<4,2,1,0>::value;
-  constexpr size_t sym_index = sym_t::compressed_index<4,4,4,4>::value;
+  std::cout << "2,4,1,0" << std::endl;
+  constexpr size_t gen_index = gen_t::compressed_index<2,4,1,0>::value;
+  constexpr size_t gen_index_flip = gen_t::compressed_index<2,0,1,4>::value;
+  constexpr size_t sym_index = sym_t::compressed_index<2,4,1,0>::value;
 
   constexpr size_t gen_trans_gen = gen_t::index_from_generic<gen_index>::value;
   constexpr size_t gen_trans_sym = gen_t::index_to_generic<gen_index>::value;
@@ -282,5 +284,87 @@ double norm2_am1 = contract<0,0>(metric,am1,am1);
 
 std::cout << "norm2 am1 :" << norm2_am1 <<std::endl;
 
+// Symmetry of two indices
+sym_tensor3_t<double,0,1,upper_t,lower_t> sym_tensor3;
+sym_tensor4_t<double,0,1,upper_t,lower_t> sym_tensor4;
+
+sym_tensor4_t<double,0,1,upper_t,lower_t,lower_t> sym_tensor4_3;
+
+for(int i = 0; i<sym2_symmetry_t<3,2,0,1>::ndof; ++i)
+  sym_tensor3[i] = i+1;
+for(int i = 0; i<sym2_symmetry_t<4,2,0,1>::ndof; ++i)
+  sym_tensor4[i] = i+1;
+for(int i = 0; i<sym2_symmetry_t<4,3,0,1>::ndof; ++i)
+  sym_tensor4_3[i] = i+1;
+
+std::cout << "sym3: " << sym_tensor3 << std::endl;
+std::cout << "sym4: " << sym_tensor4 << std::endl;
+std::cout << "sym4_3: " << sym_tensor4_3 << std::endl;
+
+std::cout << "Symmetric tensor 3:" << std::endl;
+std::cout << sym_tensor3.c<0,0>() << " " << sym_tensor3.c<0,1>() << " " << sym_tensor3.c<0,2>() << std::endl;
+std::cout << sym_tensor3.c<1,0>() << " " << sym_tensor3.c<1,1>() << " " << sym_tensor3.c<1,2>() << std::endl;
+std::cout << sym_tensor3.c<2,0>() << " " << sym_tensor3.c<2,1>() << " " << sym_tensor3.c<2,2>() << std::endl;
+
+std::cout << "Symmetric tensor 4:" << std::endl;
+std::cout << sym_tensor4.c<0,0>() << " " << sym_tensor4.c<0,1>() << " " << sym_tensor4.c<0,2>() << " " << sym_tensor4.c<0,3>() << std::endl;
+std::cout << sym_tensor4.c<1,0>() << " " << sym_tensor4.c<1,1>() << " " << sym_tensor4.c<1,2>() << " " << sym_tensor4.c<1,3>() << std::endl;
+std::cout << sym_tensor4.c<2,0>() << " " << sym_tensor4.c<2,1>() << " " << sym_tensor4.c<2,2>() << " " << sym_tensor4.c<2,3>() << std::endl;
+std::cout << sym_tensor4.c<3,0>() << " " << sym_tensor4.c<3,1>() << " " << sym_tensor4.c<3,2>() << " " << sym_tensor4.c<3,3>() << std::endl;
+
+//tensor3_t<double,upper_t,lower_t> from_sym3(sym_tensor3);
+//tensor4_t<double,upper_t,lower_t> from_sym4(sym_tensor4);
+
+//tensor3_t<double,upper_t,lower_t> from_sym3;
+//tensor4_t<double,upper_t,lower_t> from_sym4;
+
+//from_sym3.set<-1,-1>(sym_tensor3);
+//from_sym4.set<-1,-1>(sym_tensor4);
+
+auto from_sym3 = evaluate(generic_cast(sym_tensor3));
+auto from_sym4 = evaluate(generic_cast(sym_tensor4));
+
+std::cout << "Generic from symmetric tensor 3:" << std::endl;
+std::cout << from_sym3.c<0,0>() << " " << from_sym3.c<0,1>() << " " << from_sym3.c<0,2>() << std::endl;
+std::cout << from_sym3.c<1,0>() << " " << from_sym3.c<1,1>() << " " << from_sym3.c<1,2>() << std::endl;
+std::cout << from_sym3.c<2,0>() << " " << from_sym3.c<2,1>() << " " << from_sym3.c<2,2>() << std::endl;
+
+std::cout << "Generic from symmetric tensor 4:" << std::endl;
+std::cout << from_sym4.c<0,0>() << " " << from_sym4.c<0,1>() << " " << from_sym4.c<0,2>() << " " << from_sym4.c<0,3>() << std::endl;
+std::cout << from_sym4.c<1,0>() << " " << from_sym4.c<1,1>() << " " << from_sym4.c<1,2>() << " " << from_sym4.c<1,3>() << std::endl;
+std::cout << from_sym4.c<2,0>() << " " << from_sym4.c<2,1>() << " " << from_sym4.c<2,2>() << " " << from_sym4.c<2,3>() << std::endl;
+std::cout << from_sym4.c<3,0>() << " " << from_sym4.c<3,1>() << " " << from_sym4.c<3,2>() << " " << from_sym4.c<3,3>() << std::endl;
+
+// here generic -> symmetric tensor is automatically called (through constructor)
+std::cout << "Generic and symmetric are the same: " << sym_tensor3.compare_components<14>(from_sym3).first << " "
+                                                    << sym_tensor4.compare_components<14>(from_sym4).first << std::endl;
+// here sym2_cast_t -> symmetric tensor is automatically called (through constructor)
+std::cout << "Generic and symmetric are the same (cast): " << sym_tensor3.compare_components<14>(sym2_cast<0,1>(from_sym3)).first << " "
+                                                           << sym_tensor4.compare_components<14>(sym2_cast<0,1>(from_sym4)).first << std::endl;
+
+
+sym_tensor3_t<double,0,1,upper_t,lower_t> from_generic3(E);
+from_generic3.set<-1,0>(a);
+
+std::cout << "Symmetric from gemeric (E) tensor 3:" << std::endl;
+std::cout << from_generic3.c<0,0>() << " " << from_generic3.c<0,1>() << " " << from_generic3.c<0,2>() << std::endl;
+std::cout << from_generic3.c<1,0>() << " " << from_generic3.c<1,1>() << " " << from_generic3.c<1,2>() << std::endl;
+std::cout << from_generic3.c<2,0>() << " " << from_generic3.c<2,1>() << " " << from_generic3.c<2,2>() << std::endl;
+
+sym_tensor4_t<double,0,1,upper_t,lower_t> sym_tensor4_set(sym_tensor4);
+//sym_tensor4_set.set<-2,-2>(E);
+sym_tensor4_set.set<-2,-2>(from_generic3);
+
+vector4_t<double> vec4(1337,1338,42,43);
+sym_tensor4_set.set<-1,0>(vec4);
+
+std::cout << "Symmetric tensor 4 with symmetric 3 (E):" << std::endl;
+std::cout << sym_tensor4_set.c<0,0>() << " " << sym_tensor4_set.c<0,1>() << " " << sym_tensor4_set.c<0,2>() << " " << sym_tensor4_set.c<0,3>() << std::endl;
+std::cout << sym_tensor4_set.c<1,0>() << " " << sym_tensor4_set.c<1,1>() << " " << sym_tensor4_set.c<1,2>() << " " << sym_tensor4_set.c<1,3>() << std::endl;
+std::cout << sym_tensor4_set.c<2,0>() << " " << sym_tensor4_set.c<2,1>() << " " << sym_tensor4_set.c<2,2>() << " " << sym_tensor4_set.c<2,3>() << std::endl;
+std::cout << sym_tensor4_set.c<3,0>() << " " << sym_tensor4_set.c<3,1>() << " " << sym_tensor4_set.c<3,2>() << " " << sym_tensor4_set.c<3,3>() << std::endl;
 
 }
+
+
+

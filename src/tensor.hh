@@ -125,13 +125,6 @@ public:
     return symmetry_t::template compressed_index<a, indices...>::value;
   }
 
-/* doesn't work with intel
-  template <typename tuple_t>
-  static inline constexpr size_t compressed_index(tuple_t t) {
-    return compressed_index_tuple<ndim>(t);
-  }
-*/
-
   //! Access the components of a tensor using a compressed index
   /*!
    *  The data is stored in a column major format
@@ -149,7 +142,7 @@ public:
   }
 
   //! Set (part) of the tensor to the given expression
-  // SYM: still not optimal
+  //  Make sure to set a symmetric tensor to a symmetric tensor (cast), to remove redundant assignements
   template<int... Ind, typename E>
   inline void set(E const &e) {
     // count free indices
@@ -167,7 +160,7 @@ public:
     static_assert(E::property_t::ndim <= property_t::ndim, "Can't set a lower dim tensor to a higher dim.");
 
     // recursion over all components of e, sets all matching components of *this
-    setter_t<E,this_tensor_t,E::property_t::ncomp-1,Ind...>::set(e,*this);
+    setter_t<E,this_tensor_t,E::property_t::ndof-1,Ind...>::set(e,*this);
   }
 
   //! Sets tensor to zero for all components
@@ -184,12 +177,12 @@ public:
   }
 
   //! Comparison routine to a tensor of the same kind
-  // This is not optimally optimized, please change if used in non-debugging environment
+  //  This is not optimally optimized, please change if used in non-debugging environment
+  //  Any expression passed as argument is converted to this_tensor_t automagically (if possible)
   template<int exponent>
   inline decltype(auto) compare_components(this_tensor_t const& t) {
     double eps = 1.0/utilities::static_pow<10,exponent>::value;
 
-    // SYM: need num_comp loop, only works if t is symmetric by definition
     for(size_t i = 0; i<ndof; ++i) {
       double rel_err = 2*std::abs(m_data[i]- t[i])
                        /(std::abs(m_data[i])+std::abs(t[i]));
@@ -214,7 +207,6 @@ public:
 
 };
 
-// SYM: doesnt respect symmetry
 template<typename E>
 typename E::property_t::this_tensor_t evaluate(E const & u){
    return typename E::property_t::this_tensor_t(u);

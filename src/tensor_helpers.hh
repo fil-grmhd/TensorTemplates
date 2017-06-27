@@ -24,17 +24,20 @@ namespace tensors {
 template<typename E, typename T, size_t N, int... Ind>
 struct setter_t {
   static inline void set(E const& e, T & t) {
+    // convert 1,...,ndof-1 to a generic index
+    constexpr size_t gen_index = E::symmetry_t::template index_to_generic<N>::value;
+
     // computes (shifted) compressed index of t,
-    // corresponding to compressed index of e
+    // corresponding to (generic) compressed index of e
     constexpr size_t c_index = compute_unsliced_cindex<
                                  T,
                                  E,
-                                 N,
+                                 gen_index,
                                  0,
                                  Ind...
                                >::value;
 
-    t[T::symmetry_t::template index_from_generic<c_index>::value] = e.template evaluate<N>();
+    t[T::symmetry_t::template index_from_generic<c_index>::value] = e.template evaluate<gen_index>();
     setter_t<E,T,N-1,Ind...>::set(e,t);
   }
 };
