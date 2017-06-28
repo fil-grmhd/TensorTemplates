@@ -339,8 +339,9 @@ std::cout << from_sym4.c<3,0>() << " " << from_sym4.c<3,1>() << " " << from_sym4
 std::cout << "Generic and symmetric are the same: " << sym_tensor3.compare_components<14>(from_sym3).first << " "
                                                     << sym_tensor4.compare_components<14>(from_sym4).first << std::endl;
 // here sym2_cast_t -> symmetric tensor is automatically called (through constructor)
-std::cout << "Generic and symmetric are the same (cast): " << sym_tensor3.compare_components<14>(sym2_cast<0,1>(from_sym3)).first << " "
-                                                           << sym_tensor4.compare_components<14>(sym2_cast<0,1>(from_sym4)).first << std::endl;
+std::cout << "Generic and symmetric are the same (cast): "
+          << sym_tensor3.compare_components<14>(sym2_cast<0,1>(from_sym3)).first << " "
+          << sym_tensor4.compare_components<14>(sym2_cast<0,1>(from_sym4)).first << std::endl;
 
 
 sym_tensor3_t<double,0,1,upper_t,lower_t> from_generic3(E);
@@ -363,6 +364,17 @@ std::cout << sym_tensor4_set.c<0,0>() << " " << sym_tensor4_set.c<0,1>() << " " 
 std::cout << sym_tensor4_set.c<1,0>() << " " << sym_tensor4_set.c<1,1>() << " " << sym_tensor4_set.c<1,2>() << " " << sym_tensor4_set.c<1,3>() << std::endl;
 std::cout << sym_tensor4_set.c<2,0>() << " " << sym_tensor4_set.c<2,1>() << " " << sym_tensor4_set.c<2,2>() << " " << sym_tensor4_set.c<2,3>() << std::endl;
 std::cout << sym_tensor4_set.c<3,0>() << " " << sym_tensor4_set.c<3,1>() << " " << sym_tensor4_set.c<3,2>() << " " << sym_tensor4_set.c<3,3>() << std::endl;
+
+// some contraction tests
+auto sym_contract0 = evaluate(contract<0,1>(sym_tensor3,from_sym3));
+auto sym_contract1 = evaluate(contract<0,1>(sym_tensor4,from_sym4));
+
+auto sym_contract2 = evaluate(contract<0,1>(sym_tensor3,sym_tensor3));
+auto sym_contract3 = evaluate(contract<0,1>(sym_tensor4,sym_tensor4));
+
+std::cout << "Generic and symmetric contraction are the same: "
+          << sym_contract0.compare_components<14>(sym_contract2).first << " "
+          << sym_contract1.compare_components<14>(sym_contract3).first << std::endl;
 
 }
 

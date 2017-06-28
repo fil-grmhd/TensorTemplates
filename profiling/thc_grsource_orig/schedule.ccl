@@ -11,7 +11,7 @@ SCHEDULE GROUP GRSOURCE_COMP IN HydroBase_RHS AFTER THC_InitSource
 {
 } "Computations"
 
-SCHEDULE THC_GRSource IN GRSOURCE_COMP
+SCHEDULE THC_GRSource_orig IN GRSOURCE_COMP
 {
     LANG: C
 } "Computes the geometric source terms"

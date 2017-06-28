@@ -26,7 +26,7 @@
 
 #define SQ(X) ((X)*(X))
 
-extern "C" void THC_GRSource(CCTK_ARGUMENTS) {
+extern "C" void THC_GRSource_orig(CCTK_ARGUMENTS) {
     DECLARE_CCTK_ARGUMENTS
     DECLARE_CCTK_PARAMETERS
 

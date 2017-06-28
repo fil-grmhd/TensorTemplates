@@ -55,13 +55,16 @@ template <typename E1, typename E2>
 class arithmetic_expression_property_t
     : public general_tensor_property_t<typename E1::property_t::this_tensor_t> {
 public:
-  using symmetry_t = std::conditional<std::is_same<
-    					typename E1::property_t::symmetry_t, 
-					typename E2::property_t::symmetry_t>::value,
-				      typename E1::property_t::symmetry_t,
-				      generic_symmetry_t<E1::property_t::ndim,
-				                         E1::property_t::rank>
-				      >;
+  using symmetry_t = typename std::conditional<
+                                std::is_same<
+                                  typename E1::property_t::symmetry_t,
+                                  typename E2::property_t::symmetry_t
+                                >::value,
+                                typename E1::property_t::symmetry_t,
+		                            generic_symmetry_t<
+                                  E1::property_t::ndim,
+                                  E1::property_t::rank>
+                              >::type;
 
   static_assert(
       std::is_same<typename E1::property_t::frame_t,

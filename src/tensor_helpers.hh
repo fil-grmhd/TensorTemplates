@@ -25,7 +25,7 @@ template<typename E, typename T, size_t N, int... Ind>
 struct setter_t {
   static inline void set(E const& e, T & t) {
     // convert 1,...,ndof-1 to a generic index
-    constexpr size_t gen_index = E::symmetry_t::template index_to_generic<N>::value;
+    constexpr size_t gen_index = E::property_t::symmetry_t::template index_to_generic<N>::value;
 
     // computes (shifted) compressed index of t,
     // corresponding to (generic) compressed index of e

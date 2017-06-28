@@ -46,9 +46,8 @@ inline decltype(auto) contract( Tmetric const & metric_, E1 const &u, E2 const &
     return Tmetric::template metric_contraction<
         i1, i2,
         typename std::tuple_element<i1, typename E1::property_t::index_t>::type,
-        typename std::tuple_element<
-            i1, typename E2::property_t::index_t>::type,
-	E1,E2>::contract(metric_, u, v);
+        typename std::tuple_element<i1, typename E2::property_t::index_t>::type,
+	      E1,E2>::contract(metric_, u, v);
 };
 
 

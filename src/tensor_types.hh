@@ -35,7 +35,7 @@ using tensor_t = general_tensor_t<T, frame_t_, generic_symmetry_t<ndim_,sizeof..
 
 // Symmetric tensor in two indices of rank index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, size_t i0, size_t i1, typename... ranks>
-using sym_tensor_t = general_tensor_t<T, frame_t_, sym2_symmetry_t<ndim_,sizeof...(ranks),i0,i1>,
+using sym2_tensor_t = general_tensor_t<T, frame_t_, sym2_symmetry_t<ndim_,sizeof...(ranks),i0,i1>,
                                   sizeof...(ranks),
                                   std::tuple<ranks...>, ndim_>;
 
@@ -72,10 +72,10 @@ using cm_covector4_t = tensor_t<T, 4, comoving_t, lower_t>;
 template <typename T, typename... ranks>
 using cm_tensor4_t = tensor_t<T, 4, comoving_t, ranks...>;
 
-template <typename T, size_t i0, size_t i1, typename... ranks>
-using sym_tensor3_t = sym_tensor_t<T, 3, eulerian_t, i0, i1, ranks...>;
-template <typename T, size_t i0, size_t i1, typename... ranks>
-using sym_tensor4_t = sym_tensor_t<T, 4, eulerian_t, i0, i1, ranks...>;
+template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
+using sym_tensor3_t = sym2_tensor_t<T, 3, eulerian_t, i0, i1, ranks...>;
+template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
+using sym_tensor4_t = sym2_tensor_t<T, 4, eulerian_t, i0, i1, ranks...>;
 
 
 //metric

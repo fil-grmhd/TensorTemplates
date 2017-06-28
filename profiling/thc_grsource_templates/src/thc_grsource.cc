@@ -51,6 +51,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
 
     using namespace tensors;
+
     tensor_field_t<vector3_t<CCTK_REAL>> beta(betax,
                                               betay,
                                               betaz);
@@ -59,13 +60,9 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
                                                   rhs_scony,
                                                   rhs_sconz);
 
-    tensor_field_t<metric_tensor_t<double,3>> gamma(gxx,gxy,gxz,
-                                                    gxy,gyy,gyz,
-                                                    gxz,gyz,gzz);
+    tensor_field_t<sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t>> gamma(gxx,gxy,gxz,gyy,gyz,gzz);
 
-    tensor_field_t<tensor3_t<CCTK_REAL,lower_t,lower_t>> K(kxx,kxy,kxz,
-                                                           kxy,kyy,kyz,
-                                                           kxz,kyz,kzz);
+    tensor_field_t<sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t>> K(kxx,kxy,kxz,kyy,kyz,kzz);
 
     CCTK_REAL const dx  = CCTK_DELTA_SPACE(0);
     CCTK_REAL const dy  = CCTK_DELTA_SPACE(1);
@@ -86,7 +83,10 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             // contruct four metric and inverse
 // doesn't work (yet)
 //            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],gamma[ijk]);
-            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],evaluate(gamma[ijk]));
+//            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],evaluate(gamma[ijk]));
+
+            // metric still not defined as symmetric, constructor is choking if gamma is passed directly
+            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],metric_tensor_t<double,3>(gamma[ijk]));
 
 
             // Derivatives of the lapse, metric and shift
@@ -94,7 +94,8 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
                                         idy*cdiff_y(cctkGH, alp, i, j, k, fd_order),
                                         idz*cdiff_z(cctkGH, alp, i, j, k, fd_order));
 
-            tensor3_t<CCTK_REAL, upper_t, lower_t> dbeta;
+// maybe remove zero inits
+            tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta;
 
             dbeta.c<0,0>() = idx*cdiff_x(cctkGH, betax, i, j, k, fd_order);
             dbeta.c<1,0>() = idx*cdiff_x(cctkGH, betay, i, j, k, fd_order);
@@ -106,7 +107,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             dbeta.c<1,2>() = idz*cdiff_z(cctkGH, betay, i, j, k, fd_order);
             dbeta.c<2,2>() = idz*cdiff_z(cctkGH, betaz, i, j, k, fd_order);
 
-            tensor3_t<CCTK_REAL, lower_t, lower_t, lower_t> dgamma;
+            sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma;
 
             // we need a derivative expression...
             dgamma.c<0,0,0>() = idx*cdiff_x(cctkGH, gxx, i, j, k, fd_order);
@@ -128,43 +129,25 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             dgamma.c<1,2,2>() = idz*cdiff_z(cctkGH, gyz, i, j, k, fd_order);
             dgamma.c<2,2,2>() = idz*cdiff_z(cctkGH, gzz, i, j, k, fd_order);
 
-            // we need a symmetrizer / symmetric type
-            dgamma.c<1,0,0>() = dgamma.c<0,1,0>();
-            dgamma.c<2,0,0>() = dgamma.c<0,2,0>();
-            dgamma.c<2,1,0>() = dgamma.c<1,2,0>();
-
-            dgamma.c<1,0,1>() = dgamma.c<0,1,1>();
-            dgamma.c<2,0,1>() = dgamma.c<0,2,1>();
-            dgamma.c<2,1,1>() = dgamma.c<1,2,1>();
-
-            dgamma.c<1,0,2>() = dgamma.c<0,1,2>();
-            dgamma.c<2,0,2>() = dgamma.c<0,2,2>();
-            dgamma.c<2,1,2>() = dgamma.c<1,2,2>();
-
             // helpers to construct four metric derivative
-            auto g00i = - 2*dalp
-                        + 2*contract<0,0>(dbeta,contract<0,0>(gamma[ijk],beta[ijk]))
-                        + contract<0,0>(beta[ijk],contract<0,0>(beta[ijk],dgamma));
+            auto dg00i = - 2*dalp
+                         + 2*contract<0,0>(dbeta,contract<0,0>(gamma[ijk],beta[ijk]))
+                         + contract<0,0>(beta[ijk],contract<0,0>(beta[ijk],dgamma));
 
-            auto g0ji = contract<0,0>(gamma[ijk],dbeta)
-                      + contract<0,0>(dgamma,beta[ijk]);
+            auto dg0ji = contract<0,0>(gamma[ijk],dbeta)
+                       + contract<0,0>(dgamma,beta[ijk]);
 
             // gj0i is the same due to symmetry
             // gjki is dgamma
 
-            // four metric derivative, here some type of collective component set would be useful
             // initialized to zero
-            tensor4_t<CCTK_REAL, lower_t, lower_t, lower_t> dg;
-
+            sym_tensor4_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dg;
 
             // g00,i
-            dg.set<0,0,-2>(g00i);
+            dg.set<0,0,-2>(dg00i);
 
             // g0j,i
-            dg.set<0,-2,-2>(g0ji);
-
-            // gj0,i
-            dg.set<-2,0,-2>(g0ji);
+            dg.set<0,-2,-2>(dg0ji);
 
             // gjk,i
             dg.set<-2,-2,-2>(dgamma);
@@ -175,15 +158,18 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
                                           (alp[ijk]*velx[ijk] - betax[ijk])*u0,
                                           (alp[ijk]*vely[ijk] - betay[ijk])*u0,
                                           (alp[ijk]*velz[ijk] - betaz[ijk])*u0);
+            // construct tensor product
+            auto uu = sym2_cast(tensor_cat(u,u));
+            // inv metric still not symmetric
+            auto invmetric = sym2_cast(metric4d.invmetric);
 
             // construct em tensor
-            tensor4_t<CCTK_REAL, upper_t, upper_t> T = (rho[ijk]*(1+eps[ijk])+press[ijk])*tensor_cat(u,u)
-                                                     +  press[ijk]*metric4d.invmetric;
+            sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> T = (rho[ijk]*(1+eps[ijk])+press[ijk])*uu
+                                                           +  press[ijk]*invmetric;
 
             // slice expression to contain only the spatial components
-            auto rhs_scon_vec = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet*(trace<0,1>(
-                                                                           contract<0,0>(T,dg)
-                                                                         )));
+            auto rhs_scon_vec = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet
+                                         *(trace<0,1>(contract<0,0>(T,dg))));
 
             r_scon[ijk] = rhs_scon_vec;
 
@@ -192,10 +178,13 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
             auto Tij = slice<-2,-2>(T);
 
+            auto bb = sym2_cast(tensor_cat(beta[ijk],beta[ijk]));
+            auto T0ib = tensor_cat(T0i,beta[ijk]);
+
             rhs_tau[ijk] = alp[ijk] * metric4d.sqrtdet
                          * (trace<0,1>(
                               contract<0,0>(
-                                T.c<0,0>()*tensor_cat(beta[ijk],beta[ijk]) + 2 * tensor_cat(T0i,beta[ijk]) + Tij,
+                                T.c<0,0>()*bb + 2 * T0ib + Tij,
                                 K[ijk]
                               )
                             )

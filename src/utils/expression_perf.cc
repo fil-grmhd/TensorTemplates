@@ -11,18 +11,19 @@
 #define ARRAYS
 #define COMPARE
 
+#define SYMMETRIC
+
 #include "../tensor_templates.hh"
 
 int main(void) {
   using namespace tensors;
 //  constexpr size_t n = 30000000;
 //  constexpr size_t n = 100000;
-  constexpr size_t n = 1000;
+  constexpr size_t n = 500000;
 
 
   // init random gens
   std::random_device rd;
-//  std::minstd_rand gen(rd());
   std::mt19937_64 gen(rd());
 
   // uniform random number gen in 0,1
@@ -77,8 +78,13 @@ int main(void) {
             << " ms )." << std::endl;
 
 #ifdef TEMPLATES
-
+  #ifdef SYMMETRIC
+  using tensor_t = sym_tensor3_t<double,0,1,lower_t,upper_t>;
+  #else
   using tensor_t = tensor3_t<double,lower_t,upper_t>;
+  #endif
+
+
   using resulting_tensor_t = tensor3_t<double,upper_t,lower_t>;
   using vector_t = vector3_t<double>;
 
@@ -105,16 +111,16 @@ int main(void) {
 
   tensor_field_t<vector_t> contracted_vectors(&vrx[0],&vry[0],&vrz[0]);
 
-// these are always (slightly) faster on assignement, probably due to move semantics
-//  std::array<resulting_tensor_t,n> contracted_tensors;
-//  std::array<vector_t,n> contracted_vectors;
-
   std::array<double,n> traces;
 
   // random input tensor fields
+  #ifdef SYMMETRIC
+  tensor_field_t<tensor_t> tensor_field(&axx[0],&axy[0],&axz[0],&ayy[0],&ayz[0],&azz[0]);
+  #else
   tensor_field_t<tensor_t> tensor_field(&axx[0],&ayx[0],&azx[0],
                                         &axy[0],&ayy[0],&azy[0],
                                         &axz[0],&ayz[0],&azz[0]);
+  #endif
 
   tensor_field_t<vector_t> vector_field(&axx[0],&ayy[0],&azz[0]);
 
@@ -128,24 +134,14 @@ int main(void) {
     // evaluation is triggered in set_components
     auto contracted_tensor = contract<0,1>(tensor_field[i],tensor_field[i]);
 
-// more complicated expression
-//    auto contracted_tensor = contract<0,0>(tensor_field[i],
-//                                           contract<0,1>(tensor_field[i],
-//                                                         tensor_field[i]));
-
-  //  contracted_tensors.set_components(i,contracted_tensor);
+    // assignment triggers evaluation
     contracted_tensors[i] = contracted_tensor;
 
-// slightly faster, prob move semantics
-//    contracted_tensors[i] = contract<0,1>(tensor_field[i],tensor_field[i]);
 
     // contracted vector of dim = 3
-    // evaluation is triggered in set_components
+    // assignment triggers evaluation
     auto contracted_vector = contract<0,0>(tensor_field[i],vector_field[i]);
-    //contracted_vectors.set_components(i,contracted_vector);
     contracted_vectors[i] = contracted_vector;
-// slightly faster, prob move semantics
-//    contracted_vectors[i] = contract<0,0>(tensor_field[i],vector_field[i]);
 
     // traces of rank = 2 tensors
     traces[i] = trace<0,1>(tensor_field[i]);
@@ -185,7 +181,53 @@ int main(void) {
   t0 = std::chrono::high_resolution_clock::now();
 
   for(size_t i = 0; i<n; ++i) {
+    #ifdef SYMMETRIC
     // contracted tensor components
+    bxx[i] = axx[i]*axx[i]
+            +axy[i]*axy[i]
+            +axz[i]*axz[i];
+    bxy[i] = axx[i]*axy[i]
+            +axy[i]*ayy[i]
+            +axz[i]*ayz[i];
+    bxz[i] = axx[i]*axz[i]
+            +axy[i]*ayz[i]
+            +axz[i]*azz[i];
+
+    byx[i] = axy[i]*axx[i]
+            +ayy[i]*axy[i]
+            +ayz[i]*axz[i];
+    byy[i] = axy[i]*axy[i]
+            +ayy[i]*ayy[i]
+            +ayz[i]*ayz[i];
+    byz[i] = axy[i]*axz[i]
+            +ayy[i]*ayz[i]
+            +ayz[i]*azz[i];
+
+    bzx[i] = axz[i]*axx[i]
+            +ayz[i]*axy[i]
+            +azz[i]*axz[i];
+    bzy[i] = axz[i]*axy[i]
+            +ayz[i]*ayy[i]
+            +azz[i]*ayz[i];
+    bzz[i] = axz[i]*axz[i]
+            +ayz[i]*ayz[i]
+            +azz[i]*azz[i];
+
+    // contracted vector components
+    cx[i] = axx[i]*axx[i]
+           +axy[i]*ayy[i]
+           +axz[i]*azz[i];
+
+    cy[i] = axy[i]*axx[i]
+           +ayy[i]*ayy[i]
+           +ayz[i]*azz[i];
+
+    cz[i] = axz[i]*axx[i]
+           +ayz[i]*ayy[i]
+           +azz[i]*azz[i];
+
+    #else
+        // contracted tensor components
     bxx[i] = axx[i]*axx[i]
             +ayx[i]*axy[i]
             +azx[i]*axz[i];
@@ -228,7 +270,7 @@ int main(void) {
     cz[i] = axz[i]*axx[i]
            +ayz[i]*ayy[i]
            +azz[i]*azz[i];
-
+    #endif
     // traces of tensors
     d0[i] = axx[i] + ayy[i] + azz[i];
   }

@@ -29,11 +29,13 @@ class symmetry_cast_t
   E const &_v;
 
 public:
+  using symmetry_t = symmetry_t_;
+
   using property_t = general_tensor_property_t<
     		     general_tensor_t<
 		       typename E::property_t::data_t,
 		       typename E::property_t::frame_t,
-		       symmetry_t_,
+		       symmetry_t,
 		       E::property_t::rank,
 		       typename E::property_t::index_t,
 		       E::property_t::ndim>
@@ -47,12 +49,17 @@ public:
 
   template <size_t index>
   inline const typename E::property_t::data_t evaluate() const {
-    return _v.template evaluate<index>();
+    // cast generic index to symmetric one and back
+    // this makes sure, that always the same elements are accessed
+    constexpr size_t sym_index = symmetry_t::template index_from_generic<index>::value;
+    constexpr size_t gen_index = symmetry_t::template index_to_generic<sym_index>::value;
+
+    return _v.template evaluate<gen_index>();
   };
 };
 
 
-template<size_t i0, size_t i1, typename E>
+template<size_t i0 = 0, size_t i1 = 1, typename E>
 inline decltype(auto) sym2_cast(E const &v) {
     using symmetry_t = sym2_symmetry_t<
                          E::property_t::ndim,

@@ -20,7 +20,8 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 
   private:
     //! Reference to pointer array of underlying tensor field
-    std::array<data_t * const,ndof> const & ptr_array;
+//    std::array<data_t * const,ndof> const & ptr_array;
+    std::array<data_t * __restrict__ const,ndof> const & ptr_array;
 
     //! Internal (pointer) index
     size_t const ptr_index;
@@ -33,14 +34,11 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 
     [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
     inline decltype(auto) operator[](size_t i) const = delete;
-/*
-    inline decltype(auto) operator[](size_t i) const {
-      return ptr_array[i][ptr_index];
-    }
-*/
+
     template<size_t index>
     inline data_t const & evaluate() const {
-      return ptr_array[index][ptr_index];
+      constexpr size_t converted_index = property_t::symmetry_t::template index_from_generic<index>::value;
+      return ptr_array[converted_index][ptr_index];
     }
 
     template<typename E>
@@ -69,7 +67,8 @@ class tensor_field_t {
 
   private:
     //! Storage for ndof pointers
-    const std::array<data_t * const,ndof> ptr_array;
+//    const std::array<data_t * const,ndof> ptr_array;
+    const std::array<data_t * __restrict__ const,ndof> ptr_array;
 
   public:
     // Template recursion to set components, fastest for chained expressions
@@ -99,7 +98,8 @@ class tensor_field_t {
 */
     //! Constructor from pointer parameters
     template <typename... TArgs>
-    tensor_field_t(data_t * const first_elem, TArgs... elem)
+    tensor_field_t(data_t * __restrict__ const first_elem, TArgs... elem)
+//    tensor_field_t(data_t * const first_elem, TArgs... elem)
         : ptr_array({first_elem, elem...}) {
       static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
     };
@@ -120,18 +120,6 @@ class tensor_field_t {
       static_assert(std::is_same<typename T::property_t::symmetry_t, typename E::property_t::symmetry_t>::value,
                     "Please make sure that tensor expression and tensor field have the same symmetry.");
       setter_t<property_check::ndof-1,E>::set(i,e,ptr_array);
-
-/*      // calling this is slightly slower
-      set_component_impl(i,e,Indices{});
-*/
-
-/*      // slower than recursion for chained expressions, for whatever reason
-
-      // Create a tensor, triggers evaluation of any expression and does type checks
-      T t(e);
-      for(size_t k = 0; k<ndof; ++k)
-        ptr_array[k][i] = t[k];
-*/
     }
 };
 
