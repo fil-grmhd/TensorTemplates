@@ -83,10 +83,10 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             // contruct four metric and inverse
 // doesn't work (yet)
 //            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],gamma[ijk]);
-//            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],evaluate(gamma[ijk]));
+            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],evaluate(gamma[ijk]));
 
-            // metric still not defined as symmetric, constructor is choking if gamma is passed directly
-            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],metric_tensor_t<double,3>(gamma[ijk]));
+            // constructor is choking if gamma is passed directly
+//            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],metric_tensor_t<double,3>(gamma[ijk]));
 
 
             // Derivatives of the lapse, metric and shift
@@ -131,11 +131,11 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
             // helpers to construct four metric derivative
             auto dg00i = - 2*dalp
-                         + 2*contract<0,0>(dbeta,contract<0,0>(gamma[ijk],beta[ijk]))
-                         + contract<0,0>(beta[ijk],contract<0,0>(beta[ijk],dgamma));
+                         + 2*contract(dbeta,contract(gamma[ijk],beta[ijk]))
+                         + contract(beta[ijk],contract(beta[ijk],dgamma));
 
-            auto dg0ji = contract<0,0>(gamma[ijk],dbeta)
-                       + contract<0,0>(dgamma,beta[ijk]);
+            auto dg0ji = contract(gamma[ijk],dbeta)
+                       + contract(dgamma,beta[ijk]);
 
             // gj0i is the same due to symmetry
             // gjki is dgamma
@@ -161,29 +161,29 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             // construct tensor product
             auto uu = sym2_cast(tensor_cat(u,u));
             // inv metric still not symmetric
-            auto invmetric = sym2_cast(metric4d.invmetric);
+//            auto invmetric = sym2_cast(metric4d.invmetric);
 
             // construct em tensor
             sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> T = (rho[ijk]*(1+eps[ijk])+press[ijk])*uu
-                                                           +  press[ijk]*invmetric;
+                                                           +  press[ijk]*metric4d.invmetric;
 
             // slice expression to contain only the spatial components
             auto rhs_scon_vec = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet
-                                         *(trace<0,1>(contract<0,0>(T,dg))));
+                                         *(trace(contract(T,dg))));
 
             r_scon[ijk] = rhs_scon_vec;
 
             // slice em tensor
             auto T0i = slice<0,-2>(T);
 
-            auto Tij = slice<-2,-2>(T);
+            auto Tij = sym2_cast(slice<-2,-2>(T));
 
             auto bb = sym2_cast(tensor_cat(beta[ijk],beta[ijk]));
             auto T0ib = tensor_cat(T0i,beta[ijk]);
 
             rhs_tau[ijk] = alp[ijk] * metric4d.sqrtdet
-                         * (trace<0,1>(
-                              contract<0,0>(
+                         * (trace(
+                              contract(
                                 T.c<0,0>()*bb + 2 * T0ib + Tij,
                                 K[ijk]
                               )

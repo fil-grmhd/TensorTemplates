@@ -158,12 +158,25 @@ int main(){
     std::cout<<std::endl;
   }
 
+  sym_tensor3_t<double,0,1,upper_t,lower_t> D_sym(D);
+
+  std::cout << "D_sym = " << D_sym << std::endl;
+
   auto D_spatial = evaluate(slice<-2,-2>(D));
 
   std::cout << "D_sub = " << std::endl;
   for(int i=0; i<2; ++i){
     for(int j=0; j<2; ++j)
       std::cout << " "<< D_spatial[i+2*j] << " ";
+    std::cout<<std::endl;
+  }
+
+  auto D_sym_spatial = evaluate(generic_cast(evaluate(slice<-2,-2>(D_sym))));
+
+  std::cout << "D_sym_sub = " << std::endl;
+  for(int i=0; i<2; ++i){
+    for(int j=0; j<2; ++j)
+      std::cout << " "<< D_sym_spatial[i+2*j] << " ";
     std::cout<<std::endl;
   }
 
@@ -245,7 +258,6 @@ int main(){
   std::cout << "F(1,2) = " << F.c<1,2>() << std::endl;
 
   auto G = evaluate(slice<-1,1>(F));
-  G.c<1>() = 1337;
   std::cout << "G(1) = " << G.c<1>() << std::endl;
 
   tensor3_t<double,upper_t,upper_t> ab = tensor_cat(a,b);
@@ -394,9 +406,22 @@ auto sym_contract1 = evaluate(contract<0,1>(sym_tensor4,from_sym4));
 auto sym_contract2 = evaluate(contract<0,1>(sym_tensor3,sym_tensor3));
 auto sym_contract3 = evaluate(contract<0,1>(sym_tensor4,sym_tensor4));
 
-std::cout << "Generic and symmetric contraction are the same: "
+auto gen_contract0 = evaluate(contract<0,1>(from_sym3,from_sym3));
+auto gen_contract1 = evaluate(contract<0,1>(from_sym4,from_sym4));
+
+std::cout << "Mixed generic and symmetric contraction are the same: "
           << sym_contract0.compare_components<14>(sym_contract2).first << " "
           << sym_contract1.compare_components<14>(sym_contract3).first << std::endl;
+
+std::cout << "Generic and symmetric contraction are the same: "
+          << sym_contract2.compare_components<14>(gen_contract0).first << " "
+          << sym_contract3.compare_components<14>(gen_contract1).first << std::endl;
+
+double trace_sym = trace(sym_tensor3);
+double trace_gen = trace(from_sym3);
+
+std::cout << "Trace of sym and gen tensors: " << trace_sym << " " << trace_gen << std::endl;
+std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym3)::ndof << std::endl;
 
 }
 
