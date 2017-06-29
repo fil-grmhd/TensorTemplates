@@ -50,7 +50,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 
       static_assert(std::is_same<typename T::property_t::symmetry_t, typename E::property_t::symmetry_t>::value,
                     "Please make sure that tensor expression and tensor field have the same symmetry.");
-      tensor_field_t<T>::template setter_t<property_check::ndof-1,E>::set(ptr_index,e,ptr_array);
+      tensor_field_t<T>::template setter_t<E::property_t::ndof-1,E>::set(ptr_index,e,ptr_array);
     }
 };
 
@@ -114,12 +114,12 @@ class tensor_field_t {
     inline void set_components(size_t const i, E const &e) {
       // this is only a check of compatibility of T and E
       using property_check = arithmetic_expression_property_t<T,E>;
-      // evaluate expression for every component
+      // evaluate expression for every component ndof
       // and set GFs at index i to that value
 
       static_assert(std::is_same<typename T::property_t::symmetry_t, typename E::property_t::symmetry_t>::value,
                     "Please make sure that tensor expression and tensor field have the same symmetry.");
-      setter_t<property_check::ndof-1,E>::set(i,e,ptr_array);
+      setter_t<E::property_t::ndof-1,E>::set(i,e,ptr_array);
     }
 };
 
