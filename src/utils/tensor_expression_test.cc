@@ -284,6 +284,28 @@ double norm2_am1 = contract<0,0>(metric,am1,am1);
 
 std::cout << "norm2 am1 :" << norm2_am1 <<std::endl;
 
+// 4-dim metric
+
+metric4_t<double> metric4(lapse, std::move(shift), std::move(mt));
+std::cout << "Inverse metric4" << metric4.invmetric <<std::endl;
+std::cout << "metric4" << metric4.metric <<std::endl;
+std::cout << "sqrt(gamma)" << metric4.sqrtdet <<std::endl;
+
+vector4_t<double> am14 {-11.,12.,13.,14.};
+covector4_t<double> bm14 = lower_index<0>(metric4, am14);
+vector4_t<double> cm14 = raise_index<0>(metric4, bm14);
+
+std::cout << "am14 upper_t" << am14 <<std::endl;
+std::cout << "am14 lower_t" << bm14 <<std::endl;
+std::cout << "raised again" << cm14 <<std::endl;
+
+double norm2_am14 = contract<0,0>(metric4,am14,am14);
+
+std::cout << "norm2 am14 :" << norm2_am14 <<std::endl;
+
+
+
+
 // Symmetry of two indices
 sym_tensor3_t<double,0,1,upper_t,lower_t> sym_tensor3;
 sym_tensor4_t<double,0,1,upper_t,lower_t> sym_tensor4;

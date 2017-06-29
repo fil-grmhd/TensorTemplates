@@ -51,6 +51,8 @@ public:
   inline const typename E::property_t::data_t evaluate() const {
     // cast generic index to symmetric one and back
     // this makes sure, that always the same elements are accessed
+    // i.e. sym2_cast(generic_tensor).evaluate<index>() with index = compress(2,1)
+    // should always end up at index = compress(1,2)
     constexpr size_t sym_index = symmetry_t::template index_from_generic<index>::value;
     constexpr size_t gen_index = symmetry_t::template index_to_generic<sym_index>::value;
 

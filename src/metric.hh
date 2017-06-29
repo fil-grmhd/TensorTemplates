@@ -54,10 +54,8 @@ inline decltype(auto) contract( Tmetric const & metric_, E1 const &u, E2 const &
 
 template <typename data_t, size_t ndim, typename dim_specialization_t> class metric_t {
 public:
-  using metric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, sym2_symmetry_t<ndim,2>, 2, std::tuple<lower_t, lower_t>, ndim>;
-  using invmetric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, sym2_symmetry_t<ndim,2>, 2, std::tuple<upper_t, upper_t>, ndim>;
+  using metric_tensor_t = metric_tensor_t<data_t,ndim>;
+  using invmetric_tensor_t = invmetric_tensor_t<data_t,ndim>;
   using shift_t = vector3_t<data_t>; //Note that we are assume a 3+1 split where dim(shift) = 3 always!
 
 
@@ -84,6 +82,9 @@ public:
            data_t sqrtdet3) : lapse(lapse_), metric(std::move(metric_)),
   	   invmetric(std::move(invmetric_)), sqrtdet(sqrtdet3), shift(std::move(shift_)) {};
 
+ metric_t() = default;
+
+/*
   metric_t(data_t lapse_, shift_t&&  shift_, metric_tensor_t&& metric_ ) : lapse(lapse_), metric(std::move(metric_)),
   	   shift(std::move(shift_)) {
 
@@ -93,7 +94,7 @@ public:
 	  //But for consistency we store only sqrt(gamma) here!
 	  sqrtdet=sqrt(sqrtdet); //Now we fix this.
   };
-
+*/
   // FIXME maybe we should change the name here, since we also have a
   // metric_contraction_t
   //      for raising and lowering now!
@@ -165,6 +166,19 @@ public:
 
   using super = metric_t<data_t,3,metric3_t<data_t>>;
 
+  metric3_t(data_t lapse_, shift_t&&  shift_, metric_tensor_t&& metric_ ) {
+
+    super::lapse = lapse_;
+    super::shift = std::move(shift_);
+    super::metric = std::move(metric_);
+    super::sqrtdet = compute_det(); //sqrtdet now stores det!!
+	  compute_inverse_metric();
+    //Note also that sqrt(g) = lapse * sqrt(gamma)!
+	  //But for consistency we store only sqrt(gamma) here!
+	  super::sqrtdet=sqrt(super::sqrtdet); //Now we fix this.
+  };
+
+
   inline void compute_inverse_metric();
   //NOTE: This has to be stored in sqrtdet! And the sqrt has to be taken separately
   inline data_t compute_det();
@@ -177,11 +191,8 @@ public:
   using invmetric_tensor_t = typename metric_t<data_t,4,metric4_t<data_t>>::invmetric_tensor_t;
   using shift_t = typename metric_t<data_t,4,metric4_t<data_t>>::shift_t;
 
-  // SYM: make these symmetric
-  using metric_tensor3_t =
-      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<3,2>, 2, std::tuple<lower_t, lower_t>, 3>;
-  using invmetric_tensor3_t =
-      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<3,2>, 2, std::tuple<upper_t, upper_t>, 3>;
+  using metric_tensor3_t = typename metric_t<data_t,3,metric3_t<data_t>>::metric_tensor_t;
+  using invmetric_tensor3_t = typename metric_t<data_t,3,metric3_t<data_t>>::invmetric_tensor_t;
 
   using metric_t<data_t,4,metric4_t<data_t>>::metric_t; //Inherit constructors
   using super = metric_t<data_t,4,metric4_t<data_t>>;

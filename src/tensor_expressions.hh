@@ -42,12 +42,18 @@ public:
     return static_cast<E const &>(*this).template evaluate<index>();
   };
 
-  //! Natural index access of tensor expression E
-  //  Expects always a generic compressed index.
+  //! (generic) compressed index access to components of tensor expression E
+  //  Calls evaluation, which can be expensive, if the expression is not evaluated yet.
+  template<size_t index>
+  inline decltype(auto) compressed_c() {
+    return static_cast<E const &>(*this).template evaluate<index>();
+  }
+
+  //! Natural index access to components of tensor expression E
   //  Calls evaluation, which can be expensive, if the expression is not evaluated yet.
   template <size_t... Ind>
   inline decltype(auto) c() {
-    return static_cast<E const &>(*this).template evaluate<
+    return static_cast<E const &>(*this).template compressed_c<
                                            generic_symmetry_t<
                                              E::property_t::ndim,
                                              E::property_t::rank
