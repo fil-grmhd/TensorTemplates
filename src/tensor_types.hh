@@ -78,14 +78,13 @@ template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
 using sym_tensor4_t = sym2_tensor_t<T, 4, eulerian_t, i0, i1, ranks...>;
 
 
-//metric
-// SYM: make this symmetric
+// metric types
 template<typename data_t, size_t ndim>
 using metric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<ndim,2>, 2, std::tuple<lower_t, lower_t>, ndim>;
+      general_tensor_t<data_t, any_frame_t, sym2_symmetry_t<ndim,2>, 2, std::tuple<lower_t, lower_t>, ndim>;
 template<typename data_t, size_t ndim>
 using invmetric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<ndim,2>, 2, std::tuple<upper_t, upper_t>, ndim>;
+      general_tensor_t<data_t, any_frame_t, sym2_symmetry_t<ndim,2>, 2, std::tuple<upper_t, upper_t>, ndim>;
 
 } // namespace tensors
 

@@ -37,7 +37,9 @@ struct setter_t {
                                  Ind...
                                >::value;
 
-    t[T::symmetry_t::template index_from_generic<c_index>::value] = e.template evaluate<gen_index>();
+    // compressed element of generic index, index is transformed internally
+    // this is necessary, because evaluate gives a const ref which is not assignable
+    t.template compressed_c<c_index>() = e.template evaluate<gen_index>();
     setter_t<E,T,N-1,Ind...>::set(e,t);
   }
 };
@@ -52,7 +54,7 @@ struct setter_t<E,T,0,Ind...> {
                                  Ind...
                                >::value;
 
-    t[T::symmetry_t::template index_from_generic<c_index>::value] = e.template evaluate<0>();
+    t.template compressed_c<c_index>() = e.template evaluate<0>();
   }
 };
 

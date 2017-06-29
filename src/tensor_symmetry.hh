@@ -34,6 +34,11 @@ struct generic_symmetry_t {
   //! Computes the compressed index given template parameter indices
   template <size_t a, size_t... indices>
   struct compressed_index {
+    static_assert(utilities::all_true<(indices < ndim)...>::value,
+                  "Trying to access index > ndim!");
+    static_assert(a < ndim,
+                  "Trying to access index > ndim!");
+
     static constexpr size_t value =
         compressed_index<indices...>::value * ndim + a;
   };
@@ -57,12 +62,18 @@ struct generic_symmetry_t {
   //  Does nothing, index is already a generic compressed index
   template <size_t index>
   struct index_to_generic {
+    static_assert(index < ndof,
+                  "Compressed index >= ndof, running out of bounds.");
+
     static constexpr size_t value = index;
   };
   //! Index transformation given compressed index of generic type
   //  Does nothing, index is already a generic compressed index
   template <size_t index>
   struct index_from_generic {
+    static_assert(index < ndof,
+                  "Compressed index >= ndof, running out of bounds.");
+
     static constexpr size_t value = index;
   };
 
@@ -70,6 +81,9 @@ struct generic_symmetry_t {
   //  In this case there is no symmetry, thus it is always preserved
   template <size_t i_red>
   struct is_reduction_symmetric {
+    static_assert(i_red < rank,
+                  "Reduced index > rank - 1, running out of bounds.");
+
     static constexpr bool value = true;
   };
 };
@@ -80,7 +94,7 @@ struct generic_symmetry_t {
 //  Represents a symmetry of the two indices i0,i1
 ///////////////////////////////////////////////////////////////////////////////
 
-template<size_t ndim, size_t rank, size_t i0, size_t i1>
+template<size_t ndim, size_t rank, size_t i0 = 0, size_t i1 = 1>
 struct sym2_symmetry_t {
   //! Compile-time constant ndof
   static constexpr size_t ndof = utilities::static_pow<ndim,rank-1>::value*(ndim+1)/2;
@@ -97,13 +111,15 @@ struct sym2_symmetry_t {
   // Internal compressed index transformation, based on symmetric index positions.
   // i0 and i1 are (internally) always shifted to be the first two indices
   // and sorted to ascending order.
-  // This computes the compressed index part of one uncomp_index at index_pos.
+  // This computes the compressed index part of uncomp_index at index_pos.
   template <size_t uncomp_index, size_t ind0, size_t ind1, size_t index_pos>
   struct compress_single_index {
   private:
+    // Are index values of symmetric indices in ascending order?
     static constexpr bool asc = ind0 < ind1;
+    // Compress symmetric part depending on order
     static constexpr size_t c_ind0 =  !(asc) ? ind0 : (ind0 * ndim - ind0*(ind0 + 1) / 2);
-    static constexpr size_t c_ind1 =   asc ? ind1  : (ind1 * ndim - ind1*(ind1 + 1) / 2);
+    static constexpr size_t c_ind1 =   asc   ? ind1  : (ind1 * ndim - ind1*(ind1 + 1) / 2);
   public:
     static constexpr size_t value = (i0 == index_pos)
                                    *(c_ind0)
@@ -114,10 +130,16 @@ struct sym2_symmetry_t {
                                    * utilities::static_pow<ndim,index_pos - (index_pos > i0) - (index_pos > i1)>::value);
   };
 
-  // Internal compressed index transformation, based on symmetric index positions
+  //! Internal compressed index transformation, based on symmetric index positions
   // i0 and i1 are (internally) always shifted to be the first two indices
+  // CHECK: Could be simplified, if one collects the i0,i1 values beforehand
   template <size_t N_sym, size_t i0_val, size_t i1_val, size_t a, size_t... indices>
   struct compressed_index_impl {
+    static_assert(utilities::all_true<(indices < ndim)...>::value,
+                  "Trying to access index > ndim!");
+    static_assert(a < ndim,
+                  "Trying to access index > ndim!");
+
     static constexpr size_t index_pos = rank - (sizeof...(indices) + 1);
     static constexpr size_t value = (i0 == index_pos)
                                    *(compressed_index_impl<N_sym+1,a,i1_val,indices...>::value)
@@ -129,6 +151,7 @@ struct sym2_symmetry_t {
                                     + compressed_index_impl<N_sym,i0_val,i1_val,indices...>::value
                                     );
   };
+  // termination
   template <size_t N_sym, size_t i0_val, size_t i1_val, size_t a>
   struct compressed_index_impl<N_sym,i0_val,i1_val,a> {
     static constexpr size_t value = (N_sym == 1)
@@ -152,6 +175,9 @@ struct sym2_symmetry_t {
   template <size_t a, size_t... indices>
   struct compressed_index {
     static constexpr size_t value = compressed_index_impl<0,0,0,a,indices...>::value;
+
+    static_assert(value < ndof,
+                  "Compressed index >= ndof, running out of bounds.");
   };
 
 
@@ -173,12 +199,20 @@ struct sym2_symmetry_t {
   template <size_t index>
   struct uncompress_smaller {
     static constexpr size_t value = uncompress_smaller_impl<0,index>::value;
+
+    static_assert(value < ndim,
+                  "Uncompressed index > ndim!");
   };
 
-  //! Uncompresses single index of position index_pos from compressed index
-  //! index
+  //! Uncompresses single index of position index_pos from
+  //! (symmetric) compressed index index
   template <size_t index_pos, size_t index>
   struct uncompress_index {
+    static_assert(index_pos < rank,
+                  "Trying to uncompress index of index position > (rank - 1)!");
+    static_assert(index < ndof,
+                  "Compressed index >= ndof!");
+
   private:
     // divisor to get non-symmetric compressed index part
     static constexpr size_t div = utilities::static_pow<
@@ -201,6 +235,11 @@ struct sym2_symmetry_t {
        *ind1
       + ((index_pos != i0) && (index_pos != i1))
        *((index / div) % ndim);
+
+    static_assert(ind0 < ndim,
+                  "Lower symmetric index >= ndim!");
+    static_assert(ind1 < ndim,
+                  "Higher symmetric index >= ndim!");
   };
 
   //! Template recursion to transform from symmetric compressed to generic compressed index
@@ -246,18 +285,27 @@ struct sym2_symmetry_t {
   //! resulting in a generic compressed index
   template <size_t index>
   struct index_to_generic {
+    static_assert(index < ndof,
+                  "Compressed index >= ndof, running out of bounds.");
+
     static constexpr size_t value = transform_sym2_impl<rank-1,index>::value;
   };
   //! Index transformation given compressed index of generic type,
   //! resulting in a sym2 compressed index
   template <size_t index>
   struct index_from_generic {
+    static_assert(index < generic_symmetry_t<ndim,rank>::ndof,
+                  "Compressed index >= ndof, running out of bounds.");
+
     static constexpr size_t value = transform_gen_impl<rank-1,index>::value;
   };
 
   //! Returns true if reduction of index i_red preserves this symmetry
   template <size_t i_red>
   struct is_reduction_symmetric {
+    static_assert(i_red < rank,
+                  "Reduced index > rank - 1, running out of bounds.");
+
     static constexpr bool value = (i_red != i0) && (i_red != i1);
   };
 };

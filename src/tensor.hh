@@ -113,8 +113,14 @@ public:
 
   general_tensor_t() : m_data({0}){};
 
-  //! Computes the compressed index associated with the given indices
-  //! one would need to cusomize this if one wants to implement symmetries
+  // CHECK: make this a var template
+
+  //! Computes the GENERIC compressed index associated with the given indices
+  //  All members are expecting a generic compressed index,
+  //  which is then transformed internally.
+  //  This makes it easier to write generic tensor expressions.
+  //  The symmetry dependence of ndof makes sure that only ndof expressions
+  //  are evaluated, when a tensor is instantiated.
   template <size_t a, size_t... indices>
   static inline constexpr size_t compressed_index() {
     static_assert(rank == sizeof...(indices) + 1,
@@ -122,21 +128,40 @@ public:
     static_assert(utilities::all_true<(indices < ndim)...>::value,
                   "Trying to access index > ndim!");
 
-    return symmetry_t::template compressed_index<a, indices...>::value;
+    return generic_symmetry_t<ndim,rank>::template compressed_index<a, indices...>::value;
   }
 
-  //! Access the components of a tensor using a compressed index
-  /*!
-   *  The data is stored in a column major format
-   */
-  inline T &operator[](size_t const a) { return m_data[a]; }
-  //! Access the components of a tensor using a compressed index
-  /*!
-   *  The data is stored in a column major format
-   */
-  inline T const &operator[](size_t const a) const { return m_data[a]; }
+  //! Access the components of a tensor using (compile-time) natural indices
+  //  This gives back a non-const reference, since this is a evaluated expression
+  template <size_t... Ind>
+  inline data_t & c() {
+    return this->compressed_c<compressed_index<Ind...>()>();
+  };
+
+  //! Get component reference at (generic) compressed index position
+  //  Needed if one wants to assign something to a specific element,
+  //  given a generic compressed index.
+  template<size_t index>
+  inline T & compressed_c() {
+    return m_data[symmetry_t::template index_from_generic<index>::value];
+  }
+
+// CHECK: OBSOLETE but still used in expressions test, we should convert that and remove this
+// in that case we also need to remove it in expression base class
+  //! Access the components of a tensor using a (generic) compressed index
+  inline T &operator[](size_t const a) {
+    return m_data[a];
+//    return m_data[symmetry_t::template index_from_generic<a>::value];
+  }
+  //! Access the components of a tensor using a (generic) compressed index
+  inline T const &operator[](size_t const a) const {
+    return m_data[a];
+//    return m_data[symmetry_t::template index_from_generic<a>::value];
+  }
 
   //! Evaluation routine for expression templates
+  //  This is ALWAYS expecting index to be a GENERIC compressed index,
+  //  which is then transformed to the respective symmetry compressed index
   template <size_t index> inline T const & evaluate() const {
     return m_data[symmetry_t::template index_from_generic<index>::value];
   }

@@ -24,18 +24,6 @@
 
 namespace tensors {
 
-//! Computes the compressed index of a tuple of indices
-template <size_t ndim, typename tuple_t,
-          size_t N = std::tuple_size<tuple_t>::value - 1>
-static inline constexpr size_t compressed_index_tuple(tuple_t t) {
-  return (N == 0)
-             ? std::get<std::tuple_size<tuple_t>::value - 1>(t)
-             : compressed_index_tuple<ndim, tuple_t, (N - 1) * (N > 0)>(t) *
-                       ndim +
-                   std::get<(std::tuple_size<tuple_t>::value - 1 - N) *
-                            (N > 0)>(t);
-}
-
 // Count number of free indices, defined by an index < 0
 template <int i0, int... Indices>
 struct count_free_indices {

@@ -54,11 +54,10 @@ inline decltype(auto) contract( Tmetric const & metric_, E1 const &u, E2 const &
 
 template <typename data_t, size_t ndim, typename dim_specialization_t> class metric_t {
 public:
-  // SYM: make these symmetric
   using metric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<ndim,2>, 2, std::tuple<lower_t, lower_t>, ndim>;
+      general_tensor_t<data_t, any_frame_t, sym2_symmetry_t<ndim,2>, 2, std::tuple<lower_t, lower_t>, ndim>;
   using invmetric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, generic_symmetry_t<ndim,2>, 2, std::tuple<upper_t, upper_t>, ndim>;
+      general_tensor_t<data_t, any_frame_t, sym2_symmetry_t<ndim,2>, 2, std::tuple<upper_t, upper_t>, ndim>;
   using shift_t = vector3_t<data_t>; //Note that we are assume a 3+1 split where dim(shift) = 3 always!
 
 
@@ -169,18 +168,6 @@ public:
   inline void compute_inverse_metric();
   //NOTE: This has to be stored in sqrtdet! And the sqrt has to be taken separately
   inline data_t compute_det();
-
-/*
-  metric3_t(data_t lapse_, shift_t&&  shift_, metric_tensor_t&& metric_ ) : super::lapse(lapse_), super::metric(std::move(metric_)),
-  	   super::shift(std::move(shift_)) {
-
-    super::sqrtdet = compute_det(); //sqrtdet now stores det!!
-	  compute_inverse_metric();
-    //Note also that sqrt(g) = lapse * sqrt(gamma)!
-	  //But for consistency we store only sqrt(gamma) here!
-	  super::sqrtdet=sqrt(super::sqrtdet); //Now we fix this.
-  };
-*/
 };
 
 template<typename data_t>
@@ -198,9 +185,6 @@ public:
 
   using metric_t<data_t,4,metric4_t<data_t>>::metric_t; //Inherit constructors
   using super = metric_t<data_t,4,metric4_t<data_t>>;
-
-  //Additional constructor
-//  metric4_t(data_t lapse_, shift_t&&  shift_, metric_tensor3_t&& metric_);
 
   inline void compute_metric4_from3(metric_tensor3_t& metric3);
   inline void compute_inverse_metric();
@@ -229,6 +213,8 @@ inline data_t metric3_t<data_t>::compute_det(){
   data_t& sqrtdet =super::sqrtdet;
   invmetric_tensor_t& invmetric= super::invmetric;
 
+  // this must be a generic compressed index, because evaluate expects one
+  // symmetry transformation is done internally
   constexpr size_t GXX = metric_tensor_t::template compressed_index<0,0>();
   constexpr size_t GXY = metric_tensor_t::template compressed_index<0,1>();
   constexpr size_t GXZ = metric_tensor_t::template compressed_index<0,2>();
@@ -278,29 +264,23 @@ inline void metric3_t<data_t>::compute_inverse_metric(){
   data_t& sqrtdet =super::sqrtdet;
   invmetric_tensor_t& invmetric= super::invmetric;
 
+  // this must be a generic compressed index, because evaluate expects one
+  // symmetry transformation is done internally
   constexpr size_t GXX = metric_tensor_t::template compressed_index<0,0>();
   constexpr size_t GXY = metric_tensor_t::template compressed_index<0,1>();
   constexpr size_t GXZ = metric_tensor_t::template compressed_index<0,2>();
-  constexpr size_t GYX = metric_tensor_t::template compressed_index<1,0>();
   constexpr size_t GYY = metric_tensor_t::template compressed_index<1,1>();
   constexpr size_t GYZ = metric_tensor_t::template compressed_index<1,2>();
-  constexpr size_t GZX = metric_tensor_t::template compressed_index<2,0>();
-  constexpr size_t GZY = metric_tensor_t::template compressed_index<2,1>();
   constexpr size_t GZZ = metric_tensor_t::template compressed_index<2,2>();
 
     //IMPORTANT:   We are deliberately storing det in sqrtdet and take the square-root later in the initialisation
-    invmetric[GXX] = (-this->SQ(metric.template evaluate<GYZ>()) + metric.template evaluate<GYY>() * metric.template evaluate<GZZ>()) / sqrtdet;
-    invmetric[GXY] = ((metric.template evaluate<GYZ>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXY>() * metric.template evaluate<GZZ>()) / sqrtdet;
-    invmetric[GYY] = (-this->SQ(metric.template evaluate<GXZ>()) + metric.template evaluate<GXX>() * metric.template evaluate<GZZ>()) / sqrtdet;
-    invmetric[GXZ] =
+    invmetric.template compressed_c<GXX>() = (-this->SQ(metric.template evaluate<GYZ>()) + metric.template evaluate<GYY>() * metric.template evaluate<GZZ>()) / sqrtdet;
+    invmetric.template compressed_c<GXY>() = ((metric.template evaluate<GYZ>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXY>() * metric.template evaluate<GZZ>()) / sqrtdet;
+    invmetric.template compressed_c<GYY>() = (-this->SQ(metric.template evaluate<GXZ>()) + metric.template evaluate<GXX>() * metric.template evaluate<GZZ>()) / sqrtdet;
+    invmetric.template compressed_c<GXZ>() =
         (-(metric.template evaluate<GXZ>() * metric.template evaluate<GYY>()) + metric.template evaluate<GXY>() * metric.template evaluate<GYZ>()) / sqrtdet;
-    invmetric[GYZ] = ((metric.template evaluate<GXY>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXX>() * metric.template evaluate<GYZ>()) / sqrtdet;
-    invmetric[GZZ] = (-this->SQ(metric.template evaluate<GXY>()) + metric.template evaluate<GXX>() * metric.template evaluate<GYY>()) / sqrtdet;
-
-    //Symmetrize
-    invmetric[GYX] = invmetric.template evaluate<GXY>();
-    invmetric[GZX] = invmetric.template evaluate<GXZ>();
-    invmetric[GZY] = invmetric.template evaluate<GYZ>();
+    invmetric.template compressed_c<GYZ>() = ((metric.template evaluate<GXY>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXX>() * metric.template evaluate<GYZ>()) / sqrtdet;
+    invmetric.template compressed_c<GZZ>() = (-this->SQ(metric.template evaluate<GXY>()) + metric.template evaluate<GXX>() * metric.template evaluate<GYY>()) / sqrtdet;
 
 };
 
@@ -313,61 +293,44 @@ inline void metric4_t<data_t>::compute_inverse_metric(){
   data_t& sqrtdet =super::sqrtdet;
   invmetric_tensor_t& invmetric= super::invmetric;
 
+  // this must be a generic compressed index, because evaluate expects one
+  // symmetry transformation is done internally
   constexpr size_t GTT = metric_tensor_t::template compressed_index<0,0>();
   constexpr size_t GTX = metric_tensor_t::template compressed_index<0,1>();
   constexpr size_t GTY = metric_tensor_t::template compressed_index<0,2>();
   constexpr size_t GTZ = metric_tensor_t::template compressed_index<0,3>();
-  constexpr size_t GXT = metric_tensor_t::template compressed_index<1,0>();
-  constexpr size_t GYT = metric_tensor_t::template compressed_index<2,0>();
-  constexpr size_t GZT = metric_tensor_t::template compressed_index<3,0>();
 
   constexpr size_t GXX = metric_tensor_t::template compressed_index<1,1>();
   constexpr size_t GXY = metric_tensor_t::template compressed_index<1,2>();
   constexpr size_t GXZ = metric_tensor_t::template compressed_index<1,3>();
-  constexpr size_t GYX = metric_tensor_t::template compressed_index<2,1>();
   constexpr size_t GYY = metric_tensor_t::template compressed_index<2,2>();
   constexpr size_t GYZ = metric_tensor_t::template compressed_index<2,3>();
-  constexpr size_t GZX = metric_tensor_t::template compressed_index<3,1>();
-  constexpr size_t GZY = metric_tensor_t::template compressed_index<3,2>();
   constexpr size_t GZZ = metric_tensor_t::template compressed_index<3,3>();
 
 
-  invmetric[GTT] = -1./this->SQ(lapse);
-  invmetric[GTX] = -invmetric.template evaluate<GTT>()*shift.template evaluate<0>();
-  invmetric[GTY] = -invmetric.template evaluate<GTT>()*shift.template evaluate<1>();
-  invmetric[GTZ] = -invmetric.template evaluate<GTT>()*shift.template evaluate<2>();
+  invmetric.template compressed_c<GTT>() = -1./this->SQ(lapse);
+  invmetric.template compressed_c<GTX>() = -invmetric.template evaluate<GTT>()*shift.template evaluate<0>();
+  invmetric.template compressed_c<GTY>() = -invmetric.template evaluate<GTT>()*shift.template evaluate<1>();
+  invmetric.template compressed_c<GTZ>() = -invmetric.template evaluate<GTT>()*shift.template evaluate<2>();
 
   //IMPORTANT:   We are deliberately storing det in sqrtdet and take the square-root later in the initialisation
-  invmetric[GXX] = (-this->SQ(metric.template evaluate<GYZ>()) + metric.template evaluate<GYY>() * metric.template evaluate<GZZ>()) / sqrtdet;
-  invmetric[GXY] = ((metric.template evaluate<GYZ>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXY>() * metric.template evaluate<GZZ>()) / sqrtdet;
-  invmetric[GYY] = (-this->SQ(metric.template evaluate<GXZ>()) + metric.template evaluate<GXX>() * metric.template evaluate<GZZ>()) / sqrtdet;
-  invmetric[GXZ] =
+  invmetric.template compressed_c<GXX>() = (-this->SQ(metric.template evaluate<GYZ>()) + metric.template evaluate<GYY>() * metric.template evaluate<GZZ>()) / sqrtdet;
+  invmetric.template compressed_c<GXY>() = ((metric.template evaluate<GYZ>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXY>() * metric.template evaluate<GZZ>()) / sqrtdet;
+  invmetric.template compressed_c<GYY>() = (-this->SQ(metric.template evaluate<GXZ>()) + metric.template evaluate<GXX>() * metric.template evaluate<GZZ>()) / sqrtdet;
+  invmetric.template compressed_c<GXZ>() =
       (-(metric.template evaluate<GXZ>() * metric.template evaluate<GYY>()) + metric.template evaluate<GXY>() * metric.template evaluate<GYZ>()) / sqrtdet;
-  invmetric[GYZ] = ((metric.template evaluate<GXY>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXX>() * metric.template evaluate<GYZ>()) / sqrtdet;
-  invmetric[GZZ] = (-this->SQ(metric.template evaluate<GXY>()) + metric.template evaluate<GXX>() * metric.template evaluate<GYY>()) / sqrtdet;
+  invmetric.template compressed_c<GYZ>() = ((metric.template evaluate<GXY>() * metric.template evaluate<GXZ>()) - metric.template evaluate<GXX>() * metric.template evaluate<GYZ>()) / sqrtdet;
+  invmetric.template compressed_c<GZZ>() = (-this->SQ(metric.template evaluate<GXY>()) + metric.template evaluate<GXX>() * metric.template evaluate<GYY>()) / sqrtdet;
 
 
-  invmetric[GXX] += invmetric[GTT]*shift.template evaluate<0>()*shift.template evaluate<0>();
-  invmetric[GXY] += invmetric[GTT]*shift.template evaluate<0>()*shift.template evaluate<1>();
-  invmetric[GXZ] += invmetric[GTT]*shift.template evaluate<0>()*shift.template evaluate<2>();
-  invmetric[GYY] += invmetric[GTT]*shift.template evaluate<1>()*shift.template evaluate<1>();
-  invmetric[GYZ] += invmetric[GTT]*shift.template evaluate<1>()*shift.template evaluate<2>();
-  invmetric[GZZ] += invmetric[GTT]*shift.template evaluate<2>()*shift.template evaluate<2>();
-
-
-
-  //Symmetrize
-
-  invmetric[GXT] = invmetric.template evaluate<GTX>();
-  invmetric[GYT] = invmetric.template evaluate<GTY>();
-  invmetric[GZT] = invmetric.template evaluate<GTZ>();
-
-  invmetric[GYX] = invmetric.template evaluate<GXY>();
-  invmetric[GZX] = invmetric.template evaluate<GXZ>();
-  invmetric[GZY] = invmetric.template evaluate<GYZ>();
+  invmetric.template compressed_c<GXX>() += invmetric.template compressed_c<GTT>()*shift.template evaluate<0>()*shift.template evaluate<0>();
+  invmetric.template compressed_c<GXY>() += invmetric.template compressed_c<GTT>()*shift.template evaluate<0>()*shift.template evaluate<1>();
+  invmetric.template compressed_c<GXZ>() += invmetric.template compressed_c<GTT>()*shift.template evaluate<0>()*shift.template evaluate<2>();
+  invmetric.template compressed_c<GYY>() += invmetric.template compressed_c<GTT>()*shift.template evaluate<1>()*shift.template evaluate<1>();
+  invmetric.template compressed_c<GYZ>() += invmetric.template compressed_c<GTT>()*shift.template evaluate<1>()*shift.template evaluate<2>();
+  invmetric.template compressed_c<GZZ>() += invmetric.template compressed_c<GTT>()*shift.template evaluate<2>()*shift.template evaluate<2>();
 };
 
-// CHECK: formula
 template<typename data_t>
 inline void metric4_t<data_t>::compute_metric4_from3(metric_tensor3_t& metric3){
 
@@ -378,62 +341,44 @@ inline void metric4_t<data_t>::compute_metric4_from3(metric_tensor3_t& metric3){
   invmetric_tensor_t& invmetric= super::invmetric;
 
 
-
+  // this must be a generic compressed index, because evaluate expects one
+  // symmetry transformation is done internally
   constexpr size_t GTT = metric_tensor_t::template compressed_index<0,0>();
   constexpr size_t GTX = metric_tensor_t::template compressed_index<0,1>();
   constexpr size_t GTY = metric_tensor_t::template compressed_index<0,2>();
   constexpr size_t GTZ = metric_tensor_t::template compressed_index<0,3>();
-  constexpr size_t GXT = metric_tensor_t::template compressed_index<1,0>();
-  constexpr size_t GYT = metric_tensor_t::template compressed_index<2,0>();
-  constexpr size_t GZT = metric_tensor_t::template compressed_index<3,0>();
 
   constexpr size_t GXX = metric_tensor_t::template compressed_index<1,1>();
   constexpr size_t GXY = metric_tensor_t::template compressed_index<1,2>();
   constexpr size_t GXZ = metric_tensor_t::template compressed_index<1,3>();
-  constexpr size_t GYX = metric_tensor_t::template compressed_index<2,1>();
   constexpr size_t GYY = metric_tensor_t::template compressed_index<2,2>();
   constexpr size_t GYZ = metric_tensor_t::template compressed_index<2,3>();
-  constexpr size_t GZX = metric_tensor_t::template compressed_index<3,1>();
-  constexpr size_t GZY = metric_tensor_t::template compressed_index<3,2>();
   constexpr size_t GZZ = metric_tensor_t::template compressed_index<3,3>();
 
   //indices of the three metric
   constexpr size_t G3XX = metric_tensor3_t::template compressed_index<0,0>();
   constexpr size_t G3XY = metric_tensor3_t::template compressed_index<0,1>();
   constexpr size_t G3XZ = metric_tensor3_t::template compressed_index<0,2>();
-  constexpr size_t G3YX = metric_tensor3_t::template compressed_index<1,0>();
   constexpr size_t G3YY = metric_tensor3_t::template compressed_index<1,1>();
   constexpr size_t G3YZ = metric_tensor3_t::template compressed_index<1,2>();
-  constexpr size_t G3ZX = metric_tensor3_t::template compressed_index<2,0>();
-  constexpr size_t G3ZY = metric_tensor3_t::template compressed_index<2,1>();
   constexpr size_t G3ZZ = metric_tensor3_t::template compressed_index<2,2>();
 
 
   //beta low
   std::array<double,3> beta_low;
 
-  metric[GTX] = shift.template evaluate<0>()*metric3.template evaluate<G3XX>() + shift.template evaluate<1>()*metric3.template evaluate<G3XY>() + shift.template evaluate<2>()*metric3.template evaluate<G3XZ>();
-  metric[GTY] = shift.template evaluate<0>()*metric3.template evaluate<G3XY>() + shift.template evaluate<1>()*metric3.template evaluate<G3YY>() + shift.template evaluate<2>()*metric3.template evaluate<G3YZ>();
-  metric[GTZ] = shift.template evaluate<0>()*metric3.template evaluate<G3XZ>() + shift.template evaluate<1>()*metric3.template evaluate<G3YZ>() + shift.template evaluate<2>()*metric3.template evaluate<G3ZZ>();
+  metric.template compressed_c<GTX>() = shift.template evaluate<0>()*metric3.template evaluate<G3XX>() + shift.template evaluate<1>()*metric3.template evaluate<G3XY>() + shift.template evaluate<2>()*metric3.template evaluate<G3XZ>();
+  metric.template compressed_c<GTY>() = shift.template evaluate<0>()*metric3.template evaluate<G3XY>() + shift.template evaluate<1>()*metric3.template evaluate<G3YY>() + shift.template evaluate<2>()*metric3.template evaluate<G3YZ>();
+  metric.template compressed_c<GTZ>() = shift.template evaluate<0>()*metric3.template evaluate<G3XZ>() + shift.template evaluate<1>()*metric3.template evaluate<G3YZ>() + shift.template evaluate<2>()*metric3.template evaluate<G3ZZ>();
 
-  metric[GTT] = -this->SQ(lapse) + metric.template evaluate<GTX>()*shift.template evaluate<0>() + metric.template evaluate<GTY>()*shift.template evaluate<1>() + metric.template evaluate<GTZ>()*shift.template evaluate<2>();
+  metric.template compressed_c<GTT>() = -this->SQ(lapse) + metric.template evaluate<GTX>()*shift.template evaluate<0>() + metric.template evaluate<GTY>()*shift.template evaluate<1>() + metric.template evaluate<GTZ>()*shift.template evaluate<2>();
 
-  metric[GXX] = metric3.template evaluate<G3XX>();
-  metric[GXY] = metric3.template evaluate<G3XY>();
-  metric[GXZ] = metric3.template evaluate<G3XZ>();
-  metric[GYY] = metric3.template evaluate<G3YY>();
-  metric[GYZ] = metric3.template evaluate<G3YZ>();
-  metric[GZZ] = metric3.template evaluate<G3ZZ>();
-
-  //Symmetrize
-
-  metric[GXT] = metric.template evaluate<GTX>();
-  metric[GYT] = metric.template evaluate<GTY>();
-  metric[GZT] = metric.template evaluate<GTZ>();
-
-  metric[GYX] = metric.template evaluate<GXY>();
-  metric[GZX] = metric.template evaluate<GXZ>();
-  metric[GZY] = metric.template evaluate<GYZ>();
+  metric.template compressed_c<GXX>() = metric3.template evaluate<G3XX>();
+  metric.template compressed_c<GXY>() = metric3.template evaluate<G3XY>();
+  metric.template compressed_c<GXZ>() = metric3.template evaluate<G3XZ>();
+  metric.template compressed_c<GYY>() = metric3.template evaluate<G3YY>();
+  metric.template compressed_c<GYZ>() = metric3.template evaluate<G3YZ>();
+  metric.template compressed_c<GZZ>() = metric3.template evaluate<G3ZZ>();
 };
 
 } // namespace tensors

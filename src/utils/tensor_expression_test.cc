@@ -262,9 +262,9 @@ int main(){
 double lapse = 1.;
 vector3_t<double> shift {0,0,0};
 
-metric_tensor_t<double,3> mt {1,0,-0.3,
-			      0,1,0,
-		      	     -0.3,0,1};
+metric_tensor_t<double,3> mt{1, 0, -0.3,
+                                1,  0,
+                                    1};
 
 metric3_t<double> metric(lapse, std::move(shift), std::move(mt));
 
