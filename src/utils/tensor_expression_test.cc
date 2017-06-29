@@ -260,7 +260,7 @@ int main(){
 
 //Flat space-time test
 double lapse = 1.;
-vector3_t<double> shift {0,0,0};
+vector3_t<double> shift {1,2,3};
 
 metric_tensor_t<double,3> mt{1, 0, -0.3,
                                 1,  0,

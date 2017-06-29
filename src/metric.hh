@@ -204,7 +204,7 @@ public:
 
   metric4_t(data_t lapse_, shift_t&&  shift_, metric_tensor3_t&& metric_) : super(lapse_,std::move(shift_)) {
 	  compute_metric4_from3(metric_);
-    compute_det(); //sqrtdet now stores det!!
+    super::sqrtdet=compute_det(); //sqrtdet now stores det!!
 	  compute_inverse_metric();
     //Note also that sqrt(g) = lapse * sqrt(gamma)!
 	  //But for consistency we store only sqrt(gamma) here!
