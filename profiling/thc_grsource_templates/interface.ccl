@@ -8,6 +8,6 @@ USES INCLUDE: tensor_templates.hh
 
 PUBLIC:
 
-CCTK_REAL rhs_scon[3] TYPE=GF TAGS='Prolongation="None"' "scon[3] right hand side"
-CCTK_REAL rhs_tau TYPE=GF TAGS='Prolongation="None"' "tau right hand side"
+CCTK_REAL rhs_scon_temp[3] TYPE=GF TAGS='Prolongation="None"' "scon[3] right hand side"
+CCTK_REAL rhs_tau_temp TYPE=GF TAGS='Prolongation="None"' "tau right hand side"
 

@@ -45,9 +45,9 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     CCTK_REAL const * vely = &vel[1*gsiz];
     CCTK_REAL const * velz = &vel[2*gsiz];
 */
-    CCTK_REAL * rhs_sconx  = &rhs_scon[0*gsiz];
-    CCTK_REAL * rhs_scony  = &rhs_scon[1*gsiz];
-    CCTK_REAL * rhs_sconz  = &rhs_scon[2*gsiz];
+    CCTK_REAL * rhs_sconx  = &rhs_scon_temp[0*gsiz];
+    CCTK_REAL * rhs_scony  = &rhs_scon_temp[1*gsiz];
+    CCTK_REAL * rhs_sconz  = &rhs_scon_temp[2*gsiz];
 
 
     using namespace tensors;
@@ -181,18 +181,18 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             auto bb = sym2_cast(tensor_cat(beta[ijk],beta[ijk]));
             auto T0ib = tensor_cat(T0i,beta[ijk]);
 
-            rhs_tau[ijk] = alp[ijk] * metric4d.sqrtdet
-                         * (trace(
-                              contract(
-                                T.c<0,0>()*bb + 2 * T0ib + Tij,
-                                K[ijk]
-                              )
-                            )
-                          - contract(
-                              T.c<0,0>()*beta[ijk] + T0i,
-                              dalp
-                            )
-                           );
+            rhs_tau_temp[ijk] = alp[ijk] * metric4d.sqrtdet
+                              * (trace(
+                                   contract(
+                                     T.c<0,0>()*bb + 2 * T0ib + Tij,
+                                     K[ijk]
+                                   )
+                                 )
+                               - contract(
+                                   T.c<0,0>()*beta[ijk] + T0i,
+                                   dalp
+                                 )
+                                );
 
         } UTILS_ENDLOOP3(thc_grsource_templates);
     }

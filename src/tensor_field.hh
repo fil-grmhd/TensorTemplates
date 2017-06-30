@@ -75,7 +75,11 @@ class tensor_field_t {
     template<size_t N, typename E>
     struct setter_t {
       static inline void set(size_t const i, E const& e, decltype(ptr_array) const & arr) {
-        arr[N][i] = e.template evaluate<N>();
+        // N goes from ndof to zero of this tensor type
+        // one has to cast to generic index before one can call evaluate
+        constexpr size_t gen_index = E::property_t::symmetry_t::template index_to_generic<N>::value;
+
+        arr[N][i] = e.template evaluate<gen_index>();
         setter_t<N-1,E>::set(i,e,arr);
       }
     };

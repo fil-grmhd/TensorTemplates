@@ -6,3 +6,6 @@ USES INCLUDE: tensor_templates.hh
 USES INCLUDE: utils.hh
 
 PUBLIC:
+
+CCTK_REAL rhs_scon_reldiff TYPE=GF TAGS='Prolongation="None"' "Max rel err of rhs scon"
+CCTK_REAL rhs_tau_reldiff TYPE=GF TAGS='Prolongation="None"' "Rel err of tau"

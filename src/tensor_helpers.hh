@@ -63,7 +63,10 @@ struct setter_t<E,T,0,Ind...> {
 template<typename T, size_t N>
 struct sum_squares {
   static inline typename T::data_t sum(T const &t) {
-    return t.template evaluate<N>() * t.template evaluate<N>() + sum_squares<T,N-1>::sum(t);
+    constexpr size_t gen_index = T::symmetry_t::template index_to_generic<N>::value;
+    return t.template evaluate<gen_index>()
+         * t.template evaluate<gen_index>()
+         + sum_squares<T,N-1>::sum(t);
   }
 };
 template<typename T>

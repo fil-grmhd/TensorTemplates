@@ -151,12 +151,10 @@ public:
   //! Access the components of a tensor using a (generic) compressed index
   inline T &operator[](size_t const a) {
     return m_data[a];
-//    return m_data[symmetry_t::template index_from_generic<a>::value];
   }
   //! Access the components of a tensor using a (generic) compressed index
   inline T const &operator[](size_t const a) const {
     return m_data[a];
-//    return m_data[symmetry_t::template index_from_generic<a>::value];
   }
 
   //! Evaluation routine for expression templates
@@ -208,14 +206,17 @@ public:
   inline decltype(auto) compare_components(this_tensor_t const& t) {
     double eps = 1.0/utilities::static_pow<10,exponent>::value;
 
+    double max_rel_err = 0;
     for(size_t i = 0; i<ndof; ++i) {
-      double rel_err = 2*std::abs(m_data[i]- t[i])
-                       /(std::abs(m_data[i])+std::abs(t[i]));
+      double rel_err = 2*std::abs(m_data[i] - t[i])
+                     /(std::abs(m_data[i])+std::abs(t[i]));
+      if(rel_err > max_rel_err)
+        max_rel_err = rel_err;
       if(rel_err > eps) {
         return std::pair<bool,double>(false,rel_err);
       }
     }
-    return std::pair<bool,double>(true,eps);
+    return std::pair<bool,double>(true,max_rel_err);
   }
 
   //! Easy print to out stream, e.g. std::out

@@ -188,6 +188,22 @@ int main(){
   std::cout << "D reordered" << D_T <<std::endl;
 
   std::cout<<std::endl;
+  std::cout << "D_sym -1 0 slice" << evaluate(slice<-1,0>(D_sym)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout<<std::endl;
+  std::cout << "D_sym 0 -1 slice" << evaluate(slice<0,-1>(D_sym)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout<<std::endl;
+  std::cout << "D_sym 1 -1 slice" << evaluate(slice<1,-1>(D_sym)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout<<std::endl;
+  std::cout << "D_sym 2 -1 slice" << evaluate(slice<2,-1>(D_sym)) << std::endl;
+  std::cout<<std::endl;
+
+  std::cout<<std::endl;
   std::cout << "D -1 0 slice" << evaluate(slice<-1,0>(D)) << std::endl;
   std::cout<<std::endl;
 

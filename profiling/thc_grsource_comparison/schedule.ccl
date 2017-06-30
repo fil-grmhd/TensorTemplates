@@ -4,6 +4,9 @@
 # Storage
 ###############################################################################
 
+STORAGE: rhs_scon_reldiff
+STORAGE: rhs_tau_reldiff
+
 SCHEDULE THC_GRSource_comparison IN HydroBase_RHS AFTER GRSOURCE_COMP
 {
     LANG: C

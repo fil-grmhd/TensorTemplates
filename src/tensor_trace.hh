@@ -89,6 +89,7 @@ struct tracer_t {
     return tensor_trace_t<(i1 < i2) ? i1 : i2,(i1 > i2) ? i1 : i2,E>(u);
   }
 };
+
 // Scalar trace result (for E::rank == 2)
 template<typename E, size_t i1, size_t i2>
 struct tracer_t<E,2,i1,i2> {
