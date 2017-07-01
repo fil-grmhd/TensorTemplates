@@ -63,11 +63,11 @@ public:
   data_t sqrtdet;
   invmetric_tensor_t invmetric;
 
-  static_assert( std::is_same<typename m_tensor_t::property_t, 
+  static_assert( std::is_same<typename m_tensor_t::property_t,
       		              typename ::tensors::metric_tensor_t<data_t,ndim>::property_t
 			      > ::value, "You can only use metric_types!");
 
-  static_assert( std::is_same<typename shift_t::property_t, 
+  static_assert( std::is_same<typename shift_t::property_t,
       		              typename vector3_t<data_t>::property_t
 			      > ::value, "You can only use a vector3 type for the shift!");
 
@@ -196,7 +196,8 @@ class metric4_t : public metric_t<metric_tensor_t<data_t,4>,shift_t, data_t,4,me
 public:
   using super = metric_t<metric_tensor_t<data_t,4>,shift_t,data_t,4,metric4_t<data_t, m_tensor_t, shift_t>>;
   using invmetric_tensor_t = typename super::invmetric_tensor_t;
-  using metric_t<metric_tensor_t<data_t,4>,shift_t, data_t,4,metric4_t<data_t, m_tensor_t, shift_t>>::metric_t; //Inherit constructors
+  //Inherit constructors
+  using metric_t<metric_tensor_t<data_t,4>,shift_t, data_t,4,metric4_t<data_t, m_tensor_t, shift_t>>::metric_t;
 
   using metric_tensor_t = metric_tensor_t<data_t,4>;
 
@@ -204,9 +205,10 @@ public:
   using invmetric_tensor3_t = typename super::invmetric_tensor_t;
 
 
-  decltype(slice<-2,-2>(super::metric)) metric3 ;
-  decltype(slice<-2,-2>(super::invmetric) - tensor_cat(super::shift,super::shift)) invmetric3;
-
+  decltype(sym2_cast(slice<-2,-2>(super::metric))) metric3;
+  decltype(sym2_cast(slice<-2,-2>(super::invmetric) - tensor_cat(super::shift,super::shift))) invmetric3;
+// CHECK: This doesnt compile, why?! we are only interested in the tensor type here, so...
+//  decltype(sym2_cast(slice<-2,-2>(super::invmetric))) invmetric3;
 
   inline void compute_metric4_from3(metric_tensor3_t& metric3);
   inline void compute_inverse_metric();
@@ -214,14 +216,14 @@ public:
   inline data_t compute_det();
 
 
-  static_assert( std::is_same<typename m_tensor_t::property_t, 
-      		              typename  ::tensors::metric_tensor_t<data_t,3>::property_t
+  static_assert(std::is_same<typename m_tensor_t::property_t,
+      		                   typename  ::tensors::metric_tensor_t<data_t,3>::property_t
 			      >::value, "You can only use metric3_types!");
 
 
-  metric4_t(data_t lapse_, shift_t&&  shift_, m_tensor_t&& metric_) : 
-      super(lapse_,std::move(shift_)), metric3(slice<-2,-2>(super::metric))
-      , invmetric3(slice<-2,-2>(super::invmetric) - tensor_cat(super::shift,super::shift)) {
+  metric4_t(data_t lapse_, shift_t&&  shift_, m_tensor_t&& metric_) :
+      super(lapse_,std::move(shift_)), metric3(sym2_cast(slice<-2,-2>(super::metric)))
+      , invmetric3(sym2_cast(slice<-2,-2>(super::invmetric) - tensor_cat(super::shift,super::shift))) {
 	  compute_metric4_from3(metric_);
     super::sqrtdet=compute_det(); //sqrtdet now stores det!!
 	  compute_inverse_metric();

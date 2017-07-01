@@ -39,12 +39,6 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     CCTK_REAL * vely = &vel[1*gsiz];
     CCTK_REAL * velz = &vel[2*gsiz];
 
-/* tensor field is not compatible with const pointers (yet)
-    // should use const tensor_field_t instead
-    CCTK_REAL const * velx = &vel[0*gsiz];
-    CCTK_REAL const * vely = &vel[1*gsiz];
-    CCTK_REAL const * velz = &vel[2*gsiz];
-*/
     CCTK_REAL * rhs_sconx  = &rhs_scon_temp[0*gsiz];
     CCTK_REAL * rhs_scony  = &rhs_scon_temp[1*gsiz];
     CCTK_REAL * rhs_sconz  = &rhs_scon_temp[2*gsiz];
@@ -79,21 +73,15 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
 
 
-            // contruct four metric and inverse
-// doesn't work (yet)
-//            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],gamma[ijk]);
-            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],evaluate(gamma[ijk]));
-
-            // constructor is choking if gamma is passed directly
-//            metric4_t<CCTK_REAL> metric4d(alp[ijk],beta[ijk],metric_tensor_t<double,3>(gamma[ijk]));
-
+            // construct four metric and inverse
+            // this is the only way to make it work, passing gamma[ijk] or evaluate(gamma[ijk]) fails
+            auto metric4d = make_metric4(alp[ijk],beta[ijk],metric_tensor_t<CCTK_REAL,3>(gamma[ijk]));
 
             // Derivatives of the lapse, metric and shift
             covector3_t<CCTK_REAL> dalp(idx*cdiff_x(cctkGH, alp, i, j, k, fd_order),
                                         idy*cdiff_y(cctkGH, alp, i, j, k, fd_order),
                                         idz*cdiff_z(cctkGH, alp, i, j, k, fd_order));
 
-// maybe remove zero inits
             tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta;
 
             dbeta.c<0,0>() = idx*cdiff_x(cctkGH, betax, i, j, k, fd_order);
@@ -159,8 +147,6 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
                                           (alp[ijk]*velz[ijk] - betaz[ijk])*u0);
             // construct tensor product
             auto uu = sym2_cast(tensor_cat(u,u));
-            // inv metric still not symmetric
-//            auto invmetric = sym2_cast(metric4d.invmetric);
 
             // construct em tensor
             sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> T = (rho[ijk]*(1+eps[ijk])+press[ijk])*uu
