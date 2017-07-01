@@ -130,7 +130,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             dgamma.c<2,2,2>() = idz*cdiff_z(cctkGH, gzz, i, j, k, fd_order);
 
             // helpers to construct four metric derivative
-            auto dg00i = - 2*dalp
+            auto dg00i = - 2*alp[ijk]*dalp
                          + 2*contract(dbeta,contract(gamma[ijk],beta[ijk]))
                          + contract(beta[ijk],contract(beta[ijk],dgamma));
 
