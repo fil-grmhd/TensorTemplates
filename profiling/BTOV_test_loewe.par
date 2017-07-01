@@ -258,7 +258,8 @@ HydroBase::initial_Y_e		= "PizzaTOV"
 HydroBase::initial_Abar		= "zero"
 
 # File describing a one-parametric EOS in Pizza format. Used only for initial data.
-PizzaIDBase::eos_file		= "/gpfs/work/pr62do/di25def2/initial/eos/DD2/0.01MeV/eos_dd2_adb.pizza"
+PizzaIDBase::eos_file		= "/home/astro/shared/projekt/EOS_Collection/LS220/old/0.01MeVbeta/LS220B0.pizza"
+#PizzaIDBase::eos_file		= "/gpfs/work/pr62do/di25def2/initial/eos/DD2/0.01MeV/eos_dd2_adb.pizza"
 
 # q = 1.0
 PizzaTOV::idtype = "BNS"
@@ -328,9 +329,13 @@ EOS_Thermal_Extable::rho_max		= 1e10
 EOS_Thermal_Extable::temp_max		= 1000
 EOS_Thermal_Extable::extend_ye		= "yes"
 
-EOS_Thermal_Table3d::eos_db_loc		= "/gpfs/work/pr62do/di25def2/initial/eos"
-EOS_Thermal_Table3d::eos_folder		= "DD2"
-EOS_Thermal_Table3d::eos_filename		= "DD2_DD2_hydro_30-Mar-2015.h5"
+#EOS_Thermal_Table3d::eos_db_loc		= "/gpfs/work/pr62do/di25def2/initial/eos"
+#EOS_Thermal_Table3d::eos_folder		= "DD2"
+#EOS_Thermal_Table3d::eos_filename		= "DD2_DD2_hydro_30-Mar-2015.h5"
+
+EOS_Thermal_Table3d::eos_db_loc   = "/home/astro/shared/projekt/EOS_Collection"
+EOS_Thermal_Table3d::eos_folder   = "LS220"
+EOS_Thermal_Table3d::eos_filename   = "LS220_hydro_09-Apr-2017.h5"
 
 THC_Analysis::compute_eninf		= "yes"
 

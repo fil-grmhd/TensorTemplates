@@ -71,12 +71,11 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     CCTK_REAL const idy = 1.0/dy;
     CCTK_REAL const idz = 1.0/dz;
 
-#pragma omp parallel
-    {
-        UTILS_LOOP3(thc_grsource_templates,
-                k, cctk_nghostzones[2], cctk_lsh[2]-cctk_nghostzones[2],
-                j, cctk_nghostzones[1], cctk_lsh[1]-cctk_nghostzones[1],
-                i, cctk_nghostzones[0], cctk_lsh[0]-cctk_nghostzones[0]) {
+    #pragma omp parallel for
+    for(int k = cctk_nghostzones[2]; k < cctk_lsh[2]-cctk_nghostzones[2]; ++k)
+    for(int j = cctk_nghostzones[1]; j < cctk_lsh[1]-cctk_nghostzones[1]; ++j)
+    #pragma forceinline recursive
+    for(int i = cctk_nghostzones[0]; i < cctk_lsh[0]-cctk_nghostzones[0]; ++i) {
             int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
 
 
@@ -194,6 +193,5 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
                                  )
                                 );
 
-        } UTILS_ENDLOOP3(thc_grsource_templates);
     }
 }
