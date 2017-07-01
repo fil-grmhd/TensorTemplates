@@ -58,6 +58,61 @@ struct setter_t<E,T,0,Ind...> {
   }
 };
 
+template<typename E, typename T, size_t N>
+struct add_to_tensor_t{
+  static inline void add_to_tensor( E const &e, T &t){
+    constexpr size_t gen_index = T::property_t::symmetry_t::template index_to_generic<N>::value;
+    t.template compressed_c<gen_index>() += e.template evaluate<gen_index>();
+    add_to_tensor_t<E,T,N-1>::add_to_tensor(e,t);
+  };
+};
+
+template<typename E, typename T>
+struct add_to_tensor_t<E,T,0>{
+  static inline void add_to_tensor( E const &e, T &t){
+    constexpr size_t gen_index = T::property_t::symmetry_t::template index_to_generic<0>::value;
+    t.template compressed_c<gen_index>() += e.template evaluate<gen_index>();
+  };
+};
+
+template<typename E, typename T, size_t N>
+struct subtract_from_tensor_t{
+  static inline void subtract_from_tensor( E const &e, T &t){
+    constexpr size_t gen_index = T::property_t::symmetry_t::template index_to_generic<N>::value;
+    t.template compressed_c<gen_index>() -= e.template evaluate<gen_index>();
+    subtract_from_tensor_t<E,T,N-1>::subtract_from_tensor(e,t);
+  };
+};
+
+template<typename E, typename T>
+struct subtract_from_tensor_t<E,T,0>{
+  static inline void subtract_from_tensor( E const &e, T &t){
+    constexpr size_t gen_index = T::property_t::symmetry_t::template index_to_generic<0>::value;
+    t.template compressed_c<gen_index>() -= e.template evaluate<gen_index>();
+  };
+};
+
+template<typename T, size_t N>
+struct multiply_tensor_with_t{
+  static inline void multiply_tensor_with( typename T::property_t::data_t const &e, T &t){
+    constexpr size_t gen_index = T::property_t::symmetry_t::template index_to_generic<N>::value;
+    t.template compressed_c<gen_index>() *= e;
+    multiply_tensor_with_t<T,N-1>::multiply_tensor_with(e,t);
+  };
+};
+
+template<typename T>
+struct multiply_tensor_with_t<T,0>{
+  static inline void multiply_tensor_with( typename T::property_t::data_t const &e, T &t){
+    constexpr size_t gen_index = T::property_t::symmetry_t::template index_to_generic<0>::value;
+    t.template compressed_c<gen_index>() *= e;
+  };
+};
+
+
+
+
+
 // Template recursion to compute sum of squares of components
 // T should be a explicit tensor, because of a lot of evaluations
 template<typename T, size_t N>

@@ -231,6 +231,59 @@ public:
     return stream;
   }
 
+
+  //Add expression to tensor
+  template <typename E>
+  inline void operator+=(tensor_expression_t<E> const &tensor_expression){
+//    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
+//                  "Frame types don't match!");
+
+    static_assert(ndim == E::property_t::ndim, "Dimensions don't match!");
+
+    static_assert(rank == E::property_t::rank, "Ranks don't match!");
+
+    static_assert(std::is_same<data_t, typename E::property_t::data_t>::value,
+                  "Data types don't match!");
+
+    static_assert(
+        compare_index_types<index_t, typename E::property_t::index_t,
+                                 rank>(),
+        "Index types do not match (e.g. lower_t != upper_t)!");
+
+   add_to_tensor_t<E,this_tensor_t,ndof-1>::add_to_tensor(tensor_expression,*this);
+
+  };
+
+  //Subtract expression from tensor
+  template <typename E>
+  inline void operator-=(tensor_expression_t<E> const &tensor_expression){
+//    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
+//                  "Frame types don't match!");
+
+    static_assert(ndim == E::property_t::ndim, "Dimensions don't match!");
+
+    static_assert(rank == E::property_t::rank, "Ranks don't match!");
+
+    static_assert(std::is_same<data_t, typename E::property_t::data_t>::value,
+                  "Data types don't match!");
+
+    static_assert(
+        compare_index_types<index_t, typename E::property_t::index_t,
+                                 rank>(),
+        "Index types do not match (e.g. lower_t != upper_t)!");
+
+   subtract_from_tensor_t<E,this_tensor_t,ndof-1>::subtract_from_tensor(tensor_expression,*this);
+
+  };
+
+
+  //Multiply tensor with scalar
+  inline void operator*=(data_t const & lambda){
+
+   multiply_tensor_with_t<this_tensor_t,ndof-1>::multiply_tensor_with(lambda,*this);
+
+  };
+
 };
 
 template<typename E>

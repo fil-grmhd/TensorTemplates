@@ -294,7 +294,8 @@ metric_tensor_t<double,3> mt{1, 0, -0.3,
                                 1,  0,
                                     1};
 
-metric3_t<double> metric(lapse, std::move(shift), std::move(mt));
+//metric3_t metric(lapse, std::move(shift), std::move(mt));
+auto metric = make_metric3(lapse, std::move(shift), std::move(mt));
 
 std::cout << "Inverse metric" << metric.invmetric <<std::endl;
 std::cout << "metric" << metric.metric <<std::endl;
@@ -314,7 +315,9 @@ std::cout << "norm2 am1 :" << norm2_am1 <<std::endl;
 
 // 4-dim metric
 
-metric4_t<double> metric4(lapse, std::move(shift), std::move(mt));
+//metric4_t metric4(lapse, std::move(shift), std::move(mt));
+auto metric4 = make_metric4(lapse, std::move(shift), std::move(mt));
+
 std::cout << "Inverse metric4" << metric4.invmetric <<std::endl;
 std::cout << "metric4" << metric4.metric <<std::endl;
 std::cout << "sqrt(gamma)" << metric4.sqrtdet <<std::endl;
@@ -438,6 +441,57 @@ double trace_gen = trace(from_sym3);
 
 std::cout << "Trace of sym and gen tensors: " << trace_sym << " " << trace_gen << std::endl;
 std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym3)::ndof << std::endl;
+
+
+/////////////////////////////////////////////////////////////
+//
+// Subtensor assignment
+//
+/////////////////////////////////////////////////////////////
+
+
+
+  std::cout << "A = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< A[i+3*j] << " ";
+    std::cout<<std::endl;
+  }
+
+
+  std::cout << "D_sub = " << std::endl;
+  for(int i=0; i<2; ++i){
+    for(int j=0; j<2; ++j)
+      std::cout << " "<< D_spatial[i+2*j] << " ";
+    std::cout<<std::endl;
+  }
+
+  assign_slice<-2,-2>(A) += D_spatial;
+  std::cout << "A<-2,-2> + D_spatial = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< A[i+3*j] << " ";
+    std::cout<<std::endl;
+  }
+
+  assign_slice<-2,-2>(A) -= 0.5*D_spatial;
+  std::cout << "A<-2,-2> - 0.5*D_spatial = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< A[i+3*j] << " ";
+    std::cout<<std::endl;
+  }
+
+  assign_slice<-2,-2>(A) *= 10;
+  std::cout << "A<-2,-2>*10 = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< A[i+3*j] << " ";
+    std::cout<<std::endl;
+  }
+
+  
+
 
 }
 

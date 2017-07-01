@@ -6,6 +6,7 @@ namespace tensors {
 //! Expression template for generic tensor expression slice
 template <typename E, int... Ind>
 class tensor_slice_t : public tensor_expression_t<tensor_slice_t<E, Ind...>> {
+protected:
   // references to sliced expression
   E const &_u;
 
@@ -102,6 +103,98 @@ template <int... Indices, typename E>
 tensor_slice_t<E, Indices...> const inline slice(E const &u) {
   return tensor_slice_t<E, Indices...>(u);
 };
+
+
+
+
+template <typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typename index_t_,
+          size_t ndim_, int... Ind>
+class tensor_assign_slice_t : public tensor_slice_t<general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_>, Ind...>{
+
+  //Inherit constructor
+  using tensor_slice_t<general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_>, Ind...>::tensor_slice_t;
+  using super = tensor_slice_t<general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_>, Ind...>;
+
+  using this_tensor_t = tensor_assign_slice_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_,Ind...>;
+  
+public:
+  //! Get component reference at (generic) compressed index position
+  //  Needed if one wants to assign something to a specific element,
+  //  given a generic compressed index.
+  template<size_t index>
+  inline T & compressed_c() {
+    return const_cast<general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_> &>(super::_u).
+      			template compressed_c<
+                         compute_unsliced_cindex<
+                           general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_>,
+                           typename super::property_t::this_tensor_t,
+                           index,
+                           0,
+                           Ind...
+                         >::value
+                       >();
+  }
+
+
+  //Add expression to tensor
+  template <typename E>
+  inline void operator+=(tensor_expression_t<E> const &tensor_expression){
+//    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
+//                  "Frame types don't match!");
+
+    static_assert(super::property_t::ndim== E::property_t::ndim, "Dimensions don't match!");
+
+    static_assert(super::property_t::rank == E::property_t::rank, "Ranks don't match!");
+
+    static_assert(std::is_same<T, typename E::property_t::data_t>::value,
+                  "Data types don't match!");
+
+    static_assert(
+        compare_index_types<typename super::property_t::index_t, typename E::property_t::index_t,
+                                 super::property_t::rank>(),
+        "Index types do not match (e.g. lower_t != upper_t)!");
+
+   add_to_tensor_t<E,this_tensor_t,super::property_t::ndof-1>::add_to_tensor(tensor_expression,*this);
+
+  };
+
+  //Add expression to tensor
+  template <typename E>
+  inline void operator-=(tensor_expression_t<E> const &tensor_expression){
+//    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
+//                  "Frame types don't match!");
+
+    static_assert(super::property_t::ndim == E::property_t::ndim, "Dimensions don't match!");
+
+    static_assert(super::property_t::rank == E::property_t::rank, "Ranks don't match!");
+
+    static_assert(std::is_same<T, typename E::property_t::data_t>::value,
+                  "Data types don't match!");
+
+    static_assert(
+        compare_index_types<typename super::property_t::index_t, typename E::property_t::index_t,
+                                 super::property_t::rank>(),
+        "Index types do not match (e.g. lower_t != upper_t)!");
+
+   subtract_from_tensor_t<E,this_tensor_t,super::property_t::ndof-1>::subtract_from_tensor(tensor_expression,*this);
+
+  };
+
+
+  //Multiply tensor with scalar
+  inline void operator*=(T const & lambda){
+
+   multiply_tensor_with_t<this_tensor_t,super::property_t::ndof-1>::multiply_tensor_with(lambda,*this);
+
+  };
+
+};
+
+template <int... Ind, typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typename index_t_,size_t ndim_>
+inline decltype(auto) assign_slice(general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_> & t){
+  return tensor_assign_slice_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_, Ind...>(t);
+};
+
 
 }
 #endif

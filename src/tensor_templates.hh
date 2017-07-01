@@ -27,13 +27,13 @@
 #include "tensor_expressions.hh"
 #include "tensor_helpers.hh"
 #include "tensor.hh"
+#include "tensor_slice.hh"
 #include "tensor_field.hh"
 #include "tensor_symmetry_expressions.hh"
 #include "tensor_contraction.hh"
 #include "tensor_trace.hh"
 #include "tensor_concat.hh"
 #include "tensor_index_reordering.hh"
-#include "tensor_slice.hh"
 #include "metric.hh"
 
 //! main namespace
