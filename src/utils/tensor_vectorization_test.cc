@@ -7,7 +7,7 @@
 #include <random>
 #include <chrono>
 
-#include <tensor_templates.hh>
+#include "../tensor_templates.hh"
 
 
 int main() {
@@ -18,7 +18,7 @@ int main() {
 //  using vec_type = Vc::float_v;
 //  using sca_type = float;
 
-  constexpr size_t N = 3000000;
+  constexpr size_t N = 3000;
   constexpr size_t vec_size = vec_type::Size;
   constexpr size_t num_data = N*vec_size;
 
