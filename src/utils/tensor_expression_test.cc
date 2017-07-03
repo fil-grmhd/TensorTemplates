@@ -19,7 +19,7 @@
 #include<iostream>
 #include<typeinfo>
 
-#define TENSORS_DEBUGGING
+#define TENSORS_VECTORIZATION
 #include "../tensor_templates.hh"
 
 

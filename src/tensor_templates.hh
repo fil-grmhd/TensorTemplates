@@ -18,6 +18,10 @@
 #ifndef TENSORS_HH
 #define TENSORS_HH
 
+#ifdef TENSORS_VECTORIZATION
+#include <Vc/Vc>
+#endif
+
 #include "utilities.hh"
 #include "tensor_core_types.hh"
 #include "tensor_symmetry.hh"
