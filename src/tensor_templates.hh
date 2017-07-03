@@ -42,7 +42,7 @@
 #include "metric.hh"
 
 #ifdef TENSORS_VECTORIZATION
-#include "tensor_field_vec.hh"
+#include "tensor_field_vectorized.hh"
 #endif
 
 //! main namespace

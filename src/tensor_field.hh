@@ -49,7 +49,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     inline decltype(auto) operator[](size_t i) const = delete;
 
     template<size_t index>
-    inline data_t const & evaluate() const {
+    inline decltype(auto) evaluate() const {
       constexpr size_t converted_index = property_t::symmetry_t::template index_from_generic<index>::value;
       return ptr_array[converted_index][ptr_index];
     }

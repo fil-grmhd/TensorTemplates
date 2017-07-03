@@ -10,7 +10,10 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
   public:
     // Get properties of underlying tensor type
     using property_t = typename T::property_t;
-    using data_t = typename property_t::data_t;
+    // The data type is in this case a vector register type
+    using vec_t = typename property_t::data_t;
+    // The actual data type
+    using data_t = typename vec_t::EntryType;
     static constexpr size_t ndof = property_t::ndof;
 
   private:
@@ -50,11 +53,11 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
     inline decltype(auto) operator[](size_t i) const = delete;
 
     template<size_t index>
-    inline data_t const & evaluate() const {
+    inline decltype(auto) evaluate() const {
       constexpr size_t converted_index = property_t::symmetry_t::template index_from_generic<index>::value;
 
-      // reads Vc::Vector<T>::Size values from ptr_index on into vector register
-      Vc::Vector<T> vec_register(&(ptr_array[converted_index][ptr_index]));
+      // reads Vc::Vector<T>::Size values from ptr_index on into vector register of data_t
+      Vc::Vector<data_t> vec_register(&(ptr_array[converted_index][ptr_index]));
 
       return vec_register;
     }
@@ -77,8 +80,35 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
 //! Template for generic tensor field
 //! A tensor field is not a tensor expression,
 //! but delivers tensor field expressions at different grid points.
-template<typename T>
-using tensor_field_vt = tensor_field_t<T, tensor_field_expression_vt<T>>;
+//  The tensor field expression is itself a template parameter,
+//  which implements the load/store operations.
+template<typename T, typename tf_expression_t = tensor_field_expression_vt<T>>
+class tensor_field_vt {
+  public:
+    // Get properties of underlying tensor type
+    using property_t = typename T::property_t;
+    // The data type is in this case a vector register type
+    using vec_t = typename property_t::data_t;
+    // The actual data type
+    using data_t = typename vec_t::EntryType;
+    static constexpr size_t ndof = property_t::ndof;
 
+  private:
+    //! Storage for ndof pointers
+    const std::array<data_t * __restrict__ const,ndof> ptr_array;
+
+  public:
+    //! Constructor from pointer parameters
+    template <typename... TArgs>
+    tensor_field_vt(data_t * __restrict__ const first_elem, TArgs... elem)
+        : ptr_array({first_elem, elem...}) {
+      static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
+    };
+
+    //! Returns a tensor field expression at (pointer) index i
+    inline decltype(auto) operator[](size_t const i) const {
+      return tf_expression_t(ptr_array,i);
+    }
+};
 }
 #endif

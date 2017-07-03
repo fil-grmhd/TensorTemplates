@@ -85,7 +85,7 @@ public:
   operator[](size_t i) const = delete;
 
   template <size_t c_index>
-  inline typename property_t::data_t const evaluate() const {
+  inline decltype(auto) evaluate() const {
 
     return _u.template evaluate<
                          compute_unsliced_cindex<
