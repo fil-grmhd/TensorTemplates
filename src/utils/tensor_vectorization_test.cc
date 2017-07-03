@@ -6,7 +6,7 @@
 #include <random>
 #include <chrono>
 
-#define TENSORS_VECTORIZATION
+#define TENSORS_VECTORIZED
 #include "../tensor_templates.hh"
 
 #define SCA

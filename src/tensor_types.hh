@@ -84,7 +84,7 @@ using metric_tensor_t = sym2_tensor_t<T, ndim, any_frame_t, 0, 1, lower_t, lower
 template<typename T, size_t ndim>
 using invmetric_tensor_t = sym2_tensor_t<T, ndim, any_frame_t, 0, 1, upper_t, upper_t>;
 
-#ifdef TENSORS_VECTORIZATION
+#ifdef TENSORS_VECTORIZED
 // Vectorized typedefs, just for conveniece
 // Tensor of rank index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, typename... ranks>

@@ -23,6 +23,9 @@
 
 #include "finite_difference.h"
 #include "utils.hh"
+
+// doesn't work yet
+//#define TENSORS_VECTORIZED
 #include "tensor_templates.hh"
 
 #define SQ(X) ((X)*(X))
