@@ -31,13 +31,13 @@ namespace tensors {
 //! Raise index
 template <size_t i, typename Tmetric, typename E>
 decltype(auto) inline raise_index(Tmetric const& metric_, E const &v) {
-  return metric_contraction_t<i,typename Tmetric::invmetric_tensor_t, E>(metric_.invmetric, v);
+  return metric_contraction_t<i,typename Tmetric::internal_im_t, E>(metric_.invmetric, v);
 };
 
 //! Lower index
 template <size_t i, typename Tmetric, typename E>
 decltype(auto) inline lower_index(Tmetric const& metric_, E const &v) {
-  return metric_contraction_t<i,typename Tmetric::metric_tensor_t, E>(metric_.metric, v);
+  return metric_contraction_t<i,typename Tmetric::internal_m_t, E>(metric_.metric, v);
 };
 
 //! Contract indices
@@ -54,14 +54,14 @@ inline decltype(auto) contract( Tmetric const & metric_, E1 const &u, E2 const &
 
 template <typename m_tensor_t,typename shift_t,  typename data_t, size_t ndim, typename dim_specialization_t> class metric_t {
 public:
-  using invmetric_tensor_t = invmetric_tensor_t<data_t,ndim>;
-  using metric_tensor_t = m_tensor_t;
+  using internal_im_t = invmetric_tensor_t<data_t,ndim>;
+  using internal_m_t = m_tensor_t;
 
   m_tensor_t metric;
   data_t lapse;
   shift_t shift;
   data_t sqrtdet;
-  invmetric_tensor_t invmetric;
+  internal_im_t invmetric;
 
   static_assert( std::is_same<typename m_tensor_t::property_t,
       		              typename ::tensors::metric_tensor_t<data_t,ndim>::property_t
@@ -85,14 +85,14 @@ private:
 public:
   metric_t(data_t lapse_, shift_t&& shift_) : lapse(lapse_), shift(std::move(shift_)) {}
   //! Move constructors
-  metric_t(data_t lapse_, shift_t&&  shift_, m_tensor_t&& metric_, invmetric_tensor_t&& invmetric_,
+  metric_t(data_t lapse_, shift_t&&  shift_, m_tensor_t&& metric_, internal_im_t&& invmetric_,
            data_t sqrtdet3) : lapse(lapse_), metric(std::move(metric_)),
   	   invmetric(std::move(invmetric_)), sqrtdet(sqrtdet3), shift(std::move(shift_)) {};
 
  metric_t() = default;
 
 /*
-  metric_t(data_t lapse_, shift_t&&  shift_, metric_tensor_t&& metric_ ) : lapse(lapse_), metric(std::move(metric_)),
+  metric_t(data_t lapse_, shift_t&&  shift_, internal_m_t&& metric_ ) : lapse(lapse_), metric(std::move(metric_)),
   	   shift(std::move(shift_)) {
 
     sqrtdet = compute_det(); //sqrtdet now stores det!!
@@ -169,8 +169,8 @@ public:
 
   using metric_t<m_tensor_t,shift_t,data_t,3,metric3_t<data_t,m_tensor_t, shift_t>>::metric_t; //Inherit constructors
 
-  using metric_tensor_t = m_tensor_t;
-  using invmetric_tensor_t = typename super::invmetric_tensor_t;
+  using internal_m_t = m_tensor_t;
+  using internal_im_t = typename super::internal_im_t;
 
 
   metric3_t(data_t lapse_, shift_t&&  shift_, m_tensor_t&& metric_ ) {
@@ -195,14 +195,14 @@ template<typename data_t, typename m_tensor_t,typename shift_t>
 class metric4_t : public metric_t<metric_tensor_t<data_t,4>,shift_t, data_t,4,metric4_t<data_t, m_tensor_t, shift_t>>{
 public:
   using super = metric_t<metric_tensor_t<data_t,4>,shift_t,data_t,4,metric4_t<data_t, m_tensor_t, shift_t>>;
-  using invmetric_tensor_t = typename super::invmetric_tensor_t;
+  using internal_im_t = typename super::internal_im_t;
   //Inherit constructors
   using metric_t<metric_tensor_t<data_t,4>,shift_t, data_t,4,metric4_t<data_t, m_tensor_t, shift_t>>::metric_t;
 
-  using metric_tensor_t = metric_tensor_t<data_t,4>;
+  using internal_m_t = metric_tensor_t<data_t,4>;
 
   using metric_tensor3_t = m_tensor_t;
-  using invmetric_tensor3_t = typename super::invmetric_tensor_t;
+  using invmetric_tensor3_t = typename super::internal_im_t;
 
 
   decltype(sym2_cast(slice<-2,-2>(super::metric))) metric3;
@@ -246,16 +246,16 @@ inline data_t metric3_t<data_t, m_tensor_t,shift_t>::compute_det(){
   m_tensor_t& metric = super::metric;
   data_t& lapse = super::lapse;
   data_t& sqrtdet =super::sqrtdet;
-  invmetric_tensor_t& invmetric= super::invmetric;
+  internal_im_t& invmetric= super::invmetric;
 
   // this must be a generic compressed index, because evaluate expects one
   // symmetry transformation is done internally
-  constexpr size_t GXX = metric_tensor_t::template compressed_index<0,0>();
-  constexpr size_t GXY = metric_tensor_t::template compressed_index<0,1>();
-  constexpr size_t GXZ = metric_tensor_t::template compressed_index<0,2>();
-  constexpr size_t GYY = metric_tensor_t::template compressed_index<1,1>();
-  constexpr size_t GYZ = metric_tensor_t::template compressed_index<1,2>();
-  constexpr size_t GZZ = metric_tensor_t::template compressed_index<2,2>();
+  constexpr size_t GXX = internal_m_t::template compressed_index<0,0>();
+  constexpr size_t GXY = internal_m_t::template compressed_index<0,1>();
+  constexpr size_t GXZ = internal_m_t::template compressed_index<0,2>();
+  constexpr size_t GYY = internal_m_t::template compressed_index<1,1>();
+  constexpr size_t GYZ = internal_m_t::template compressed_index<1,2>();
+  constexpr size_t GZZ = internal_m_t::template compressed_index<2,2>();
 
 
     //   We are deliberately storing det in sqrtdet and take the square-root later in the initialisation
@@ -267,19 +267,19 @@ inline data_t metric3_t<data_t, m_tensor_t,shift_t>::compute_det(){
 
 template<typename data_t, typename m_tensor_t,typename shift_t>
 inline data_t metric4_t<data_t, m_tensor_t,shift_t>::compute_det(){
-  metric_tensor_t& metric = super::metric;
+  internal_m_t& metric = super::metric;
   data_t& lapse = super::lapse;
   data_t& sqrtdet =super::sqrtdet;
-  invmetric_tensor_t& invmetric= super::invmetric;
+  internal_im_t& invmetric= super::invmetric;
 
 
 
-  constexpr size_t GXX = metric_tensor_t::template compressed_index<1,1>();
-  constexpr size_t GXY = metric_tensor_t::template compressed_index<1,2>();
-  constexpr size_t GXZ = metric_tensor_t::template compressed_index<1,3>();
-  constexpr size_t GYY = metric_tensor_t::template compressed_index<2,2>();
-  constexpr size_t GYZ = metric_tensor_t::template compressed_index<2,3>();
-  constexpr size_t GZZ = metric_tensor_t::template compressed_index<3,3>();
+  constexpr size_t GXX = internal_m_t::template compressed_index<1,1>();
+  constexpr size_t GXY = internal_m_t::template compressed_index<1,2>();
+  constexpr size_t GXZ = internal_m_t::template compressed_index<1,3>();
+  constexpr size_t GYY = internal_m_t::template compressed_index<2,2>();
+  constexpr size_t GYZ = internal_m_t::template compressed_index<2,3>();
+  constexpr size_t GZZ = internal_m_t::template compressed_index<3,3>();
 
 
     //   We are deliberately storing det in sqrtdet and take the square-root later in the initialisation
@@ -292,10 +292,10 @@ inline data_t metric4_t<data_t, m_tensor_t,shift_t>::compute_det(){
 
 template<typename data_t, typename m_tensor_t,typename shift_t>
 inline void metric3_t<data_t, m_tensor_t, shift_t >::compute_inverse_metric(){
-  metric_tensor_t& metric = super::metric;
+  internal_m_t& metric = super::metric;
   data_t& lapse = super::lapse;
   data_t& sqrtdet =super::sqrtdet;
-  invmetric_tensor_t& invmetric= super::invmetric;
+  internal_im_t& invmetric= super::invmetric;
 
   // this must be a generic compressed index, because evaluate expects one
   // symmetry transformation is done internally
@@ -320,25 +320,25 @@ inline void metric3_t<data_t, m_tensor_t, shift_t >::compute_inverse_metric(){
 // CHECK: formula especially time components
 template<typename data_t, typename m_tensor_t,typename shift_t>
 inline void metric4_t<data_t, m_tensor_t, shift_t>::compute_inverse_metric(){
-  metric_tensor_t& metric = super::metric;
+  internal_m_t& metric = super::metric;
   data_t& lapse = super::lapse;
   data_t& sqrtdet =super::sqrtdet;
-  invmetric_tensor_t& invmetric= super::invmetric;
+  internal_im_t& invmetric= super::invmetric;
   shift_t& shift = super::shift;
 
   // this must be a generic compressed index, because evaluate expects one
   // symmetry transformation is done internally
-  constexpr size_t GTT = metric_tensor_t::template compressed_index<0,0>();
-  constexpr size_t GTX = metric_tensor_t::template compressed_index<0,1>();
-  constexpr size_t GTY = metric_tensor_t::template compressed_index<0,2>();
-  constexpr size_t GTZ = metric_tensor_t::template compressed_index<0,3>();
+  constexpr size_t GTT = internal_m_t::template compressed_index<0,0>();
+  constexpr size_t GTX = internal_m_t::template compressed_index<0,1>();
+  constexpr size_t GTY = internal_m_t::template compressed_index<0,2>();
+  constexpr size_t GTZ = internal_m_t::template compressed_index<0,3>();
 
-  constexpr size_t GXX = metric_tensor_t::template compressed_index<1,1>();
-  constexpr size_t GXY = metric_tensor_t::template compressed_index<1,2>();
-  constexpr size_t GXZ = metric_tensor_t::template compressed_index<1,3>();
-  constexpr size_t GYY = metric_tensor_t::template compressed_index<2,2>();
-  constexpr size_t GYZ = metric_tensor_t::template compressed_index<2,3>();
-  constexpr size_t GZZ = metric_tensor_t::template compressed_index<3,3>();
+  constexpr size_t GXX = internal_m_t::template compressed_index<1,1>();
+  constexpr size_t GXY = internal_m_t::template compressed_index<1,2>();
+  constexpr size_t GXZ = internal_m_t::template compressed_index<1,3>();
+  constexpr size_t GYY = internal_m_t::template compressed_index<2,2>();
+  constexpr size_t GYZ = internal_m_t::template compressed_index<2,3>();
+  constexpr size_t GZZ = internal_m_t::template compressed_index<3,3>();
 
 
   invmetric.template c<0,0>() = -1./this->SQ(lapse);
@@ -371,10 +371,10 @@ inline void metric4_t<data_t, m_tensor_t, shift_t>::compute_inverse_metric(){
 template<typename data_t, typename m_tensor_t,typename shift_t>
 inline void metric4_t<data_t, m_tensor_t,shift_t>::compute_metric4_from3(metric_tensor3_t& metric3){
 
-  metric_tensor_t& metric = super::metric;
+  internal_m_t& metric = super::metric;
   data_t& lapse = super::lapse;
   data_t& sqrtdet =super::sqrtdet;
-  invmetric_tensor_t& invmetric= super::invmetric;
+  internal_im_t& invmetric= super::invmetric;
 
   //beta low
   metric.template set<0,-2>( contract(metric3,super::shift));
