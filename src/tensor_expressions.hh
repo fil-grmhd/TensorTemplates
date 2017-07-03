@@ -53,12 +53,12 @@ public:
   //  Calls evaluation, which can be expensive, if the expression is not evaluated yet.
   template <size_t... Ind>
   inline decltype(auto) c() {
-    return static_cast<E const &>(*this).template compressed_c<
-                                           generic_symmetry_t<
-                                             E::property_t::ndim,
-                                             E::property_t::rank
-                                            >::template compressed_index<Ind...>::value
-                                          >();
+    constexpr size_t index = generic_symmetry_t<
+                               E::property_t::ndim,
+                               E::property_t::rank
+                             >::template compressed_index<Ind...>::value;
+
+    return static_cast<E const &>(*this).template evaluate<index>();
   };
 
   //! Conversion operator to reference of tensor expression E
