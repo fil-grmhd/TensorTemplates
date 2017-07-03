@@ -12,7 +12,7 @@
 #define COMPARE
 
 #define SYMMETRIC
-
+#define TENSORS_VECTORIZATION
 #include "../tensor_templates.hh"
 
 int main(void) {

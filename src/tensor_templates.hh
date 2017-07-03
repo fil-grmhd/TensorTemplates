@@ -19,6 +19,7 @@
 #define TENSORS_HH
 
 #ifdef TENSORS_VECTORIZATION
+#pragma message ("TensorTemplates: Vectorization support activated.")
 #include <Vc/Vc>
 #endif
 
@@ -39,6 +40,10 @@
 #include "tensor_concat.hh"
 #include "tensor_index_reordering.hh"
 #include "metric.hh"
+
+#ifdef TENSORS_VECTORIZATION
+#include "tensor_field_vec.hh"
+#endif
 
 //! main namespace
 namespace tensors {
