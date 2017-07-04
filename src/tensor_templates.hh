@@ -23,6 +23,10 @@
 #include <Vc/Vc>
 #endif
 
+#ifdef TENSORS_CACTUS
+#include "cctk.h"
+#endif
+
 #include "utilities.hh"
 #include "tensor_core_types.hh"
 #include "tensor_symmetry.hh"
@@ -40,8 +44,14 @@
 #include "tensor_concat.hh"
 #include "tensor_index_reordering.hh"
 #include "metric.hh"
+#include "finite_differences.hh"
+
+#ifdef TENSORS_CACTUS
+#include "tensor_cactus_types.hh"
+#endif
 
 #ifdef TENSORS_VECTORIZED
+#include "tensor_vectortypes.hh"
 #include "tensor_field_vectorized.hh"
 #endif
 

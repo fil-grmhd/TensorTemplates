@@ -26,6 +26,7 @@
 
 // doesn't work yet
 //#define TENSORS_VECTORIZED
+#define TENSORS_CACTUS
 #include "tensor_templates.hh"
 
 #define SQ(X) ((X)*(X))
@@ -68,6 +69,8 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     CCTK_REAL const idy = 1.0/dy;
     CCTK_REAL const idz = 1.0/dz;
 
+    fd::cactus_cdiff cdiff(cctkGH,dx,dy,dz);
+
     #pragma omp parallel for
     for(int k = cctk_nghostzones[2]; k < cctk_lsh[2]-cctk_nghostzones[2]; ++k)
     for(int j = cctk_nghostzones[1]; j < cctk_lsh[1]-cctk_nghostzones[1]; ++j)
@@ -81,43 +84,24 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             auto metric4d = make_metric4(alp[ijk],beta[ijk],metric_tensor_t<CCTK_REAL,3>(gamma[ijk]));
 
             // Derivatives of the lapse, metric and shift
-            covector3_t<CCTK_REAL> dalp(idx*cdiff_x(cctkGH, alp, i, j, k, fd_order),
-                                        idy*cdiff_y(cctkGH, alp, i, j, k, fd_order),
-                                        idz*cdiff_z(cctkGH, alp, i, j, k, fd_order));
+            // this could be simplified by a specialized scalar field type
+            covector3_t<CCTK_REAL> dalp(cdiff.diff<0,fd_order>(alp, ijk),
+                                        cdiff.diff<1,fd_order>(alp, ijk),
+                                        cdiff.diff<2,fd_order>(alp, ijk));
 
-            tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta;
+            tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta = beta.diff<fd_order>(ijk,cdiff);
 
-            dbeta.c<0,0>() = idx*cdiff_x(cctkGH, betax, i, j, k, fd_order);
-            dbeta.c<1,0>() = idx*cdiff_x(cctkGH, betay, i, j, k, fd_order);
-            dbeta.c<2,0>() = idx*cdiff_x(cctkGH, betaz, i, j, k, fd_order);
-            dbeta.c<0,1>() = idy*cdiff_y(cctkGH, betax, i, j, k, fd_order);
-            dbeta.c<1,1>() = idy*cdiff_y(cctkGH, betay, i, j, k, fd_order);
-            dbeta.c<2,1>() = idy*cdiff_y(cctkGH, betaz, i, j, k, fd_order);
-            dbeta.c<0,2>() = idz*cdiff_z(cctkGH, betax, i, j, k, fd_order);
-            dbeta.c<1,2>() = idz*cdiff_z(cctkGH, betay, i, j, k, fd_order);
-            dbeta.c<2,2>() = idz*cdiff_z(cctkGH, betaz, i, j, k, fd_order);
+/*
+            auto dbeta_comp = dbeta.compare_components<20>(dbeta_test);
 
-            sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma;
-
-            // we need a derivative expression...
-            dgamma.c<0,0,0>() = idx*cdiff_x(cctkGH, gxx, i, j, k, fd_order);
-            dgamma.c<0,1,0>() = idx*cdiff_x(cctkGH, gxy, i, j, k, fd_order);
-            dgamma.c<0,2,0>() = idx*cdiff_x(cctkGH, gxz, i, j, k, fd_order);
-            dgamma.c<1,1,0>() = idx*cdiff_x(cctkGH, gyy, i, j, k, fd_order);
-            dgamma.c<1,2,0>() = idx*cdiff_x(cctkGH, gyz, i, j, k, fd_order);
-            dgamma.c<2,2,0>() = idx*cdiff_x(cctkGH, gzz, i, j, k, fd_order);
-            dgamma.c<0,0,1>() = idy*cdiff_y(cctkGH, gxx, i, j, k, fd_order);
-            dgamma.c<0,1,1>() = idy*cdiff_y(cctkGH, gxy, i, j, k, fd_order);
-            dgamma.c<0,2,1>() = idy*cdiff_y(cctkGH, gxz, i, j, k, fd_order);
-            dgamma.c<1,1,1>() = idy*cdiff_y(cctkGH, gyy, i, j, k, fd_order);
-            dgamma.c<1,2,1>() = idy*cdiff_y(cctkGH, gyz, i, j, k, fd_order);
-            dgamma.c<2,2,1>() = idy*cdiff_y(cctkGH, gzz, i, j, k, fd_order);
-            dgamma.c<0,0,2>() = idz*cdiff_z(cctkGH, gxx, i, j, k, fd_order);
-            dgamma.c<0,1,2>() = idz*cdiff_z(cctkGH, gxy, i, j, k, fd_order);
-            dgamma.c<0,2,2>() = idz*cdiff_z(cctkGH, gxz, i, j, k, fd_order);
-            dgamma.c<1,1,2>() = idz*cdiff_z(cctkGH, gyy, i, j, k, fd_order);
-            dgamma.c<1,2,2>() = idz*cdiff_z(cctkGH, gyz, i, j, k, fd_order);
-            dgamma.c<2,2,2>() = idz*cdiff_z(cctkGH, gzz, i, j, k, fd_order);
+            if((ijk % 1000) == 0) {
+              CCTK_VInfo(CCTK_THORNSTRING,"dbeta_xx at (%i): %e, %e",ijk,dbeta.c<0,0>(),dbeta_test.c<0,0>());
+              CCTK_VInfo(CCTK_THORNSTRING,"dbeta_yy at (%i): %e, %e",ijk,dbeta.c<1,1>(),dbeta_test.c<1,1>());
+              CCTK_VInfo(CCTK_THORNSTRING,"dbeta_zz at (%i): %e, %e",ijk,dbeta.c<2,2>(),dbeta_test.c<2,2>());
+              CCTK_VInfo(CCTK_THORNSTRING,"dbet diff at (%i): %e",ijk,dbeta_comp.second);
+            }
+*/
+            sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma = gamma.diff<fd_order>(ijk,cdiff);
 
             // helpers to construct four metric derivative
             auto dg00i = - 2*alp[ijk]*dalp
