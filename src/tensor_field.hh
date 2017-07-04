@@ -18,7 +18,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     std::array<data_t * __restrict__ const,ndof> const & ptr_array;
 
     //! Internal (pointer) index
-    size_t const ptr_index;
+    size_t const grid_index;
 
     // Template recursion to set components, fastest for chained expressions
     template<size_t N, typename E>
@@ -41,8 +41,8 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 
   public:
     //! Contructor (called from a tensor field)
-    tensor_field_expression_t(decltype(ptr_array) const & arr, size_t const index)
-        : ptr_array(arr), ptr_index(index) {}
+    tensor_field_expression_t(decltype(ptr_array) const & arr, size_t const grid_index_)
+        : ptr_array(arr), grid_index(grid_index_) {}
 
 
     [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
@@ -51,7 +51,13 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     template<size_t index>
     inline decltype(auto) evaluate() const {
       constexpr size_t converted_index = property_t::symmetry_t::template index_from_generic<index>::value;
-      return ptr_array[converted_index][ptr_index];
+      return ptr_array[converted_index][grid_index];
+    }
+
+    //! Returns a partial derivative of this tensor field
+    template<typename fd_t>
+    inline decltype(auto) finite_diff(fd_t const & fd) const {
+      return tensor_partial_derivative_t<T,decltype(ptr_array),fd_t>(grid_index,ptr_array,fd);
     }
 
     template<typename E>
@@ -63,7 +69,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 
       static_assert(std::is_same<typename T::property_t::symmetry_t, typename E::property_t::symmetry_t>::value,
                     "Please make sure that tensor expression and tensor field have the same symmetry.");
-      setter_t<E::property_t::ndof-1,E>::set(ptr_index,e,ptr_array);
+      setter_t<E::property_t::ndof-1,E>::set(grid_index,e,ptr_array);
     }
 };
 
@@ -85,7 +91,7 @@ class tensor_field_t {
     const std::array<data_t * __restrict__ const,ndof> ptr_array;
 
     // Template recursion to compute derivatives of components
-    template<size_t order, size_t N, typename dT, typename fd_t>
+    template<size_t N, typename dT, typename fd_t>
     struct fds_gen_t {
       static inline void set(size_t const i, dT& dt, decltype(ptr_array) const & arr, fd_t const & fd) {
         // N goes from ndof to zero of this tensor type
@@ -101,15 +107,15 @@ class tensor_field_t {
         // Get last index (derivative index)
         constexpr size_t deriv_index = dT::property_t::symmetry_t::template uncompress_index<rank-1,gen_index>::value;
 
-        dt.template compressed_c<gen_index>() = fd.template diff<deriv_index,order>(arr[t_sym_index],i);
+        dt.template compressed_c<gen_index>() = fd.template diff<deriv_index>(arr[t_sym_index],i);
 
-        fds_gen_t<order,N-1,dT,fd_t>::set(i,dt,arr,fd);
+        fds_gen_t<N-1,dT,fd_t>::set(i,dt,arr,fd);
       }
     };
-    template<size_t order, typename dT, typename fd_t>
-    struct fds_gen_t<order,0,dT,fd_t> {
+    template<typename dT, typename fd_t>
+    struct fds_gen_t<0,dT,fd_t> {
       static inline void set(size_t const i, dT& dt, decltype(ptr_array) const & arr, fd_t const & fd) {
-        dt.template compressed_c<0>() = fd.template diff<0,order>(arr[0],i);
+        dt.template compressed_c<0>() = fd.template diff<0>(arr[0],i);
       }
     };
 
@@ -127,7 +133,7 @@ class tensor_field_t {
     }
 
     //! Returns a partial derivative of this tensor field at (pointer) index i
-    template<size_t order, typename fd_t>
+    template<typename fd_t>
     inline decltype(auto) diff(size_t const i, fd_t const & fd) const {
       // derivative adds a new (lower) index to this tensor
       using new_index_t = decltype(std::tuple_cat(std::declval<T::property_t::index_t>(),
@@ -146,7 +152,7 @@ class tensor_field_t {
                    ndim>;
       dT dt;
       // fill with finite differences
-      fds_gen_t<order,dT::property_t::ndof-1,dT,fd_t>::set(i,dt,ptr_array,fd);
+      fds_gen_t<dT::property_t::ndof-1,dT,fd_t>::set(i,dt,ptr_array,fd);
 
       return dt;
     }

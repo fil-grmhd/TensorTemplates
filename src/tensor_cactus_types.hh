@@ -22,7 +22,10 @@
 namespace tensors {
 namespace fd {
 
+template<size_t order_>
 struct cactus_cdiff {
+  static constexpr size_t order = order_;
+
   cGH const * const cctkGH;
   std::array<double,3> const idx;
 
@@ -36,7 +39,7 @@ struct cactus_cdiff {
          + (dir == 2)*(CCTK_GFINDEX3D(cctkGH, 0, 0, 1) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0));
   }
 
-  template<size_t dir, size_t order, typename T>
+  template<size_t dir, typename T>
   inline T diff(T const * const ptr, size_t const index) const {
     return idx[dir]*c_diff<dir,order>(ptr, index, this->stride<dir>());
   }

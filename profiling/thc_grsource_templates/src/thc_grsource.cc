@@ -69,7 +69,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     CCTK_REAL const idy = 1.0/dy;
     CCTK_REAL const idz = 1.0/dz;
 
-    fd::cactus_cdiff cdiff(cctkGH,dx,dy,dz);
+    fd::cactus_cdiff<fd_order> cdiff(cctkGH,dx,dy,dz);
 
     #pragma omp parallel for
     for(int k = cctk_nghostzones[2]; k < cctk_lsh[2]-cctk_nghostzones[2]; ++k)
@@ -85,23 +85,13 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
             // Derivatives of the lapse, metric and shift
             // this could be simplified by a specialized scalar field type
-            covector3_t<CCTK_REAL> dalp(cdiff.diff<0,fd_order>(alp, ijk),
-                                        cdiff.diff<1,fd_order>(alp, ijk),
-                                        cdiff.diff<2,fd_order>(alp, ijk));
+            covector3_t<CCTK_REAL> dalp(cdiff.diff<0>(alp, ijk),
+                                        cdiff.diff<1>(alp, ijk),
+                                        cdiff.diff<2>(alp, ijk));
 
-            tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta = beta.diff<fd_order>(ijk,cdiff);
+            tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta = beta[ijk].finite_diff(cdiff);
 
-/*
-            auto dbeta_comp = dbeta.compare_components<20>(dbeta_test);
-
-            if((ijk % 1000) == 0) {
-              CCTK_VInfo(CCTK_THORNSTRING,"dbeta_xx at (%i): %e, %e",ijk,dbeta.c<0,0>(),dbeta_test.c<0,0>());
-              CCTK_VInfo(CCTK_THORNSTRING,"dbeta_yy at (%i): %e, %e",ijk,dbeta.c<1,1>(),dbeta_test.c<1,1>());
-              CCTK_VInfo(CCTK_THORNSTRING,"dbeta_zz at (%i): %e, %e",ijk,dbeta.c<2,2>(),dbeta_test.c<2,2>());
-              CCTK_VInfo(CCTK_THORNSTRING,"dbet diff at (%i): %e",ijk,dbeta_comp.second);
-            }
-*/
-            sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma = gamma.diff<fd_order>(ijk,cdiff);
+            sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma = gamma[ijk].finite_diff(cdiff);
 
             // helpers to construct four metric derivative
             auto dg00i = - 2*alp[ijk]*dalp

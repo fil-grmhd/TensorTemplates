@@ -37,6 +37,7 @@
 #include "tensor_helpers.hh"
 #include "tensor.hh"
 #include "tensor_slice.hh"
+#include "tensor_derivative.hh"
 #include "tensor_field.hh"
 #include "tensor_symmetry_expressions.hh"
 #include "tensor_contraction.hh"
