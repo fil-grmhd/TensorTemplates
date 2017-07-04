@@ -90,35 +90,6 @@ class tensor_field_t {
     //! Storage for ndof pointers
     const std::array<data_t * __restrict__ const,ndof> ptr_array;
 
-    // Template recursion to compute derivatives of components
-    template<size_t N, typename dT, typename fd_t>
-    struct fds_gen_t {
-      static inline void set(size_t const i, dT& dt, decltype(ptr_array) const & arr, fd_t const & fd) {
-        // N goes from ndof to zero of this tensor type
-        // one has to cast to generic index before one can call evaluate
-        constexpr size_t gen_index = dT::property_t::symmetry_t::template index_to_generic<N>::value;
-        constexpr size_t rank = dT::property_t::rank;
-        constexpr size_t ndim = dT::property_t::ndim;
-
-        // Remove híghest power of ndim -> remove last index -> T index
-        constexpr size_t t_gen_index = gen_index % utilities::static_pow<ndim,rank-1>::value;
-        // Transform to sym index of T
-        constexpr size_t t_sym_index = T::property_t::symmetry_t::template index_from_generic<t_gen_index>::value;
-        // Get last index (derivative index)
-        constexpr size_t deriv_index = dT::property_t::symmetry_t::template uncompress_index<rank-1,gen_index>::value;
-
-        dt.template compressed_c<gen_index>() = fd.template diff<deriv_index>(arr[t_sym_index],i);
-
-        fds_gen_t<N-1,dT,fd_t>::set(i,dt,arr,fd);
-      }
-    };
-    template<typename dT, typename fd_t>
-    struct fds_gen_t<0,dT,fd_t> {
-      static inline void set(size_t const i, dT& dt, decltype(ptr_array) const & arr, fd_t const & fd) {
-        dt.template compressed_c<0>() = fd.template diff<0>(arr[0],i);
-      }
-    };
-
   public:
     //! Constructor from pointer parameters
     template <typename... TArgs>
@@ -130,31 +101,6 @@ class tensor_field_t {
     //! Returns a tensor field expression at (pointer) index i
     inline decltype(auto) operator[](size_t const i) const {
       return tf_expression_t(ptr_array,i);
-    }
-
-    //! Returns a partial derivative of this tensor field at (pointer) index i
-    template<typename fd_t>
-    inline decltype(auto) diff(size_t const i, fd_t const & fd) const {
-      // derivative adds a new (lower) index to this tensor
-      using new_index_t = decltype(std::tuple_cat(std::declval<T::property_t::index_t>(),
-                                                  std::declval<std::tuple<lower_t>>()));
-
-      // partial derivative of tensor
-      constexpr size_t ndim = T::property_t::ndim;
-      constexpr size_t rank = T::property_t::rank + 1;
-      using dT = general_tensor_t<typename T::property_t::data_t,
-                   typename T::property_t::frame_t,
-// doesn't work, one would need to changed rank in symmetry_t
-//                   typename T::property_t::symmetry_t,
-                   generic_symmetry_t<ndim,rank>,
-                   rank,
-                   new_index_t,
-                   ndim>;
-      dT dt;
-      // fill with finite differences
-      fds_gen_t<dT::property_t::ndof-1,dT,fd_t>::set(i,dt,ptr_array,fd);
-
-      return dt;
     }
 };
 
