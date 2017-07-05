@@ -1,12 +1,12 @@
-#ifndef TENSORS_DERIVATIVE_HH
-#define TENSORS_DERIVATIVE_HH
+#ifndef TENSORS_DERIVATIVE_VEC_HH
+#define TENSORS_DERIVATIVE_VEC_HH
 
 namespace tensors {
 
-//! Expression template for a partial derivative of a tensor
+//! Expression template for a vectorized partial derivative of a tensor
 template <typename E, typename array_t, typename fd_t>
-class tensor_partial_derivative_t
-    : public tensor_expression_t<tensor_partial_derivative_t<E,array_t,fd_t>> {
+class tensor_partial_derivative_vt
+    : public tensor_expression_t<tensor_partial_derivative_vt<E,array_t,fd_t>> {
 
 private:
   //! Object defining a finite difference operation on a pointer
@@ -43,8 +43,14 @@ public:
                        >
                      >;
 
+  // The data type is in this case a vector register type
+  using vec_t = typename property_t::data_t;
+  // The actual data type
+  using data_t = typename vec_t::EntryType;
 
-  tensor_partial_derivative_t(size_t const grid_index_, array_t const & ptr_array_, fd_t const & fd_)
+
+
+  tensor_partial_derivative_vt(size_t const grid_index_, array_t const & ptr_array_, fd_t const & fd_)
                             : grid_index(grid_index_), ptr_array(ptr_array_), fd(fd_) {};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
@@ -52,7 +58,8 @@ public:
   operator[](size_t i) const = delete;
 
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index>
+  inline decltype(auto) evaluate() const {
     // get index without partial derivative index part
     constexpr size_t tensor_gen_index = index % utilities::static_pow<ndim,rank-1>::value;
     // transform to underlying symmetry index (since array has only ndof elements)
@@ -61,8 +68,15 @@ public:
     // get last index, which is the derivative index and defines the direction of the fd
     constexpr size_t deriv_index = property_t::symmetry_t::template uncompress_index<rank-1,index>::value;
 
-    // compute fd at point grid_index of tensor_sym_index' component
-    return fd.template diff<deriv_index>(ptr_array[tensor_sym_index],grid_index);
+    // vector register of data_t with Vc::Vector<data_t>::Size elemets
+    vec_t vec_register;
+
+    // compute fd at points grid_index...gird_index + Vc::Vector<data_t>::Size of tensor_sym_index' component
+    for(size_t i = 0; i < vec_t::Size; ++i) {
+      vec_register[i] = fd.template diff<deriv_index>(ptr_array[tensor_sym_index],grid_index+i);
+    }
+
+    return vec_register;
   }
 };
 

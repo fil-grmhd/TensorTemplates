@@ -1,5 +1,5 @@
 //  TensorTemplates: C++ tensor class templates
-//  Copyright (C) 2016, Ludwig Jens Papenfort
+//  Copyright (C) 2017, Ludwig Jens Papenfort
 //                      <papenfort@th.physik.uni-frankfurt.de>
 //
 //  This program is free software: you can redistribute it and/or modify

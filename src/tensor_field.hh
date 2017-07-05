@@ -5,8 +5,8 @@ namespace tensors {
 
 //! Template for generic tensor field expression
 //! This represents a tensor at a specific grid position
-template<typename T>
-class tensor_field_expression_t : public tensor_expression_t<tensor_field_expression_t<T>> {
+template<typename T, typename ptr_array_t>
+class tensor_field_expression_t : public tensor_expression_t<tensor_field_expression_t<T,ptr_array_t>> {
   public:
     // Get properties of underlying tensor type
     using property_t = typename T::property_t;
@@ -15,7 +15,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 
   private:
     //! Reference to pointer array of underlying tensor field
-    std::array<data_t * __restrict__ const,ndof> const & ptr_array;
+    ptr_array_t const & ptr_array;
 
     //! Internal (pointer) index
     size_t const grid_index;
@@ -23,7 +23,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     // Template recursion to set components, fastest for chained expressions
     template<size_t N, typename E>
     struct setter_t {
-      static inline void set(size_t const i, E const& e, decltype(ptr_array) const & arr) {
+      static inline void set(size_t const i, E const& e, ptr_array_t const & arr) {
         // N goes from ndof to zero of this tensor type
         // one has to cast to generic index before one can call evaluate
         constexpr size_t gen_index = E::property_t::symmetry_t::template index_to_generic<N>::value;
@@ -34,14 +34,14 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     };
     template<typename E>
     struct setter_t<0,E> {
-      static inline void set(size_t const i, E const& e, decltype(ptr_array) const & arr) {
+      static inline void set(size_t const i, E const& e, ptr_array_t const & arr) {
         arr[0][i] = e.template evaluate<0>();
       }
     };
 
   public:
     //! Contructor (called from a tensor field)
-    tensor_field_expression_t(decltype(ptr_array) const & arr, size_t const grid_index_)
+    tensor_field_expression_t(ptr_array_t const & arr, size_t const grid_index_)
         : ptr_array(arr), grid_index(grid_index_) {}
 
 
@@ -57,7 +57,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     //! Returns a partial derivative of this tensor field
     template<typename fd_t>
     inline decltype(auto) finite_diff(fd_t const & fd) const {
-      return tensor_partial_derivative_t<T,decltype(ptr_array),fd_t>(grid_index,ptr_array,fd);
+      return tensor_partial_derivative_t<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
     }
 
     template<typename E>
@@ -78,7 +78,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 //! but delivers tensor field expressions at different grid points.
 //  The tensor field expression is itself a template parameter,
 //  which implements the load/store operations.
-template<typename T, typename tf_expression_t = tensor_field_expression_t<T>>
+template<typename T>
 class tensor_field_t {
   public:
     // Get properties of underlying tensor type
@@ -100,7 +100,7 @@ class tensor_field_t {
 
     //! Returns a tensor field expression at (pointer) index i
     inline decltype(auto) operator[](size_t const i) const {
-      return tf_expression_t(ptr_array,i);
+      return tensor_field_expression_t<T,decltype(ptr_array)>(ptr_array,i);
     }
 };
 

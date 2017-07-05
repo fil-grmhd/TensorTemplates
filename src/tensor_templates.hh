@@ -52,8 +52,9 @@
 #endif
 
 #ifdef TENSORS_VECTORIZED
-#include "tensor_vectortypes.hh"
-#include "tensor_field_vectorized.hh"
+#include "vectorized/tensor_types.hh"
+#include "vectorized/tensor_derivative.hh"
+#include "vectorized/tensor_field.hh"
 #endif
 
 //! main namespace
