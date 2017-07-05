@@ -21,15 +21,15 @@
 #include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
-#include "finite_difference.h"
-#include "utils.hh"
-
 // doesn't work yet
+// activates vectorized types and implementations
 //#define TENSORS_VECTORIZED
+
+// needed for cactus fd interface
 #define TENSORS_CACTUS
 #include "tensor_templates.hh"
 
-#define SQ(X) ((X)*(X))
+
 
 extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     DECLARE_CCTK_ARGUMENTS
@@ -37,7 +37,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
     constexpr int fd_order = 4;
 
-    int const gsiz = UTILS_GFSIZE(cctkGH);
+    int const gsiz = cctkGH->cctk_ash[0]*cctkGH->cctk_ash[1]*cctkGH->cctk_ash[2];
 
     CCTK_REAL * velx = &vel[0*gsiz];
     CCTK_REAL * vely = &vel[1*gsiz];
@@ -65,9 +65,6 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     CCTK_REAL const dx  = CCTK_DELTA_SPACE(0);
     CCTK_REAL const dy  = CCTK_DELTA_SPACE(1);
     CCTK_REAL const dz  = CCTK_DELTA_SPACE(2);
-    CCTK_REAL const idx = 1.0/dx;
-    CCTK_REAL const idy = 1.0/dy;
-    CCTK_REAL const idz = 1.0/dz;
 
     fd::cactus_cdiff<fd_order> cdiff(cctkGH,dx,dy,dz);
 
@@ -77,7 +74,6 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     #pragma forceinline recursive
     for(int i = cctk_nghostzones[0]; i < cctk_lsh[0]-cctk_nghostzones[0]; ++i) {
             int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
-
 
             // construct four metric and inverse
             // this is the only way to make it work, passing gamma[ijk] or evaluate(gamma[ijk]) fails
@@ -116,30 +112,29 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             // gjk,i
             dg.set<-2,-2,-2>(dgamma);
 
-            // four velocity
+            // four velocity u^mu
             const auto u0 =  w_lorentz[ijk]/alp[ijk];
             auto u = vector4_t<CCTK_REAL> (u0,
                                           (alp[ijk]*velx[ijk] - betax[ijk])*u0,
                                           (alp[ijk]*vely[ijk] - betay[ijk])*u0,
                                           (alp[ijk]*velz[ijk] - betaz[ijk])*u0);
-            // construct tensor product
+            // construct tensor product of u^mu u^nu
             auto uu = sym2_cast(tensor_cat(u,u));
 
             // construct em tensor
             sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> T = (rho[ijk]*(1+eps[ijk])+press[ijk])*uu
                                                            +  press[ijk]*metric4d.invmetric;
 
-            // slice expression to contain only the spatial components
-            auto rhs_scon_vec = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet
+            // slice expression to contain only the spatial components, which is rhs S conserved
+            r_scon[ijk] = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet
                                          *(trace(contract(T,dg))));
 
-            r_scon[ijk] = rhs_scon_vec;
-
-            // slice em tensor
+            // slice em tensor in different ways
             auto T0i = slice<0,-2>(T);
 
             auto Tij = sym2_cast(slice<-2,-2>(T));
 
+            // construct tensor products
             auto bb = sym2_cast(tensor_cat(beta[ijk],beta[ijk]));
             auto T0ib = tensor_cat(T0i,beta[ijk]);
 

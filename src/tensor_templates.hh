@@ -48,7 +48,7 @@
 #include "finite_differences.hh"
 
 #ifdef TENSORS_CACTUS
-#include "tensor_cactus_types.hh"
+#include "cactus_types.hh"
 #endif
 
 #ifdef TENSORS_VECTORIZED

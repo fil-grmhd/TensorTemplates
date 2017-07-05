@@ -27,11 +27,13 @@ struct cactus_cdiff {
   static constexpr size_t order = order_;
 
   cGH const * const cctkGH;
+  // one over dx,dy,dz
   std::array<double,3> const idx;
 
   cactus_cdiff(cGH const * const cctkGH_, double dx, double dy, double dz)
              : cctkGH(cctkGH_), idx({1.0/dx,1.0/dy,1.0/dz}) {}
 
+  // get stride from cactus grid
   template<size_t dir>
   inline size_t stride() const {
     return (dir == 0)*(CCTK_GFINDEX3D(cctkGH, 1, 0, 0) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0))
@@ -39,6 +41,7 @@ struct cactus_cdiff {
          + (dir == 2)*(CCTK_GFINDEX3D(cctkGH, 0, 0, 1) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0));
   }
 
+  // compute central difference, uses general cdiff interface
   template<size_t dir, typename T>
   inline T diff(T const * const ptr, size_t const index) const {
     return idx[dir]*c_diff<dir,order>(ptr, index, this->stride<dir>());
