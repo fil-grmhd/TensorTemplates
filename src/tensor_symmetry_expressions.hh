@@ -48,7 +48,7 @@ public:
   operator[](size_t i) const = delete;
 
   template <size_t index>
-  inline const typename E::property_t::data_t evaluate() const {
+  inline decltype(auto) evaluate() const {
     // cast generic index to symmetric one and back
     // this makes sure, that always the same elements are accessed
     // i.e. sym2_cast(generic_tensor).evaluate<index>() with index = compress(2,1)

@@ -85,7 +85,7 @@ public:
   operator[](size_t i) const = delete;
 
   template <size_t c_index>
-  inline typename property_t::data_t const evaluate() const {
+  inline decltype(auto) evaluate() const {
 
     return _u.template evaluate<
                          compute_unsliced_cindex<
@@ -116,7 +116,7 @@ class tensor_assign_slice_t : public tensor_slice_t<general_tensor_t<T, frame_t_
   using super = tensor_slice_t<general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_>, Ind...>;
 
   using this_tensor_t = tensor_assign_slice_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_,Ind...>;
-  
+
 public:
   //! Get component reference at (generic) compressed index position
   //  Needed if one wants to assign something to a specific element,

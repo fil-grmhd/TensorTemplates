@@ -18,8 +18,6 @@
 #ifndef TENSORS_TYPES_HH
 #define TENSORS_TYPES_HH
 
-#include <type_traits>
-
 namespace tensors {
 
 // forward decleration of general tensor class
@@ -79,12 +77,10 @@ using sym_tensor4_t = sym2_tensor_t<T, 4, eulerian_t, i0, i1, ranks...>;
 
 
 // metric types
-template<typename data_t, size_t ndim>
-using metric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, sym2_symmetry_t<ndim,2>, 2, std::tuple<lower_t, lower_t>, ndim>;
-template<typename data_t, size_t ndim>
-using invmetric_tensor_t =
-      general_tensor_t<data_t, any_frame_t, sym2_symmetry_t<ndim,2>, 2, std::tuple<upper_t, upper_t>, ndim>;
+template<typename T, size_t ndim>
+using metric_tensor_t = sym2_tensor_t<T, ndim, any_frame_t, 0, 1, lower_t, lower_t>;
+template<typename T, size_t ndim>
+using invmetric_tensor_t = sym2_tensor_t<T, ndim, any_frame_t, 0, 1, upper_t, upper_t>;
 
 } // namespace tensors
 

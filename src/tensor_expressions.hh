@@ -45,14 +45,14 @@ public:
   //! (generic) compressed index access to components of tensor expression E
   //  Calls evaluation, which can be expensive, if the expression is not evaluated yet.
   template<size_t index>
-  inline decltype(auto) compressed_c() {
+  inline decltype(auto) compressed_c() const {
     return static_cast<E const &>(*this).template evaluate<index>();
   }
 
   //! Natural index access to components of tensor expression E
   //  Calls evaluation, which can be expensive, if the expression is not evaluated yet.
   template <size_t... Ind>
-  inline decltype(auto) c() {
+  inline decltype(auto) c() const {
     constexpr size_t index = generic_symmetry_t<
                                E::property_t::ndim,
                                E::property_t::rank

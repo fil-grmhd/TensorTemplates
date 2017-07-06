@@ -19,7 +19,8 @@
 #include<iostream>
 #include<typeinfo>
 
-#define TENSORS_DEBUGGING
+// nothing vectorized yet
+//#define TENSORS_VECTORIZED
 #include "../tensor_templates.hh"
 
 
@@ -274,6 +275,8 @@ int main(){
   std::cout << "F(1,2) = " << F.c<1,2>() << std::endl;
 
   auto G = evaluate(slice<-1,1>(F));
+  std::cout << "G(1) = " << G.c<1>() << std::endl;
+  G.c<1>() = 1337;
   std::cout << "G(1) = " << G.c<1>() << std::endl;
 
   tensor3_t<double,upper_t,upper_t> ab = tensor_cat(a,b);

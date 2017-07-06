@@ -54,7 +54,7 @@ public:
   };
 
 
-  template <size_t index> inline typename property_t::data_t const evaluate() const {
+  template <size_t index> inline decltype(auto) evaluate() const {
 
     return _u.template evaluate<compute_new_cindex<index,Ind...>::value>();
   }

@@ -105,12 +105,17 @@ public:
   //! Constructor from parameters
   // SYM: this is in weird order for sym2 and rank > 2, first sym indices than rest
   template <typename... TArgs>
-  general_tensor_t(data_t first_elem, TArgs... elem)
-      : m_data({first_elem, static_cast<data_t>(elem)...}) {
+  general_tensor_t(data_t first_elem, TArgs... elem) : m_data({first_elem, static_cast<data_t>(elem)...}) {
 	  static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
 	  static_assert(utilities::all_true<(std::is_convertible<data_t,TArgs>::value)...>::value, "The data_types are incompatible!");
   };
 
+/*
+  template <typename... TArgs>
+  general_tensor_t(const double * first_elem, TArgs... elem) : m_data({data_t(first_elem), data_t(static_cast<const double*>(elem))...}) {
+	  static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
+  };
+*/
   general_tensor_t() : m_data({0}){};
 
   // CHECK: make this a var template

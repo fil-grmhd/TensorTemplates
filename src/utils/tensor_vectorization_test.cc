@@ -1,4 +1,3 @@
-
 #include <Vc/Vc>
 #include <iostream>
 #include <array>
@@ -7,18 +6,68 @@
 #include <random>
 #include <chrono>
 
-#include <tensor_templates.hh>
+#define TENSORS_VECTORIZED
+#include "../tensor_templates.hh"
+
+#define SCA
+#define VEC
+
+using namespace tensors;
+
+// some artificial diff class
+struct test_diff {
+  template<size_t dir>
+  static inline size_t stride() {
+    return dir+1;
+  }
+
+  template<size_t dir, typename T>
+  static inline T diff(T const * const ptr, size_t const index) {
+//    constexpr double idx[3] = {0,0,0};
+    double idx = 0.1;
+    return idx*fd::c_diff<dir,4>(ptr, index, test_diff::stride<dir>());
+  }
+};
+struct test_diff_v {
+  template<size_t dir>
+  static inline size_t stride() {
+    return dir+1;
+  }
+
+  template<size_t dir, typename T>
+  static inline decltype(auto) diff(T const * const ptr, size_t const index) {
+//    Vc::double_v idx[3] = {Vc::double_v(0),Vc::double_v(0),Vc::double_v(0)};
+    Vc::double_v idx(0.1);
+    return idx*fd::c_diff_v<dir,4>(ptr, index, test_diff_v::stride<dir>());
+  }
+};
+
+struct test_diff_v_old {
+  template<size_t dir, typename T>
+  static inline decltype(auto) diff(T const * const ptr, size_t const index) {
+
+    Vc::double_v idx(0.1);
+    Vc::Vector<T> vec_register;
+
+    for(size_t i = 0; i < Vc::Vector<T>::Size; ++i) {
+      vec_register[i] = fd::c_diff<dir,4>(ptr, index + i, test_diff::stride<dir>());
+//      vec_register[i] = test_diff::template diff<dir>(ptr,index+i);
+    }
+
+    return idx*vec_register;
+  }
+};
 
 
 int main() {
-  using namespace tensors;
 
-  using vec_type = Vc::double_v;
   using sca_type = double;
-//  using vec_type = Vc::float_v;
 //  using sca_type = float;
 
-  constexpr size_t N = 3000000;
+  using vec_type = Vc::Vector<sca_type>;
+
+//  constexpr size_t N = 80000000;
+  constexpr size_t N = 80000;
   constexpr size_t vec_size = vec_type::Size;
   constexpr size_t num_data = N*vec_size;
 
@@ -26,7 +75,20 @@ int main() {
   std::vector<sca_type> data_0(num_data);
   std::vector<sca_type> data_1(num_data);
   std::vector<sca_type> data_2(num_data);
-  std::vector<sca_type> data_3(num_data);
+
+  std::vector<sca_type> data_000(num_data);
+  std::vector<sca_type> data_010(num_data);
+  std::vector<sca_type> data_020(num_data);
+  std::vector<sca_type> data_110(num_data);
+  std::vector<sca_type> data_120(num_data);
+  std::vector<sca_type> data_220(num_data);
+
+  std::vector<sca_type> data_001(num_data);
+  std::vector<sca_type> data_011(num_data);
+  std::vector<sca_type> data_021(num_data);
+  std::vector<sca_type> data_111(num_data);
+  std::vector<sca_type> data_121(num_data);
+  std::vector<sca_type> data_221(num_data);
 
   // some result GF for scalar and vector version
   std::vector<sca_type> result0(num_data);
@@ -48,54 +110,84 @@ int main() {
     data_0[i] = dist_uni(gen);
     data_1[i] = dist_uni(gen);
     data_2[i] = dist_uni(gen);
-    data_3[i] = dist_uni(gen);
+
+    data_000[i] = dist_uni(gen);
+    data_010[i] = dist_uni(gen);
+    data_020[i] = dist_uni(gen);
+    data_110[i] = dist_uni(gen);
+    data_120[i] = dist_uni(gen);
+    data_220[i] = dist_uni(gen);
+
+    data_000[i] = dist_uni(gen);
+    data_010[i] = dist_uni(gen);
+    data_020[i] = dist_uni(gen);
+    data_110[i] = dist_uni(gen);
+    data_120[i] = dist_uni(gen);
+    data_220[i] = dist_uni(gen);
+/*
+    data_0[i] = 1;
+    data_1[i] = 2;
+    data_2[i] = 3;
+
+    data_000[i] = 4;
+    data_010[i] = 5;
+    data_020[i] = 6;
+    data_110[i] = 7;
+    data_120[i] = 8;
+    data_220[i] = 9;
+
+    data_000[i] = 10;
+    data_010[i] = 11;
+    data_020[i] = 12;
+    data_110[i] = 13;
+    data_120[i] = 14;
+    data_220[i] = 15;
+*/
   }
 
-  // scalar version
   auto t0 = std::chrono::high_resolution_clock::now();
+  auto t1 = std::chrono::high_resolution_clock::now();
+
+  #ifdef SCA
+  std::cout << "Starting scalar computations..." << std::endl;
+  // scalar version
+  t0 = std::chrono::high_resolution_clock::now();
+
+{
+  test_diff diff;
+
+  tensor_field_t<vector3_t<sca_type>> beta(&data_0[0],&data_1[0],&data_2[0]);
+
+  tensor_field_t<covector3_t<sca_type>> rhs_scon(&result0[0],&result1[0],&result2[0]);
+
+  tensor_field_t<metric_tensor_t<sca_type,3>> gamma(&data_000[0],&data_010[0],&data_020[0],
+                                                                 &data_110[0],&data_120[0],
+                                                                              &data_220[0]);
+
+  tensor_field_t<metric_tensor_t<sca_type,3>> K(&data_001[0],&data_011[0],&data_021[0],
+                                                             &data_111[0],&data_121[0],
+                                                                          &data_221[0]);
+
+
   #pragma forceinline recursive
   for(int i = 0; i < num_data; ++i) {
     sca_type alp = data_0[i];
-    vector3_t<sca_type> beta(data_0[i],data_1[i],data_2[i]);
-    metric_tensor_t<double,3> gamma(data_0[i],data_1[i],data_2[i],
-                                              data_1[i],data_2[i],
-                                                        data_2[i]);
-    metric_tensor_t<double,3> K(data_0[i],data_1[i],data_2[i],
-                                          data_1[i],data_2[i],
-                                                    data_2[i]);
 
-    covector3_t<double> dalp(data_0[i],data_1[i],data_2[i]);
-    tensor3_t<double,upper_t,lower_t> dbeta(data_0[i],data_1[i],data_2[i],
-                                            data_0[i],data_1[i],data_2[i],
-                                            data_0[i],data_1[i],data_2[i]);
+    // this is only because we have not special scalar type
+    covector3_t<double> dalp(diff.diff<0>(&data_0[0],i),
+                             diff.diff<1>(&data_0[0],i),
+                             diff.diff<2>(&data_0[0],i));
 
-    sym_tensor3_t<double,0,1,lower_t,lower_t,lower_t> dgamma;
+    tensor3_t<double,upper_t,lower_t> dbeta = beta[i].finite_diff(diff);
 
-    dgamma.c<0,0,0>() = 1;
-    dgamma.c<0,1,0>() = 1;
-    dgamma.c<0,2,0>() = 1;
-    dgamma.c<1,1,0>() = 1;
-    dgamma.c<1,2,0>() = 1;
-    dgamma.c<2,2,0>() = 1;
-    dgamma.c<0,0,1>() = 1;
-    dgamma.c<0,1,1>() = 1;
-    dgamma.c<0,2,1>() = 1;
-    dgamma.c<1,1,1>() = 1;
-    dgamma.c<1,2,1>() = 1;
-    dgamma.c<2,2,1>() = 1;
-    dgamma.c<0,0,2>() = 1;
-    dgamma.c<0,1,2>() = 1;
-    dgamma.c<0,2,2>() = 1;
-    dgamma.c<1,1,2>() = 1;
-    dgamma.c<1,2,2>() = 1;
-    dgamma.c<2,2,2>() = 1;
+    sym_tensor3_t<double,0,1,lower_t,lower_t,lower_t> dgamma = gamma[i].finite_diff(diff);
 
+// this fails with gcc
     auto dg00i = - 2* alp * dalp
-                 + 2*contract(dbeta,contract(gamma,beta))
-                 + contract(beta,contract(beta,dgamma));
-    auto dg0ji = contract(gamma,dbeta)
-               + contract(dgamma,beta);
-
+                 + 2*contract(dbeta,contract(gamma[i],beta[i]))
+                 + contract(beta[i],contract(beta[i],dgamma));
+    auto dg0ji = contract(gamma[i],dbeta)
+               + contract(dgamma,beta[i]);
 
     sym_tensor4_t<double,0,1,lower_t,lower_t,lower_t> dg;
 
@@ -108,116 +200,89 @@ int main() {
     // gjk,i
     dg.set<-2,-2,-2>(dgamma);
 
-    vector4_t<double> u(data_0[i],data_1[i],data_2[i],data_3[i]);
+    vector4_t<double> u(1,2,3,4);
 
+// this fails with gcc
     auto uu = sym2_cast(tensor_cat(u,u));
 
-    sym_tensor4_t<double,0,1,upper_t,upper_t> invmetric(data_0[i],data_1[i],data_2[i],data_3[i],
-                                                                  data_1[i],data_2[i],data_3[i],
-                                                                            data_2[i],data_3[i],
-                                                                                      data_3[i]);
+    sym_tensor4_t<double,0,1,upper_t,upper_t> invmetric(1,1,1,1,
+                                                          2,2,2,
+                                                            3,3,
+                                                              4);
 
     sym_tensor4_t<double,0,1,upper_t,upper_t> T = uu*1337 + 42.0*invmetric;
 
-    auto rhs_scon = slice<-2>(0.5*alp*(trace(contract(T,dg))));
-
-    result0[i] = rhs_scon.c<1>();
-    result1[i] = rhs_scon.c<2>();
-    result2[i] = rhs_scon.c<3>();
+// this fails with gcc
+    rhs_scon[i] = slice<-2>(0.5*alp*(trace(contract(T,dg))));
 
     auto T0i = slice<0,-2>(T);
 
     auto Tij = sym2_cast(slice<-2,-2>(T));
 
-    auto bb = sym2_cast(tensor_cat(beta,beta));
-    auto T0ib = tensor_cat(T0i,beta);
+    auto bb = sym2_cast(tensor_cat(beta[i],beta[i]));
+    auto T0ib = tensor_cat(T0i,beta[i]);
 
     result3[i] = alp
               * (trace(
                    contract(
                      T.c<0,0>()*bb + 2 * T0ib + Tij,
-                     K
+                     K[i]
                    )
                  )
                - contract(
-                   T.c<0,0>()*beta + T0i,
+                   T.c<0,0>()*beta[i] + T0i,
                    dalp
                  )
                 );
   }
-  auto t1 = std::chrono::high_resolution_clock::now();
+}
+  t1 = std::chrono::high_resolution_clock::now();
 
-  std::cout << "Scalar: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count() << " ms" << std::endl;
+  auto t_scalar = std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count();
+  std::cout << "Scalar: " << t_scalar << " ms" << std::endl;
+  #endif
 
+  #ifdef VEC
+  std::cout << "Starting vector computations..." << std::endl;
   // vectorized version
   t0 = std::chrono::high_resolution_clock::now();
+
+{
+//  test_diff_v diff;
+  test_diff_v_old diff;
+
+  tensor_field_vt<vector3_vt<sca_type>> beta(&data_0[0],&data_1[0],&data_2[0]);
+
+  tensor_field_vt<covector3_vt<sca_type>> rhs_scon(&result_vec0[0],&result_vec1[0],&result_vec2[0]);
+
+  tensor_field_vt<metric_tensor_vt<sca_type,3>> gamma(&data_000[0],&data_010[0],&data_020[0],
+                                                                   &data_110[0],&data_120[0],
+                                                                                &data_220[0]);
+
+  tensor_field_vt<metric_tensor_vt<sca_type,3>> K(&data_001[0],&data_011[0],&data_021[0],
+                                                               &data_111[0],&data_121[0],
+                                                                            &data_221[0]);
+
   #pragma forceinline recursive
   for(int i = 0; i < num_data; i += vec_size) {
-    vec_type reg00(&data_0[i]);
-    vec_type reg01(&data_1[i]);
-    vec_type reg02(&data_2[i]);
-    vec_type reg03(&data_3[i]);
+    vec_type alp(&data_0[i]);
 
-    vec_type reg10(&data_0[i]);
-    vec_type reg11(&data_1[i]);
-    vec_type reg12(&data_2[i]);
-    vec_type reg13(&data_3[i]);
+    covector3_vt<sca_type> dalp(diff.diff<0>(&data_0[0],i),
+                                diff.diff<1>(&data_0[0],i),
+                                diff.diff<2>(&data_0[0],i));
 
-    vec_type reg20(&data_0[i]);
-    vec_type reg21(&data_1[i]);
-    vec_type reg22(&data_2[i]);
-    vec_type reg23(&data_3[i]);
+    tensor3_vt<sca_type,upper_t,lower_t> dbeta = beta[i].finite_diff(diff);
 
-    vec_type reg30(&data_0[i]);
-    vec_type reg31(&data_1[i]);
-    vec_type reg32(&data_2[i]);
-    vec_type reg33(&data_3[i]);
-
-
-    vec_type alp = reg00;
-    vector3_t<vec_type> beta(reg00,reg01,reg02);
-    metric_tensor_t<vec_type,3> gamma(reg00,reg01,reg02,
-                                            reg11,reg12,
-                                                  reg22);
-    metric_tensor_t<vec_type,3> K(reg00,reg01,reg02,
-                                        reg11,reg12,
-                                              reg22);
-
-    covector3_t<vec_type> dalp(reg00,reg01,reg02);
-
-    tensor3_t<vec_type,upper_t,lower_t> dbeta(reg00,reg01,reg02,
-                                              reg10,reg11,reg12,
-                                              reg20,reg21,reg22);
-
-    sym_tensor3_t<vec_type,0,1,lower_t,lower_t,lower_t> dgamma;
-
-    dgamma.c<0,0,0>() = vec_type(1);
-    dgamma.c<0,1,0>() = vec_type(1);
-    dgamma.c<0,2,0>() = vec_type(1);
-    dgamma.c<1,1,0>() = vec_type(1);
-    dgamma.c<1,2,0>() = vec_type(1);
-    dgamma.c<2,2,0>() = vec_type(1);
-    dgamma.c<0,0,1>() = vec_type(1);
-    dgamma.c<0,1,1>() = vec_type(1);
-    dgamma.c<0,2,1>() = vec_type(1);
-    dgamma.c<1,1,1>() = vec_type(1);
-    dgamma.c<1,2,1>() = vec_type(1);
-    dgamma.c<2,2,1>() = vec_type(1);
-    dgamma.c<0,0,2>() = vec_type(1);
-    dgamma.c<0,1,2>() = vec_type(1);
-    dgamma.c<0,2,2>() = vec_type(1);
-    dgamma.c<1,1,2>() = vec_type(1);
-    dgamma.c<1,2,2>() = vec_type(1);
-    dgamma.c<2,2,2>() = vec_type(1);
+    sym_tensor3_vt<sca_type,0,1,lower_t,lower_t,lower_t> dgamma = gamma[i].finite_diff(diff);
 
     auto dg00i = - 2* alp * dalp
-                 + 2*contract(dbeta,contract(gamma,beta))
-                 + contract(beta,contract(beta,dgamma));
-    auto dg0ji = contract(gamma,dbeta)
-               + contract(dgamma,beta);
+                 + 2*contract(dbeta,contract(gamma[i],beta[i]))
+                 + contract(beta[i],contract(beta[i],dgamma));
+    auto dg0ji = contract(gamma[i],dbeta)
+               + contract(dgamma,beta[i]);
 
 
-    sym_tensor4_t<vec_type,0,1,lower_t,lower_t,lower_t> dg;
+    sym_tensor4_vt<sca_type,0,1,lower_t,lower_t,lower_t> dg;
 
     // g00,i
     dg.set<0,0,-2>(dg00i);
@@ -228,55 +293,59 @@ int main() {
     // gjk,i
     dg.set<-2,-2,-2>(dgamma);
 
-    vector4_t<vec_type> u(reg00,reg01,reg02,reg03);
+    vector4_vt<sca_type> u(vec_type(1),vec_type(2),vec_type(3),vec_type(4));
 
     auto uu = sym2_cast(tensor_cat(u,u));
 
-    sym_tensor4_t<vec_type,0,1,upper_t,upper_t> invmetric(reg00,reg01,reg02,reg03,
-                                                                reg11,reg12,reg13,
-                                                                      reg22,reg23,
-                                                                            reg33);
+    sym_tensor4_vt<sca_type,0,1,upper_t,upper_t> invmetric(vec_type(1),vec_type(1),vec_type(1),vec_type(1),
+                                                                       vec_type(2),vec_type(2),vec_type(2),
+                                                                                   vec_type(3),vec_type(3),
+                                                                                               vec_type(4));
 
-    sym_tensor4_t<vec_type,0,1,upper_t,upper_t> T = uu*1337 + 42.0*invmetric;
+    sym_tensor4_vt<sca_type,0,1,upper_t,upper_t> T = uu*1337 + 42.0*invmetric;
 
-    auto rhs_scon = slice<-2>(0.5*alp*(trace(contract(T,dg))));
-
-    vec_type reg_result0 = rhs_scon.c<1>();
-    vec_type reg_result1 = rhs_scon.c<2>();
-    vec_type reg_result2 = rhs_scon.c<3>();
+    rhs_scon[i] = slice<-2>(0.5*alp*(trace(contract(T,dg))));
 
     auto T0i = slice<0,-2>(T);
 
     auto Tij = sym2_cast(slice<-2,-2>(T));
 
-    auto bb = sym2_cast(tensor_cat(beta,beta));
-    auto T0ib = tensor_cat(T0i,beta);
+    auto bb = sym2_cast(tensor_cat(beta[i],beta[i]));
+    auto T0ib = tensor_cat(T0i,beta[i]);
 
     vec_type reg_result3 = alp
               * (trace(
                    contract(
                      T.c<0,0>()*bb + 2 * T0ib + Tij,
-                     K
+                     K[i]
                    )
                  )
                - contract(
-                   T.c<0,0>()*beta + T0i,
+                   T.c<0,0>()*beta[i] + T0i,
                    dalp
                  )
                 );
 
-    reg_result0.store(&result_vec0[i]);
-    reg_result1.store(&result_vec1[i]);
-    reg_result2.store(&result_vec2[i]);
     reg_result3.store(&result_vec3[i]);
   }
+}
   t1 = std::chrono::high_resolution_clock::now();
 
-  std::cout << "Vector: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count() << " ms" << std::endl;
+  auto t_vector = std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count();
+  std::cout << "Vector: " << t_vector << " ms" << std::endl;
+  #endif
 
-  for(int i = 0; i < num_data; i+=num_data/10) {
-    std::cout << "s: " << result0[i] << " " << result1[i] << " " << result2[i] << " " << result3[i] << std::endl;
-    std::cout << "v: " << result_vec0[i] << " " << result_vec1[i] << " " << result_vec2[i] << " " << result_vec3[i] << std::endl;
+  #ifdef SCA
+  #ifdef VEC
+  std::cout << "t_vector / t_scalar = " << (double) t_vector/t_scalar << std::endl;
+  #endif
+  #endif
+
+
+  for(int i = 0; i < num_data; i+=num_data / (dist_uni(gen) * 10 + 5)) {
+    std::cout << "s(" << i << "): " << result0[i] << " " << result1[i] << " " << result2[i] << " " << result3[i] << std::endl;
+    std::cout << "v(" << i << "): " << result_vec0[i] << " " << result_vec1[i] << " " << result_vec2[i] << " " << result_vec3[i] << std::endl;
   }
-
+  std::cin.ignore();
+  return 0;
 }

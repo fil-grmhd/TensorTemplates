@@ -18,6 +18,15 @@
 #ifndef TENSORS_HH
 #define TENSORS_HH
 
+#ifdef TENSORS_VECTORIZED
+#pragma message ("TensorTemplates: Vectorization support activated.")
+#include <Vc/Vc>
+#endif
+
+#ifdef TENSORS_CACTUS
+#include "cctk.h"
+#endif
+
 #include "utilities.hh"
 #include "tensor_core_types.hh"
 #include "tensor_symmetry.hh"
@@ -28,6 +37,7 @@
 #include "tensor_helpers.hh"
 #include "tensor.hh"
 #include "tensor_slice.hh"
+#include "tensor_derivative.hh"
 #include "tensor_field.hh"
 #include "tensor_symmetry_expressions.hh"
 #include "tensor_contraction.hh"
@@ -35,6 +45,23 @@
 #include "tensor_concat.hh"
 #include "tensor_index_reordering.hh"
 #include "metric.hh"
+#include "finite_differences.hh"
+
+#ifdef TENSORS_CACTUS
+#include "cactus_types.hh"
+#endif
+
+#ifdef TENSORS_VECTORIZED
+
+#include "vectorized/tensor_types.hh"
+#include "vectorized/tensor_field.hh"
+#include "vectorized/finite_differences.hh"
+
+#ifdef TENSORS_CACTUS
+#include "cactus_types.hh"
+#endif
+
+#endif
 
 //! main namespace
 namespace tensors {

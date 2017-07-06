@@ -12,7 +12,8 @@
 #define COMPARE
 
 #define SYMMETRIC
-
+// not vectorized yet
+//#define TENSORS_VECTORIZED
 #include "../tensor_templates.hh"
 
 int main(void) {

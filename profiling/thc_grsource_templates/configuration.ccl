@@ -1,4 +1,4 @@
-REQUIRES CPPUtils FDCore TensorTemplates
+REQUIRES TensorTemplates
 PROVIDES THC_grsource_templates
 {
     SCRIPT

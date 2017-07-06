@@ -23,7 +23,7 @@ public:
   operator[](size_t i) const = delete;
 
   template <size_t index>
-  inline typename property_t::data_t const evaluate() const {
+  inline decltype(auto) evaluate() const {
     constexpr size_t max_pow_E1 = E1::property_t::rank;
 
     constexpr size_t ndim = E1::property_t::ndim;

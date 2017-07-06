@@ -1,3 +1,4 @@
+#REQUIRES libVc
 PROVIDES TensorTemplates
 {
     SCRIPT
