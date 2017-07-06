@@ -23,7 +23,7 @@
 
 // doesn't work yet
 // activates vectorized types and implementations
-//#define TENSORS_VECTORIZED
+#define TENSORS_VECTORIZED
 
 // needed for cactus fd interface
 #define TENSORS_CACTUS
