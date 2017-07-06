@@ -52,9 +52,15 @@
 #endif
 
 #ifdef TENSORS_VECTORIZED
+
 #include "vectorized/tensor_types.hh"
-#include "vectorized/tensor_derivative.hh"
 #include "vectorized/tensor_field.hh"
+#include "vectorized/finite_differences.hh"
+
+#ifdef TENSORS_CACTUS
+#include "cactus_types.hh"
+#endif
+
 #endif
 
 //! main namespace

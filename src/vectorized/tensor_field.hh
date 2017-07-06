@@ -83,7 +83,7 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
     //! Returns a partial derivative of this tensor field
     template<typename fd_t>
     inline decltype(auto) finite_diff(fd_t const & fd) const {
-      return tensor_partial_derivative_vt<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
+      return tensor_partial_derivative_t<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
     }
 
     template<typename E>

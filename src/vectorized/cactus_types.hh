@@ -23,15 +23,17 @@ namespace tensors {
 namespace fd {
 
 template<size_t order_>
-struct cactus_cdiff {
+struct cactus_cdiff_v {
   static constexpr size_t order = order_;
 
   cGH const * const cctkGH;
   // one over dx,dy,dz
-  std::array<double,3> const idx;
+  std::array<Vc::double_v,3> const idx;
 
   cactus_cdiff(cGH const * const cctkGH_, double dx, double dy, double dz)
-             : cctkGH(cctkGH_), idx({1.0/dx,1.0/dy,1.0/dz}) {}
+             : cctkGH(cctkGH_), idx({Vc::double_v(1.0/dx),
+                                     Vc::double_v(1.0/dy),
+                                     Vc::double_v(1.0/dz)}) {}
 
   // get stride from cactus grid
   template<size_t dir>
@@ -44,7 +46,14 @@ struct cactus_cdiff {
   // compute central difference, uses general cdiff interface
   template<size_t dir, typename T>
   inline decltype(auto) diff(T const * const ptr, size_t const index) const {
-    return idx[dir]*c_diff<dir,order>(ptr, index, this->stride<dir>());
+    // in this case we want to get a vector register of derivatives
+    Vc::Vector<T> vec_register;
+
+    // all attempts to vectorize c_diff explicitly ended up in slower code...
+    for(size_t i = 0; i < Vc::Vector<T>::Size; ++i) {
+      vec_register[i] = idx[dir]*c_diff<dir,order>(ptr,index+i,this->stride<dir>);
+    }
+    return vec_register;
   }
 };
 

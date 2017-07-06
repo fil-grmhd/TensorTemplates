@@ -12,8 +12,54 @@
 #define SCA
 #define VEC
 
+using namespace tensors;
+
+// some artificial diff class
+struct test_diff {
+  template<size_t dir>
+  static inline size_t stride() {
+    return dir+1;
+  }
+
+  template<size_t dir, typename T>
+  static inline T diff(T const * const ptr, size_t const index) {
+//    constexpr double idx[3] = {0,0,0};
+    double idx = 0.1;
+    return idx*fd::c_diff<dir,4>(ptr, index, test_diff::stride<dir>());
+  }
+};
+struct test_diff_v {
+  template<size_t dir>
+  static inline size_t stride() {
+    return dir+1;
+  }
+
+  template<size_t dir, typename T>
+  static inline decltype(auto) diff(T const * const ptr, size_t const index) {
+//    Vc::double_v idx[3] = {Vc::double_v(0),Vc::double_v(0),Vc::double_v(0)};
+    Vc::double_v idx(0.1);
+    return idx*fd::c_diff_v<dir,4>(ptr, index, test_diff_v::stride<dir>());
+  }
+};
+
+struct test_diff_v_old {
+  template<size_t dir, typename T>
+  static inline decltype(auto) diff(T const * const ptr, size_t const index) {
+
+    Vc::double_v idx(0.1);
+    Vc::Vector<T> vec_register;
+
+    for(size_t i = 0; i < Vc::Vector<T>::Size; ++i) {
+      vec_register[i] = fd::c_diff<dir,4>(ptr, index + i, test_diff::stride<dir>());
+//      vec_register[i] = test_diff::template diff<dir>(ptr,index+i);
+    }
+
+    return idx*vec_register;
+  }
+};
+
+
 int main() {
-  using namespace tensors;
 
   using sca_type = double;
 //  using sca_type = float;
@@ -108,6 +154,8 @@ int main() {
   t0 = std::chrono::high_resolution_clock::now();
 
 {
+  test_diff diff;
+
   tensor_field_t<vector3_t<sca_type>> beta(&data_0[0],&data_1[0],&data_2[0]);
 
   tensor_field_t<covector3_t<sca_type>> rhs_scon(&result0[0],&result1[0],&result2[0]);
@@ -125,31 +173,14 @@ int main() {
   for(int i = 0; i < num_data; ++i) {
     sca_type alp = data_0[i];
 
-    covector3_t<double> dalp(1,2,3);
-    tensor3_t<double,upper_t,lower_t> dbeta(1,2,3,
-                                            4,5,6,
-                                            7,8,9);
+    // this is only because we have not special scalar type
+    covector3_t<double> dalp(diff.diff<0>(&data_0[0],i),
+                             diff.diff<1>(&data_0[0],i),
+                             diff.diff<2>(&data_0[0],i));
 
-    sym_tensor3_t<double,0,1,lower_t,lower_t,lower_t> dgamma;
+    tensor3_t<double,upper_t,lower_t> dbeta = beta[i].finite_diff(diff);
 
-    dgamma.c<0,0,0>() = 1;
-    dgamma.c<0,1,0>() = 1;
-    dgamma.c<0,2,0>() = 1;
-    dgamma.c<1,1,0>() = 1;
-    dgamma.c<1,2,0>() = 1;
-    dgamma.c<2,2,0>() = 1;
-    dgamma.c<0,0,1>() = 1;
-    dgamma.c<0,1,1>() = 1;
-    dgamma.c<0,2,1>() = 1;
-    dgamma.c<1,1,1>() = 1;
-    dgamma.c<1,2,1>() = 1;
-    dgamma.c<2,2,1>() = 1;
-    dgamma.c<0,0,2>() = 1;
-    dgamma.c<0,1,2>() = 1;
-    dgamma.c<0,2,2>() = 1;
-    dgamma.c<1,1,2>() = 1;
-    dgamma.c<1,2,2>() = 1;
-    dgamma.c<2,2,2>() = 1;
+    sym_tensor3_t<double,0,1,lower_t,lower_t,lower_t> dgamma = gamma[i].finite_diff(diff);
 
 // this fails with gcc
     auto dg00i = - 2* alp * dalp
@@ -217,6 +248,9 @@ int main() {
   t0 = std::chrono::high_resolution_clock::now();
 
 {
+//  test_diff_v diff;
+  test_diff_v_old diff;
+
   tensor_field_vt<vector3_vt<sca_type>> beta(&data_0[0],&data_1[0],&data_2[0]);
 
   tensor_field_vt<covector3_vt<sca_type>> rhs_scon(&result_vec0[0],&result_vec1[0],&result_vec2[0]);
@@ -233,32 +267,13 @@ int main() {
   for(int i = 0; i < num_data; i += vec_size) {
     vec_type alp(&data_0[i]);
 
-    covector3_vt<sca_type> dalp(vec_type(1),vec_type(2),vec_type(3));
+    covector3_vt<sca_type> dalp(diff.diff<0>(&data_0[0],i),
+                                diff.diff<1>(&data_0[0],i),
+                                diff.diff<2>(&data_0[0],i));
 
-    tensor3_vt<sca_type,upper_t,lower_t> dbeta(vec_type(1),vec_type(2),vec_type(3),
-                                               vec_type(4),vec_type(5),vec_type(6),
-                                               vec_type(7),vec_type(8),vec_type(9));
+    tensor3_vt<sca_type,upper_t,lower_t> dbeta = beta[i].finite_diff(diff);
 
-    sym_tensor3_vt<sca_type,0,1,lower_t,lower_t,lower_t> dgamma;
-
-    dgamma.c<0,0,0>() = vec_type(1);
-    dgamma.c<0,1,0>() = vec_type(1);
-    dgamma.c<0,2,0>() = vec_type(1);
-    dgamma.c<1,1,0>() = vec_type(1);
-    dgamma.c<1,2,0>() = vec_type(1);
-    dgamma.c<2,2,0>() = vec_type(1);
-    dgamma.c<0,0,1>() = vec_type(1);
-    dgamma.c<0,1,1>() = vec_type(1);
-    dgamma.c<0,2,1>() = vec_type(1);
-    dgamma.c<1,1,1>() = vec_type(1);
-    dgamma.c<1,2,1>() = vec_type(1);
-    dgamma.c<2,2,1>() = vec_type(1);
-    dgamma.c<0,0,2>() = vec_type(1);
-    dgamma.c<0,1,2>() = vec_type(1);
-    dgamma.c<0,2,2>() = vec_type(1);
-    dgamma.c<1,1,2>() = vec_type(1);
-    dgamma.c<1,2,2>() = vec_type(1);
-    dgamma.c<2,2,2>() = vec_type(1);
+    sym_tensor3_vt<sca_type,0,1,lower_t,lower_t,lower_t> dgamma = gamma[i].finite_diff(diff);
 
     auto dg00i = - 2* alp * dalp
                  + 2*contract(dbeta,contract(gamma[i],beta[i]))
@@ -283,9 +298,9 @@ int main() {
     auto uu = sym2_cast(tensor_cat(u,u));
 
     sym_tensor4_vt<sca_type,0,1,upper_t,upper_t> invmetric(vec_type(1),vec_type(1),vec_type(1),vec_type(1),
-                                                                      vec_type(2),vec_type(2),vec_type(2),
-                                                                                  vec_type(3),vec_type(3),
-                                                                                              vec_type(4));
+                                                                       vec_type(2),vec_type(2),vec_type(2),
+                                                                                   vec_type(3),vec_type(3),
+                                                                                               vec_type(4));
 
     sym_tensor4_vt<sca_type,0,1,upper_t,upper_t> T = uu*1337 + 42.0*invmetric;
 
