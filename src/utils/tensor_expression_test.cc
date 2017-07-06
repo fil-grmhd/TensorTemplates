@@ -19,7 +19,8 @@
 #include<iostream>
 #include<typeinfo>
 
-#define TENSORS_VECTORIZATION
+// nothing vectorized yet
+//#define TENSORS_VECTORIZED
 #include "../tensor_templates.hh"
 
 

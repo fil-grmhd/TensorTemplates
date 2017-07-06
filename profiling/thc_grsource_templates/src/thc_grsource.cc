@@ -21,11 +21,15 @@
 #include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
-#include "finite_difference.h"
-#include "utils.hh"
+// doesn't work yet
+// activates vectorized types and implementations
+//#define TENSORS_VECTORIZED
+
+// needed for cactus fd interface
+#define TENSORS_CACTUS
 #include "tensor_templates.hh"
 
-#define SQ(X) ((X)*(X))
+
 
 extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     DECLARE_CCTK_ARGUMENTS
@@ -33,7 +37,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
     constexpr int fd_order = 4;
 
-    int const gsiz = UTILS_GFSIZE(cctkGH);
+    int const gsiz = cctkGH->cctk_ash[0]*cctkGH->cctk_ash[1]*cctkGH->cctk_ash[2];
 
     CCTK_REAL * velx = &vel[0*gsiz];
     CCTK_REAL * vely = &vel[1*gsiz];
@@ -61,9 +65,8 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     CCTK_REAL const dx  = CCTK_DELTA_SPACE(0);
     CCTK_REAL const dy  = CCTK_DELTA_SPACE(1);
     CCTK_REAL const dz  = CCTK_DELTA_SPACE(2);
-    CCTK_REAL const idx = 1.0/dx;
-    CCTK_REAL const idy = 1.0/dy;
-    CCTK_REAL const idz = 1.0/dz;
+
+    fd::cactus_cdiff<fd_order> cdiff(cctkGH,dx,dy,dz);
 
     #pragma omp parallel for
     for(int k = cctk_nghostzones[2]; k < cctk_lsh[2]-cctk_nghostzones[2]; ++k)
@@ -72,49 +75,19 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     for(int i = cctk_nghostzones[0]; i < cctk_lsh[0]-cctk_nghostzones[0]; ++i) {
             int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
 
-
             // construct four metric and inverse
             // this is the only way to make it work, passing gamma[ijk] or evaluate(gamma[ijk]) fails
             auto metric4d = make_metric4(alp[ijk],beta[ijk],metric_tensor_t<CCTK_REAL,3>(gamma[ijk]));
 
             // Derivatives of the lapse, metric and shift
-            covector3_t<CCTK_REAL> dalp(idx*cdiff_x(cctkGH, alp, i, j, k, fd_order),
-                                        idy*cdiff_y(cctkGH, alp, i, j, k, fd_order),
-                                        idz*cdiff_z(cctkGH, alp, i, j, k, fd_order));
+            // this could be simplified by a specialized scalar field type
+            covector3_t<CCTK_REAL> dalp(cdiff.diff<0>(alp, ijk),
+                                        cdiff.diff<1>(alp, ijk),
+                                        cdiff.diff<2>(alp, ijk));
 
-            tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta;
+            tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta = beta[ijk].finite_diff(cdiff);
 
-            dbeta.c<0,0>() = idx*cdiff_x(cctkGH, betax, i, j, k, fd_order);
-            dbeta.c<1,0>() = idx*cdiff_x(cctkGH, betay, i, j, k, fd_order);
-            dbeta.c<2,0>() = idx*cdiff_x(cctkGH, betaz, i, j, k, fd_order);
-            dbeta.c<0,1>() = idy*cdiff_y(cctkGH, betax, i, j, k, fd_order);
-            dbeta.c<1,1>() = idy*cdiff_y(cctkGH, betay, i, j, k, fd_order);
-            dbeta.c<2,1>() = idy*cdiff_y(cctkGH, betaz, i, j, k, fd_order);
-            dbeta.c<0,2>() = idz*cdiff_z(cctkGH, betax, i, j, k, fd_order);
-            dbeta.c<1,2>() = idz*cdiff_z(cctkGH, betay, i, j, k, fd_order);
-            dbeta.c<2,2>() = idz*cdiff_z(cctkGH, betaz, i, j, k, fd_order);
-
-            sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma;
-
-            // we need a derivative expression...
-            dgamma.c<0,0,0>() = idx*cdiff_x(cctkGH, gxx, i, j, k, fd_order);
-            dgamma.c<0,1,0>() = idx*cdiff_x(cctkGH, gxy, i, j, k, fd_order);
-            dgamma.c<0,2,0>() = idx*cdiff_x(cctkGH, gxz, i, j, k, fd_order);
-            dgamma.c<1,1,0>() = idx*cdiff_x(cctkGH, gyy, i, j, k, fd_order);
-            dgamma.c<1,2,0>() = idx*cdiff_x(cctkGH, gyz, i, j, k, fd_order);
-            dgamma.c<2,2,0>() = idx*cdiff_x(cctkGH, gzz, i, j, k, fd_order);
-            dgamma.c<0,0,1>() = idy*cdiff_y(cctkGH, gxx, i, j, k, fd_order);
-            dgamma.c<0,1,1>() = idy*cdiff_y(cctkGH, gxy, i, j, k, fd_order);
-            dgamma.c<0,2,1>() = idy*cdiff_y(cctkGH, gxz, i, j, k, fd_order);
-            dgamma.c<1,1,1>() = idy*cdiff_y(cctkGH, gyy, i, j, k, fd_order);
-            dgamma.c<1,2,1>() = idy*cdiff_y(cctkGH, gyz, i, j, k, fd_order);
-            dgamma.c<2,2,1>() = idy*cdiff_y(cctkGH, gzz, i, j, k, fd_order);
-            dgamma.c<0,0,2>() = idz*cdiff_z(cctkGH, gxx, i, j, k, fd_order);
-            dgamma.c<0,1,2>() = idz*cdiff_z(cctkGH, gxy, i, j, k, fd_order);
-            dgamma.c<0,2,2>() = idz*cdiff_z(cctkGH, gxz, i, j, k, fd_order);
-            dgamma.c<1,1,2>() = idz*cdiff_z(cctkGH, gyy, i, j, k, fd_order);
-            dgamma.c<1,2,2>() = idz*cdiff_z(cctkGH, gyz, i, j, k, fd_order);
-            dgamma.c<2,2,2>() = idz*cdiff_z(cctkGH, gzz, i, j, k, fd_order);
+            sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma = gamma[ijk].finite_diff(cdiff);
 
             // helpers to construct four metric derivative
             auto dg00i = - 2*alp[ijk]*dalp
@@ -139,30 +112,29 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
             // gjk,i
             dg.set<-2,-2,-2>(dgamma);
 
-            // four velocity
+            // four velocity u^mu
             const auto u0 =  w_lorentz[ijk]/alp[ijk];
             auto u = vector4_t<CCTK_REAL> (u0,
                                           (alp[ijk]*velx[ijk] - betax[ijk])*u0,
                                           (alp[ijk]*vely[ijk] - betay[ijk])*u0,
                                           (alp[ijk]*velz[ijk] - betaz[ijk])*u0);
-            // construct tensor product
+            // construct tensor product of u^mu u^nu
             auto uu = sym2_cast(tensor_cat(u,u));
 
             // construct em tensor
             sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> T = (rho[ijk]*(1+eps[ijk])+press[ijk])*uu
                                                            +  press[ijk]*metric4d.invmetric;
 
-            // slice expression to contain only the spatial components
-            auto rhs_scon_vec = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet
+            // slice expression to contain only the spatial components, which is rhs S conserved
+            r_scon[ijk] = slice<-2>(0.5*alp[ijk]*metric4d.sqrtdet
                                          *(trace(contract(T,dg))));
 
-            r_scon[ijk] = rhs_scon_vec;
-
-            // slice em tensor
+            // slice em tensor in different ways
             auto T0i = slice<0,-2>(T);
 
             auto Tij = sym2_cast(slice<-2,-2>(T));
 
+            // construct tensor products
             auto bb = sym2_cast(tensor_cat(beta[ijk],beta[ijk]));
             auto T0ib = tensor_cat(T0i,beta[ijk]);
 
