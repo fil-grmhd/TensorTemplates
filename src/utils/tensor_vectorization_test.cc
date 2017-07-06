@@ -16,42 +16,49 @@ using namespace tensors;
 
 // some artificial diff class
 struct test_diff {
+  double idx;
+
+  test_diff(double idx_) : idx(idx_) {}
+
   template<size_t dir>
   static inline size_t stride() {
     return dir+1;
   }
 
   template<size_t dir, typename T>
-  static inline T diff(T const * const ptr, size_t const index) {
-//    constexpr double idx[3] = {0,0,0};
-    double idx = 0.1;
+  inline T diff(T const * const ptr, size_t const index) const {
     return idx*fd::c_diff<dir,4>(ptr, index, test_diff::stride<dir>());
   }
 };
+
 struct test_diff_v {
+  Vc::double_v idx;
+
+  test_diff_v(double idx_) : idx(idx_) {}
+
   template<size_t dir>
   static inline size_t stride() {
     return dir+1;
   }
 
   template<size_t dir, typename T>
-  static inline decltype(auto) diff(T const * const ptr, size_t const index) {
-//    Vc::double_v idx[3] = {Vc::double_v(0),Vc::double_v(0),Vc::double_v(0)};
-    Vc::double_v idx(0.1);
+  inline decltype(auto) diff(T const * const ptr, size_t const index) const {
     return idx*fd::c_diff_v<dir,4>(ptr, index, test_diff_v::stride<dir>());
   }
 };
 
 struct test_diff_v_old {
-  template<size_t dir, typename T>
-  static inline decltype(auto) diff(T const * const ptr, size_t const index) {
+  Vc::double_v idx;
 
-    Vc::double_v idx(0.1);
+  test_diff_v_old(double idx_) : idx(idx_) {}
+
+  template<size_t dir, typename T>
+  inline decltype(auto) diff(T const * const ptr, size_t const index) const {
+
     Vc::Vector<T> vec_register;
 
     for(size_t i = 0; i < Vc::Vector<T>::Size; ++i) {
       vec_register[i] = fd::c_diff<dir,4>(ptr, index + i, test_diff::stride<dir>());
-//      vec_register[i] = test_diff::template diff<dir>(ptr,index+i);
     }
 
     return idx*vec_register;
@@ -154,7 +161,7 @@ int main() {
   t0 = std::chrono::high_resolution_clock::now();
 
 {
-  test_diff diff;
+  test_diff diff(0.1);
 
   tensor_field_t<vector3_t<sca_type>> beta(&data_0[0],&data_1[0],&data_2[0]);
 
@@ -248,8 +255,8 @@ int main() {
   t0 = std::chrono::high_resolution_clock::now();
 
 {
-//  test_diff_v diff;
-  test_diff_v_old diff;
+//  test_diff_v diff(0.1);
+  test_diff_v_old diff(0.1);
 
   tensor_field_vt<vector3_vt<sca_type>> beta(&data_0[0],&data_1[0],&data_2[0]);
 

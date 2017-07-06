@@ -50,14 +50,16 @@ public:
     static inline decltype(auto) sum(int const stride,
                                      T const * const grid_ptr) {
 
-      Vc::Vector<T> grid_value;
+      // grid values to be summed are at non-unit stride locations
+      // this makes it inefficient to load them, so a simple loop is used
+      Vc::Vector<T> weighted_value;
       for(int i = 0; i < Vc::Vector<T>::Size; ++i) {
         T const * const vector_index_ptr = grid_ptr + i;
 
-        grid_value[i] = vector_index_ptr[(order-N-dpoint)*stride]*fd_stencils<order>::stencil[dpoint][order-N];
+        weighted_value[i] = vector_index_ptr[(order-N-dpoint)*stride]*fd_stencils<order>::stencil[dpoint][order-N];
       }
 
-      return grid_value
+      return weighted_value
            + stencil_sum<N-1,dpoint,T>::sum(stride,grid_ptr);
     }
   };
@@ -65,13 +67,15 @@ public:
   struct stencil_sum<0,dpoint,T> {
     static inline decltype(auto) sum(int const stride,
                                      T const * const grid_ptr) {
-      Vc::Vector<T> grid_value;
+      // grid values to be summed are at non-unit stride locations
+      // this makes it inefficient to load them, so a simple loop is used
+      Vc::Vector<T> weighted_value;
       for(int i = 0; i < Vc::Vector<T>::Size; ++i) {
         T const * const vector_index_ptr = grid_ptr + i;
-        grid_value[i] = vector_index_ptr[(order-dpoint)*stride]*fd_stencils<order>::stencil[dpoint][order];
+        weighted_value[i] = vector_index_ptr[(order-dpoint)*stride]*fd_stencils<order>::stencil[dpoint][order];
       }
 
-      return grid_value;
+      return weighted_value;
     }
   };
 
@@ -89,6 +93,8 @@ public:
   }
 };
 
+// "Vectorized" central fd interface
+// Unfortunately slower than the non-vectorized version
 template<int dir, int order, typename T>
 inline decltype(auto) c_diff_v(T const * const grid_ptr, int const grid_index, int const stride) {
 
