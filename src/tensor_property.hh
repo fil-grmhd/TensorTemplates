@@ -125,7 +125,7 @@ public:
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
   // static compile-time routine to get index_t, doesn't work, see generator above
-  // static inline constexpr decltype(auto) get_index_t(){}
+  // static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_index_t(){}
 
   using index_t =
       decltype(index_reduction_generator_t<i1, i2, E1, E2>::get_contraction_index_t());
@@ -177,7 +177,7 @@ public:
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
   // static compile-time routine to get index_t, doesn't work, see above
-  //static inline constexpr decltype(auto) get_index_t(){}
+  //static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_index_t(){}
 
   using index_t = decltype(index_reduction_generator_t<i1,i2,E,E>::get_trace_index_t());
 
@@ -219,7 +219,7 @@ public:
 
 
   // static compile-time routine to get index_t
-  // static inline constexpr decltype(auto) get_index_t(){}
+  // static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_index_t(){}
 
   using index_t =
       decltype(index_reduction_generator_t<i2,i2,E1,E2>::get_metric_contraction_index_t());
@@ -282,7 +282,7 @@ public:
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
   // static compile-time routine to get index_t
-  // static inline constexpr decltype(auto) get_index_t(){}
+  // static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_index_t(){}
 
   using index_t =
       decltype(index_reduction_generator_t<0,0,E1,E2>::get_concat_index_t());

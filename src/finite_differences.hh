@@ -156,6 +156,16 @@ struct fd_stencils<8> {
   };
 };
 
+// declare storage of static weight arrays
+constexpr double fd_stencils<1>::stencil[2][2];
+constexpr double fd_stencils<2>::stencil[3][3];
+constexpr double fd_stencils<3>::stencil[4][4];
+constexpr double fd_stencils<4>::stencil[5][5];
+constexpr double fd_stencils<5>::stencil[6][6];
+constexpr double fd_stencils<6>::stencil[7][7];
+constexpr double fd_stencils<7>::stencil[8][8];
+constexpr double fd_stencils<8>::stencil[9][9];
+
 ///////////////////////////////////////////////////////////////////////////////
 // Finite differences (based on Cactus Thorn FDCore by David Radice)
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,22 +187,22 @@ public:
   // leads to larger relative errors when compared to the original FDCore derivatives
   template<int N, int dpoint, typename T>
   struct stencil_sum {
-    static inline T sum(int const stride, T const * const grid_ptr) {
+    static inline __attribute__ ((always_inline)) T sum(int const stride, T const * const grid_ptr) {
       return fd_stencils<order>::stencil[dpoint][order-N] * grid_ptr[(order-N-dpoint)*stride]
            + stencil_sum<N-1,dpoint,T>::sum(stride,grid_ptr);
     }
   };
   template<int dpoint, typename T>
   struct stencil_sum<0,dpoint,T> {
-    static inline T sum(int const stride, T const * const grid_ptr) {
+    static inline __attribute__ ((always_inline)) T sum(int const stride, T const * const grid_ptr) {
       return fd_stencils<order>::stencil[dpoint][order] * grid_ptr[(order-dpoint)*stride];
     }
   };
 
-  // Static diff: compute the finite difference using the given stencil
+  // Static diff, compute the finite difference using the given stencil
   // dpoint: Point in the stencil in which to compute the derivative
   template<int dpoint, typename T>
-  static inline T sdiff(
+  static inline __attribute__ ((always_inline)) T sdiff(
           // Grid function to differentiate at the diff. point
           T const * const grid_ptr,
           // Vector stride
@@ -203,16 +213,13 @@ public:
   }
 };
 
-//template<int order>
-//constexpr stencil_t<order> fd<order>::stencil;
-
 template<int dir, int order, typename T>
-inline T c_diff(T const * const ptr, int const index, int const stride) {
+inline __attribute__ ((always_inline)) T c_diff(T const * const ptr, int const index, int const stride) {
 
   constexpr int dpoint = order/2;
   T const * const index_ptr = ptr + index;
 
-  return fd<order>::sdiff<dpoint>(index_ptr, stride);
+  return fd<order>::template sdiff<dpoint>(index_ptr, stride);
 }
 
 } // namespace fd

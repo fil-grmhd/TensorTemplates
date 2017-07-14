@@ -47,7 +47,7 @@ public:
   // leads to larger relative errors when compared to the original FDCore derivatives
   template<int N, int dpoint, typename T>
   struct stencil_sum {
-    static inline decltype(auto) sum(int const stride,
+    static inline __attribute__ ((always_inline)) decltype(auto) sum(int const stride,
                                      T const * const grid_ptr) {
 
       // grid values to be summed are at non-unit stride locations
@@ -65,7 +65,7 @@ public:
   };
   template<int dpoint, typename T>
   struct stencil_sum<0,dpoint,T> {
-    static inline decltype(auto) sum(int const stride,
+    static inline __attribute__ ((always_inline)) decltype(auto) sum(int const stride,
                                      T const * const grid_ptr) {
       // grid values to be summed are at non-unit stride locations
       // this makes it inefficient to load them, so a simple loop is used
@@ -82,7 +82,7 @@ public:
   // Static diff: compute the finite difference using the given stencil
   // dpoint: Point in the stencil in which to compute the derivative
   template<int dpoint, typename T>
-  static inline decltype(auto) sdiff(
+  static inline __attribute__ ((always_inline)) decltype(auto) sdiff(
           // Grid function to differentiate at the diff. point
           T const * const grid_ptr,
           // Vector stride
@@ -96,12 +96,12 @@ public:
 // "Vectorized" central fd interface
 // Unfortunately slower than the non-vectorized version
 template<int dir, int order, typename T>
-inline decltype(auto) c_diff_v(T const * const grid_ptr, int const grid_index, int const stride) {
+inline __attribute__ ((always_inline)) decltype(auto) c_diff_v(T const * const grid_ptr, int const grid_index, int const stride) {
 
   constexpr int dpoint = order/2;
   T const * const index_ptr = grid_ptr + grid_index;
 
-  return fd_vt<order>::sdiff<dpoint>(index_ptr, stride);
+  return fd_vt<order>::template sdiff<dpoint>(index_ptr, stride);
 }
 
 } // namespace fd

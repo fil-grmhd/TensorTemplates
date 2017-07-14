@@ -23,7 +23,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     // Template recursion to set components, fastest for chained expressions
     template<size_t N, typename E>
     struct setter_t {
-      static inline void set(size_t const i, E const& e, ptr_array_t const & arr) {
+      static inline __attribute__ ((always_inline)) void set(size_t const i, E const& e, ptr_array_t const & arr) {
         // N goes from ndof to zero of this tensor type
         // one has to cast to generic index before one can call evaluate
         constexpr size_t gen_index = E::property_t::symmetry_t::template index_to_generic<N>::value;
@@ -34,7 +34,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     };
     template<typename E>
     struct setter_t<0,E> {
-      static inline void set(size_t const i, E const& e, ptr_array_t const & arr) {
+      static inline __attribute__ ((always_inline)) void set(size_t const i, E const& e, ptr_array_t const & arr) {
         arr[0][i] = e.template evaluate<0>();
       }
     };
@@ -46,22 +46,22 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
 
 
     [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
-    inline decltype(auto) operator[](size_t i) const = delete;
+    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const = delete;
 
     template<size_t index>
-    inline decltype(auto) evaluate() const {
+    inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
       constexpr size_t converted_index = property_t::symmetry_t::template index_from_generic<index>::value;
       return ptr_array[converted_index][grid_index];
     }
 
     //! Returns a partial derivative of this tensor field
     template<typename fd_t>
-    inline decltype(auto) finite_diff(fd_t const & fd) const {
+    inline __attribute__ ((always_inline)) decltype(auto) finite_diff(fd_t const & fd) const {
       return tensor_partial_derivative_t<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
     }
 
     template<typename E>
-    inline void operator=(E const &e) {
+    inline __attribute__ ((always_inline)) void operator=(E const &e) {
       // this only a check of compatibility of T and E
       using property_check = arithmetic_expression_property_t<T,E>;
       // evaluate expression for every component
@@ -99,10 +99,49 @@ class tensor_field_t {
     };
 
     //! Returns a tensor field expression at (pointer) index i
-    inline decltype(auto) operator[](size_t const i) const {
+    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t const i) const {
       return tensor_field_expression_t<T,decltype(ptr_array)>(ptr_array,i);
     }
 };
+
+//! Template for a scalar field
+// A scalar field is not a tensor expression,
+// but delivers scalar values at different grid points.
+// This is a thin-wrapper around a grid pointer,
+// which is needed to write vectorization-agnostic code.
+template<typename T>
+class scalar_field_t {
+  public:
+    // The actual data type
+    using data_t = T;
+
+  protected:
+    //! Storage for the grid pointer
+    data_t * __restrict__ const grid_ptr;
+
+  public:
+    //! Constructor from pointer parameter
+    scalar_field_t(data_t * __restrict__ const grid_ptr_)
+        : grid_ptr(grid_ptr_) {};
+
+    //! Returns value at (pointer) index i
+    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t const i) const {
+      return grid_ptr[i];
+    }
+    //! Set value(s) at (pointer) index i ( + Size)
+    inline __attribute__ ((always_inline)) void set(data_t const & data, size_t const i) {
+      grid_ptr[i] = data;
+    }
+/*
+    //! Returns a partial derivative of this tensor field
+    template<typename fd_t>
+    inline __attribute__ ((always_inline)) decltype(auto) finite_diff(fd_t const & fd) const {
+      
+      return tensor_partial_derivative_t<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
+    }
+*/
+};
+
 
 }
 #endif

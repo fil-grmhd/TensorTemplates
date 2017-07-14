@@ -44,11 +44,11 @@ public:
   symmetry_cast_t( E const &v) : _v(v){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
 
   template <size_t index>
-  inline decltype(auto) evaluate() const {
+  inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
     // cast generic index to symmetric one and back
     // this makes sure, that always the same elements are accessed
     // i.e. sym2_cast(generic_tensor).evaluate<index>() with index = compress(2,1)
@@ -62,7 +62,7 @@ public:
 
 
 template<size_t i0 = 0, size_t i1 = 1, typename E>
-inline decltype(auto) sym2_cast(E const &v) {
+inline __attribute__ ((always_inline)) decltype(auto) sym2_cast(E const &v) {
     using symmetry_t = sym2_symmetry_t<
                          E::property_t::ndim,
                          E::property_t::rank,
@@ -72,7 +72,7 @@ inline decltype(auto) sym2_cast(E const &v) {
 }
 
 template<typename E>
-inline decltype(auto) generic_cast(E const &v) {
+inline __attribute__ ((always_inline)) decltype(auto) generic_cast(E const &v) {
     using symmetry_t = generic_symmetry_t<
                          E::property_t::ndim,
                          E::property_t::rank>;

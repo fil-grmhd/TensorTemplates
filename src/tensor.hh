@@ -1,5 +1,5 @@
 //  TensorTemplates: C++ tensor class templates
-//  Copyright (C) 2016, Ludwig Jens Papenfort
+//  Copyright (C) 2017, Ludwig Jens Papenfort
 //                      <papenfort@th.physik.uni-frankfurt.de>
 //  Copyright (C) 2017, Elias Roland Most
 //                      <emost@th.physik.uni-frankfurt.de>
@@ -25,6 +25,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <iostream>
 
 namespace tensors {
 
@@ -61,7 +62,7 @@ public:
   //! Fill property type with constexpr and types above (used in expressions)
   using property_t = general_tensor_property_t<this_tensor_t>;
 
-private:
+protected:
   //! Data storage for ndof elements
   std::array<T, ndof> m_data{};
 
@@ -127,7 +128,7 @@ public:
   //  The symmetry dependence of ndof makes sure that only ndof expressions
   //  are evaluated, when a tensor is instantiated.
   template <size_t a, size_t... indices>
-  static inline constexpr size_t compressed_index() {
+  static inline __attribute__ ((always_inline)) constexpr size_t compressed_index() {
     static_assert(rank == sizeof...(indices) + 1,
                   "Number of indices must match rank!");
     static_assert(utilities::all_true<(indices < ndim)...>::value,
@@ -139,40 +140,40 @@ public:
   //! Access the components of a tensor using (compile-time) natural indices
   //  This gives back a non-const reference, since this is a evaluated expression
   template <size_t... Ind>
-  inline data_t & c() {
-    return this->compressed_c<compressed_index<Ind...>()>();
+  inline __attribute__ ((always_inline)) data_t & c() {
+    return this->cc<compressed_index<Ind...>()>();
   };
 
   //! Get component reference at (generic) compressed index position
   //  Needed if one wants to assign something to a specific element,
   //  given a generic compressed index.
   template<size_t index>
-  inline T & compressed_c() {
+  inline __attribute__ ((always_inline)) T & cc() {
     return m_data[symmetry_t::template index_from_generic<index>::value];
   }
 
 // CHECK: OBSOLETE but still used in expressions test, we should convert that and remove this
 // in that case we also need to remove it in expression base class
   //! Access the components of a tensor using a (generic) compressed index
-  inline T &operator[](size_t const a) {
+  inline __attribute__ ((always_inline)) T &operator[](size_t const a) {
     return m_data[a];
   }
   //! Access the components of a tensor using a (generic) compressed index
-  inline T const &operator[](size_t const a) const {
+  inline __attribute__ ((always_inline)) T const &operator[](size_t const a) const {
     return m_data[a];
   }
 
   //! Evaluation routine for expression templates
   //  This is ALWAYS expecting index to be a GENERIC compressed index,
   //  which is then transformed to the respective symmetry compressed index
-  template <size_t index> inline T const & evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) T const & evaluate() const {
     return m_data[symmetry_t::template index_from_generic<index>::value];
   }
 
   //! Set (part) of the tensor to the given expression
   //  Make sure to set a symmetric tensor to a symmetric tensor (cast), to remove redundant assignements
   template<int... Ind, typename E>
-  inline void set(E const &e) {
+  inline __attribute__ ((always_inline)) void set(E const &e) {
     // count free indices
     constexpr size_t num_free_indices = count_free_indices<Ind...>::value;
     constexpr size_t max_shift = (property_t::ndim - E::property_t::ndim);
@@ -192,14 +193,14 @@ public:
   }
 
   //! Sets tensor to zero for all components
-  inline void zero() {
+  inline __attribute__ ((always_inline)) void zero() {
     for (size_t i = 0; i < ndof; ++i) {
       m_data[i] = 0;
     }
   }
 
   //! Compute the Frobenius norm
-  inline data_t norm() {
+  inline __attribute__ ((always_inline)) data_t norm() {
     data_t squared_sum = sum_squares<this_tensor_t,ncomp-1>::sum(*this);
     return std::sqrt(squared_sum);
   }
@@ -208,7 +209,7 @@ public:
   //  This is not optimally optimized, please change if used in non-debugging environment
   //  Any expression passed as argument is converted to this_tensor_t automagically (if possible)
   template<int exponent>
-  inline decltype(auto) compare_components(this_tensor_t const& t) {
+  inline __attribute__ ((always_inline)) decltype(auto) compare_components(this_tensor_t const& t) {
     double eps = 1.0/utilities::static_pow<10,exponent>::value;
 
     double max_rel_err = 0;
@@ -239,7 +240,7 @@ public:
 
   //Add expression to tensor
   template <typename E>
-  inline void operator+=(tensor_expression_t<E> const &tensor_expression){
+  inline __attribute__ ((always_inline)) void operator+=(tensor_expression_t<E> const &tensor_expression){
 //    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
 //                  "Frame types don't match!");
 
@@ -261,7 +262,7 @@ public:
 
   //Subtract expression from tensor
   template <typename E>
-  inline void operator-=(tensor_expression_t<E> const &tensor_expression){
+  inline __attribute__ ((always_inline)) void operator-=(tensor_expression_t<E> const &tensor_expression){
 //    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
 //                  "Frame types don't match!");
 
@@ -283,7 +284,7 @@ public:
 
 
   //Multiply tensor with scalar
-  inline void operator*=(data_t const & lambda){
+  inline __attribute__ ((always_inline)) void operator*=(data_t const & lambda){
 
    multiply_tensor_with_t<this_tensor_t,ndof-1>::multiply_tensor_with(lambda,*this);
 

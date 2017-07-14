@@ -17,13 +17,13 @@ class tensor_trace_t : public tensor_expression_t<tensor_trace_t<i1,i2,E> > {
     tensor_trace_t(E const& u) : _u(u) {};
 
     [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
-    inline decltype(auto) operator[](size_t i) const = delete;
+    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const = delete;
 
     //! Sum of traced components for a specific index computed by a template recursion
     template<size_t N, size_t stride>
     struct recursive_component_trace {
       template<typename A>
-      static inline decltype(auto) trace(A const & _u) {
+      static inline __attribute__ ((always_inline)) decltype(auto) trace(A const & _u) {
         return recursive_component_trace<(N-1),stride>::trace(_u)
              + _u.template evaluate<
                              stride
@@ -35,13 +35,13 @@ class tensor_trace_t : public tensor_expression_t<tensor_trace_t<i1,i2,E> > {
     template<size_t stride>
     struct recursive_component_trace<0,stride> {
       template<typename A>
-      static inline decltype(auto) trace(A const & _u) {
+      static inline __attribute__ ((always_inline)) decltype(auto) trace(A const & _u) {
         return _u.template evaluate<stride>();
       }
     };
 
     template<size_t index>
-    inline decltype(auto) evaluate() const {
+    inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
       // tuple free stride computation
       constexpr size_t ndim = E::property_t::ndim;
 
@@ -66,7 +66,7 @@ class tensor_trace_t : public tensor_expression_t<tensor_trace_t<i1,i2,E> > {
 //! Helper structure to compute trace of rank 2 tensor by a template recursion
 template <typename E, size_t N>
 struct scalar_trace_recursion {
-  static inline decltype(auto) trace(E const &u) {
+  static inline __attribute__ ((always_inline)) decltype(auto) trace(E const &u) {
     return scalar_trace_recursion<E,N-1>::trace(u)
          + u.template evaluate<generic_symmetry_t<E::property_t::ndim,2>
                                  ::template compressed_index<N,N>::value>();
@@ -75,7 +75,7 @@ struct scalar_trace_recursion {
 // Termination definition of recursion
 template<typename E>
 struct scalar_trace_recursion<E,0> {
-  static inline decltype(auto) trace(E const &u) {
+  static inline __attribute__ ((always_inline)) decltype(auto) trace(E const &u) {
     return u.template evaluate<0>();
   }
 };
@@ -84,7 +84,7 @@ struct scalar_trace_recursion<E,0> {
 //  General trace expression result
 template<typename E, size_t rank, size_t i1, size_t i2>
 struct tracer_t {
-  static inline decltype(auto) trace(E const &u) {
+  static inline __attribute__ ((always_inline)) decltype(auto) trace(E const &u) {
     // automatically change indices if they are not in ascending order
     return tensor_trace_t<(i1 < i2) ? i1 : i2,(i1 > i2) ? i1 : i2,E>(u);
   }
@@ -95,7 +95,7 @@ template<typename E, size_t i1, size_t i2>
 struct tracer_t<E,2,i1,i2> {
   static_assert(is_reducible<i1,i2,E,E>::value, "Can only contract covariant with contravariant indices!");
 
-  static inline decltype(auto) trace(E const &u) {
+  static inline __attribute__ ((always_inline)) decltype(auto) trace(E const &u) {
     return scalar_trace_recursion<E,E::property_t::ndim-1>::trace(u);
   }
 };
@@ -104,7 +104,7 @@ struct tracer_t<E,2,i1,i2> {
 //  Returns a tensor_trace_t or a scalar (if E::rank == 2)
 template<size_t i1 = 0, size_t i2 = 1, typename E>
 decltype(auto)
-inline trace(E const &u) {
+inline __attribute__ ((always_inline)) trace(E const &u) {
   return tracer_t<E,E::property_t::rank,i1,i2>::trace(u);
 }
 

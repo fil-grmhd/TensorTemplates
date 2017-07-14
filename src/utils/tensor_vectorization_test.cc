@@ -14,19 +14,19 @@
 
 using namespace tensors;
 
-// some artificial diff class
+// some artificial diff classes
 struct test_diff {
   double idx;
 
   test_diff(double idx_) : idx(idx_) {}
 
   template<size_t dir>
-  static inline size_t stride() {
+  static inline __attribute__ ((always_inline)) size_t stride() {
     return dir+1;
   }
 
   template<size_t dir, typename T>
-  inline T diff(T const * const ptr, size_t const index) const {
+  inline __attribute__ ((always_inline)) T diff(T const * const ptr, size_t const index) const {
     return idx*fd::c_diff<dir,4>(ptr, index, test_diff::stride<dir>());
   }
 };
@@ -37,12 +37,12 @@ struct test_diff_v {
   test_diff_v(double idx_) : idx(idx_) {}
 
   template<size_t dir>
-  static inline size_t stride() {
+  static inline __attribute__ ((always_inline)) size_t stride() {
     return dir+1;
   }
 
   template<size_t dir, typename T>
-  inline decltype(auto) diff(T const * const ptr, size_t const index) const {
+  inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
     return idx*fd::c_diff_v<dir,4>(ptr, index, test_diff_v::stride<dir>());
   }
 };
@@ -53,7 +53,7 @@ struct test_diff_v_old {
   test_diff_v_old(double idx_) : idx(idx_) {}
 
   template<size_t dir, typename T>
-  inline decltype(auto) diff(T const * const ptr, size_t const index) const {
+  inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
 
     Vc::Vector<T> vec_register;
 
@@ -74,7 +74,7 @@ int main() {
   using vec_type = Vc::Vector<sca_type>;
 
 //  constexpr size_t N = 80000000;
-  constexpr size_t N = 80000;
+  constexpr size_t N = 800000;
   constexpr size_t vec_size = vec_type::Size;
   constexpr size_t num_data = N*vec_size;
 

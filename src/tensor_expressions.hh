@@ -33,26 +33,26 @@ template <typename E> class tensor_expression_t {
 public:
 
   //! Index access of tensor expression E
-  inline decltype(auto) operator[](size_t i) const {
+  inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const {
     return static_cast<E const &>(*this)[i];
   };
 
   //! Evaluation routine, triggering actual computation
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
     return static_cast<E const &>(*this).template evaluate<index>();
   };
 
   //! (generic) compressed index access to components of tensor expression E
   //  Calls evaluation, which can be expensive, if the expression is not evaluated yet.
   template<size_t index>
-  inline decltype(auto) compressed_c() const {
+  inline __attribute__ ((always_inline)) decltype(auto) cc() const {
     return static_cast<E const &>(*this).template evaluate<index>();
   }
 
   //! Natural index access to components of tensor expression E
   //  Calls evaluation, which can be expensive, if the expression is not evaluated yet.
   template <size_t... Ind>
-  inline decltype(auto) c() const {
+  inline __attribute__ ((always_inline)) decltype(auto) c() const {
     constexpr size_t index = generic_symmetry_t<
                                E::property_t::ndim,
                                E::property_t::rank
@@ -80,12 +80,12 @@ public:
   tensor_sum_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
-  //    inline decltype(auto) operator[](size_t i) const { return _u[i] + _v[i];
+  //    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const { return _u[i] + _v[i];
   //    };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
     return _u.template evaluate<index>() + _v.template evaluate<index>();
   };
 };
@@ -103,12 +103,12 @@ public:
   tensor_sub_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
-  //    inline decltype(auto) operator[](size_t i) const { return _u[i] - _v[i];
+  //    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const { return _u[i] - _v[i];
   //    };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
     return _u.template evaluate<index>() - _v.template evaluate<index>();
   };
 };
@@ -127,11 +127,11 @@ public:
       : _u(u), _v(v){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
-  //    inline decltype(auto) operator[](size_t i) const { return _u * _v[i]; };
+  //    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const { return _u * _v[i]; };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
     return _v.template evaluate<index>() * _u;
   };
 };
@@ -149,41 +149,41 @@ public:
       : _u(u), _v(v){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
-  //    inline decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
+  //    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
     return _u.template evaluate<index>() / _v;
   };
 };
 
 template <typename E1, typename E2>
-tensor_sum_t<E1, E2> const inline operator+(E1 const &u, E2 const &v) {
+tensor_sum_t<E1, E2> const inline __attribute__ ((always_inline)) operator+(E1 const &u, E2 const &v) {
   return tensor_sum_t<E1, E2>(u, v);
 }
 
 template <typename E1, typename E2>
-tensor_sub_t<E1, E2> const inline operator-(E1 const &u, E2 const &v) {
+tensor_sub_t<E1, E2> const inline __attribute__ ((always_inline)) operator-(E1 const &u, E2 const &v) {
   return tensor_sub_t<E1, E2>(u, v);
 }
 
 template <typename E>
-tensor_scalar_mult_t<E> const inline
+tensor_scalar_mult_t<E> const inline __attribute__ ((always_inline))
 operator*(typename E::property_t::data_t const &u, E const &v) {
   // Should we add a data_t check here??
   return tensor_scalar_mult_t<E>(u, v);
 }
 
 template <typename E>
-tensor_scalar_mult_t<E> const inline
+tensor_scalar_mult_t<E> const inline __attribute__ ((always_inline))
 operator*(E const &u, typename E::property_t::data_t const &v) {
   // Should we add a data_t check here??
   return v * u;
 }
 
 template <typename E>
-tensor_scalar_div_t<E> const inline
+tensor_scalar_div_t<E> const inline __attribute__ ((always_inline))
 operator/(E const &u, typename E::property_t::data_t const &v) {
   // Should we add a data_t check here??
   return tensor_scalar_div_t<E>(u, v);

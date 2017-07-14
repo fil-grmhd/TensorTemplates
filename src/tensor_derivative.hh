@@ -24,7 +24,7 @@ public:
   // thus a special property class is needed.
 
   // adds a lower index
-  using index_t = decltype(std::tuple_cat(std::declval<E::property_t::index_t>(),
+  using index_t = decltype(std::tuple_cat(std::declval<typename E::property_t::index_t>(),
                                           std::declval<std::tuple<lower_t>>()));
 
   static constexpr size_t ndim = E::property_t::ndim;
@@ -48,11 +48,11 @@ public:
                             : grid_index(grid_index_), ptr_array(ptr_array_), fd(fd_) {};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
 
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
     // get index without partial derivative index part
     constexpr size_t tensor_gen_index = index % utilities::static_pow<ndim,rank-1>::value;
     // transform to underlying symmetry index (since array has only ndof elements)

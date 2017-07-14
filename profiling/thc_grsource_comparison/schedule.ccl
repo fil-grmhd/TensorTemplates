@@ -11,3 +11,8 @@ SCHEDULE THC_GRSource_comparison IN HydroBase_RHS AFTER GRSOURCE_COMP
 {
     LANG: C
 } "Compares results"
+
+#SCHEDULE THC_GRSource_comp_test IN HydroBase_RHS AFTER GRSOURCE_COMP
+#{
+#    LANG: C
+#} "Grid it test"

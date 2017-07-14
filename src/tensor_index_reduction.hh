@@ -27,7 +27,7 @@ class index_reduction_generator_t {
 public:
   //! Get index type of a contraction expression
   // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_contraction_index_t() {
+  static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_contraction_index_t() {
     using i1_t = typename E1::property_t::index_t;
     using i2_t = typename E2::property_t::index_t;
 
@@ -56,7 +56,7 @@ public:
 
   //! Get index type of a trace expression
   // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_trace_index_t() {
+  static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_trace_index_t() {
     using i1_t = typename E1::property_t::index_t;
 
     constexpr size_t E_size = E1::property_t::rank;
@@ -75,7 +75,7 @@ public:
 
   //! Get index type of a metric contraction expression
   // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_metric_contraction_index_t() {
+  static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_metric_contraction_index_t() {
     using i1_t = typename E1::property_t::index_t;
     using i2_t = typename E2::property_t::index_t;
 
@@ -103,7 +103,7 @@ public:
 
   //! Get index type of a tensor product expression
   // this is only here to deduce the index type, see below
-  static inline constexpr decltype(auto) get_concat_index_t() {
+  static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_concat_index_t() {
     using i1_t = typename E1::property_t::index_t;
     using i2_t = typename E2::property_t::index_t;
 

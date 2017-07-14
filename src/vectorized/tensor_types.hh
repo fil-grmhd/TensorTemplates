@@ -73,12 +73,17 @@ template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
 using sym_tensor4_vt = sym2_tensor_vt<T, 4, eulerian_t, i0, i1, ranks...>;
 
 
-// metric types
+// metric type
+
+template<typename T>
+using metric_tensor3_vt = metric_tensor3_t<Vc::Vector<T>>;
+
+/*
 template<typename T, size_t ndim>
 using metric_tensor_vt = sym2_tensor_vt<T, ndim, any_frame_t, 0, 1, lower_t, lower_t>;
 template<typename T, size_t ndim>
 using invmetric_tensor_vt = sym2_tensor_vt<T, ndim, any_frame_t, 0, 1, upper_t, upper_t>;
-
+*/
 } // namespace tensors
 
 #endif

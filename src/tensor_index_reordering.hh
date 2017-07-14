@@ -34,7 +34,7 @@ public:
   tensor_reorder_index_t(E const &u) : _u(u) {};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
 
 
@@ -54,7 +54,7 @@ public:
   };
 
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
 
     return _u.template evaluate<compute_new_cindex<index,Ind...>::value>();
   }
@@ -62,7 +62,7 @@ public:
 
 //! Reordering "operator" for a tensor expressions
 template <size_t ...Indices, typename E>
-tensor_reorder_index_t<E, Indices... > const inline reorder_index(E const &u){
+tensor_reorder_index_t<E, Indices... > const inline __attribute__ ((always_inline)) reorder_index(E const &u){
   return tensor_reorder_index_t<E, Indices...>(u);
 };
 

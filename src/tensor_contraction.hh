@@ -21,14 +21,14 @@ public:
   tensor_contraction_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
 
   //! Sum of contracted components for a specific index computed by a template
   //! recursion
   template <int N, int stride1, int stride2> struct recursive_contract {
     template <typename A, typename B>
-    static inline decltype(auto) contract(A const &_u, B const &_v) {
+    static inline __attribute__ ((always_inline)) decltype(auto) contract(A const &_u, B const &_v) {
       return recursive_contract<(N - 1), stride1, stride2>::contract(_u, _v)
            + _u.template evaluate<
                  stride1 +
@@ -41,7 +41,7 @@ public:
   template <int stride1, int stride2>
   struct recursive_contract<0, stride1, stride2> {
     template <typename A, typename B>
-    static inline decltype(auto) contract(A const &_u, B const &_v) {
+    static inline __attribute__ ((always_inline)) decltype(auto) contract(A const &_u, B const &_v) {
       return _u.template evaluate<stride1>() * _v.template evaluate<stride2>();
     };
   };
@@ -57,7 +57,7 @@ public:
                      (index % utilities::static_pow<ndim, i>::value);
   }
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
 
     // TUPLE FREE TENSOR CONTRACTION, fix for problems with intel compiler
     constexpr size_t max_pow_E1 = E1::property_t::rank - 1;
@@ -98,7 +98,7 @@ public:
 //! Helper structure to compute contraction of two vectors by a template recursion
 template <typename E1, typename E2, size_t N>
 struct scalar_contraction_recursion {
-  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
+  static inline __attribute__ ((always_inline)) decltype(auto) contract(E1 const &u, E2 const &v) {
     return scalar_contraction_recursion<E1,E2,N-1>::contract(u,v)
          + u.template evaluate<N>() * v.template evaluate<N>();
   }
@@ -106,7 +106,7 @@ struct scalar_contraction_recursion {
 // Termination definition of recursion
 template<typename E1, typename E2>
 struct scalar_contraction_recursion<E1,E2,0> {
-  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
+  static inline __attribute__ ((always_inline)) decltype(auto) contract(E1 const &u, E2 const &v) {
     return u.template evaluate<0>() * v.template evaluate<0>();
   }
 };
@@ -115,7 +115,7 @@ struct scalar_contraction_recursion<E1,E2,0> {
 //  General contraction expression result
 template<typename E1, typename E2, size_t contracted_rank, size_t i1, size_t i2>
 struct contractor_t {
-  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
+  static inline __attribute__ ((always_inline)) decltype(auto) contract(E1 const &u, E2 const &v) {
     // CHECK: should we check here for any index order?
     return tensor_contraction_t<i1, i2, E1, E2>(u, v);
   }
@@ -125,7 +125,7 @@ template<typename E1, typename E2, size_t i1, size_t i2>
 struct contractor_t<E1,E2,0,i1,i2> {
   static_assert(is_reducible<i1,i2,E1,E2>::value, "Can only contract covariant with contravariant indices!");
 
-  static inline decltype(auto) contract(E1 const &u, E2 const &v) {
+  static inline __attribute__ ((always_inline)) decltype(auto) contract(E1 const &u, E2 const &v) {
     return scalar_contraction_recursion<E1,E2,E1::property_t::ndim-1>::contract(u,v);
   }
 };
@@ -133,7 +133,7 @@ struct contractor_t<E1,E2,0,i1,i2> {
 //! Contraction "operator" for two tensor expressions
 //  Returns a tensor_contraction_t or a scalar (if E1,2::rank == 1)
 template <size_t i1 = 0, size_t i2 = 0, typename E1, typename E2>
-decltype(auto) inline contract(E1 const &u, E2 const &v) {
+decltype(auto) inline __attribute__ ((always_inline)) contract(E1 const &u, E2 const &v) {
   return contractor_t<E1,
                       E2,
                       E1::property_t::rank + E2::property_t::rank - 2,
@@ -166,14 +166,14 @@ public:
   metric_contraction_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
 
   //! Sum of contracted components for a specific index computed by a template
   //! recursion
   template <int N, int stride1, int stride2> struct recursive_contract {
     template <typename A, typename B>
-    static inline decltype(auto) contract(A const &_u, B const &_v) {
+    static inline __attribute__ ((always_inline)) decltype(auto) contract(A const &_u, B const &_v) {
       return recursive_contract<(N - 1), stride1, stride2>::contract(_u, _v) +
              _u.template evaluate<
                  stride1 +
@@ -186,12 +186,12 @@ public:
   template <int stride1, int stride2>
   struct recursive_contract<0, stride1, stride2> {
     template <typename A, typename B>
-    static inline decltype(auto) contract(A const &_u, B const &_v) {
+    static inline __attribute__ ((always_inline)) decltype(auto) contract(A const &_u, B const &_v) {
       return _u.template evaluate<stride1>() * _v.template evaluate<stride2>();
     };
   };
 
-  template <size_t index> inline decltype(auto) evaluate() const {
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
     // TUPLE FREE TENSOR CONTRACTION, fix for problems with intel compiler
     constexpr size_t max_pow_E1 = E1::property_t::rank - 1;
 

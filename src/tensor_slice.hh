@@ -81,11 +81,11 @@ public:
   tensor_slice_t(E const &u) : _u(u){};
 
   [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline decltype(auto)
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
 
   template <size_t c_index>
-  inline decltype(auto) evaluate() const {
+  inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
 
     return _u.template evaluate<
                          compute_unsliced_cindex<
@@ -100,7 +100,7 @@ public:
 };
 
 template <int... Indices, typename E>
-tensor_slice_t<E, Indices...> const inline slice(E const &u) {
+tensor_slice_t<E, Indices...> const inline __attribute__ ((always_inline)) slice(E const &u) {
   return tensor_slice_t<E, Indices...>(u);
 };
 
@@ -122,9 +122,9 @@ public:
   //  Needed if one wants to assign something to a specific element,
   //  given a generic compressed index.
   template<size_t index>
-  inline T & compressed_c() {
+  inline __attribute__ ((always_inline)) T & cc() {
     return const_cast<general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_> &>(super::_u).
-      			template compressed_c<
+      			template cc<
                          compute_unsliced_cindex<
                            general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_>,
                            typename super::property_t::this_tensor_t,
@@ -138,7 +138,7 @@ public:
 
   //Add expression to tensor
   template <typename E>
-  inline void operator+=(tensor_expression_t<E> const &tensor_expression){
+  inline __attribute__ ((always_inline)) void operator+=(tensor_expression_t<E> const &tensor_expression){
 //    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
 //                  "Frame types don't match!");
 
@@ -160,7 +160,7 @@ public:
 
   //Add expression to tensor
   template <typename E>
-  inline void operator-=(tensor_expression_t<E> const &tensor_expression){
+  inline __attribute__ ((always_inline)) void operator-=(tensor_expression_t<E> const &tensor_expression){
 //    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
 //                  "Frame types don't match!");
 
@@ -182,7 +182,7 @@ public:
 
 
   //Multiply tensor with scalar
-  inline void operator*=(T const & lambda){
+  inline __attribute__ ((always_inline)) void operator*=(T const & lambda){
 
    multiply_tensor_with_t<this_tensor_t,super::property_t::ndof-1>::multiply_tensor_with(lambda,*this);
 
@@ -191,7 +191,7 @@ public:
 };
 
 template <int... Ind, typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typename index_t_,size_t ndim_>
-inline decltype(auto) assign_slice(general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_> & t){
+inline __attribute__ ((always_inline)) decltype(auto) assign_slice(general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_> & t){
   return tensor_assign_slice_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_, Ind...>(t);
 };
 

@@ -18,13 +18,15 @@
 #ifndef TENSORS_HH
 #define TENSORS_HH
 
+
 #ifdef TENSORS_VECTORIZED
-#pragma message ("TensorTemplates: Vectorization support activated.")
-#include <Vc/Vc>
+  #pragma message ("TensorTemplates: Vectorization support activated.")
+  #include <Vc/Vc>
 #endif
 
+
 #ifdef TENSORS_CACTUS
-#include "cctk.h"
+  #include "cctk.h"
 #endif
 
 #include "utilities.hh"
@@ -48,18 +50,18 @@
 #include "finite_differences.hh"
 
 #ifdef TENSORS_CACTUS
-#include "cactus_types.hh"
+  #include "cactus_types.hh"
 #endif
 
 #ifdef TENSORS_VECTORIZED
 
-#include "vectorized/tensor_types.hh"
-#include "vectorized/tensor_field.hh"
-#include "vectorized/finite_differences.hh"
+  #include "vectorized/tensor_types.hh"
+  #include "vectorized/tensor_field.hh"
+  #include "vectorized/finite_differences.hh"
 
-#ifdef TENSORS_CACTUS
-#include "cactus_types.hh"
-#endif
+  #ifdef TENSORS_CACTUS
+    #include "vectorized/cactus_types.hh"
+  #endif
 
 #endif
 
