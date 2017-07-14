@@ -42,6 +42,14 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     using namespace tensors;
 
     // init tensor fields with GF pointers
+
+    // these are only here to make it symmetric to the vectorized version
+    scalar_field_t<CCTK_REAL> alpha_field(alp);
+    scalar_field_t<CCTK_REAL> w_lorentz_field(w_lorentz);
+    scalar_field_t<CCTK_REAL> rho_field(rho);
+    scalar_field_t<CCTK_REAL> eps_field(eps);
+    scalar_field_t<CCTK_REAL> press_field(press);
+
     tensor_field_t<vector3_t<CCTK_REAL>> beta_field(betax,
                                                     betay,
                                                     betaz);
@@ -58,7 +66,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
     tensor_field_t<sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t>> K_field(kxx,kxy,kxz,kyy,kyz,kzz);
 
-    using data_t = vector3_t<CCTK_REAL>::data_t;
+    using data_t = CCTK_REAL;
 
     // get grid spacing
     CCTK_REAL const dx  = CCTK_DELTA_SPACE(0);
@@ -67,7 +75,6 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
     // create a (specialized) cactus central differentiator
     fd::cactus_cdiff<fd_order> cdiff(cctkGH,dx,dy,dz);
-//    no_diff_t cdiff;
 
     // loop over local grid
     #pragma omp parallel for
@@ -84,9 +91,10 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       data_t sqrt_det = std::sqrt(det);
 
       auto beta = beta_field[ijk];
+      auto alpha = alpha_field[ijk];
 
       // inverse 4-metric, needed for energy-momentum tensor
-      auto inv_g = gamma.inverse_spacetime_metric(alp[ijk],beta,det);
+      auto inv_g = gamma.inverse_spacetime_metric(alpha,beta,det);
 
       // Derivatives of the lapse, metric and shift
       // this could be simplified by a specialized scalar field type
@@ -112,7 +120,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       #endif
 
       // helpers to construct four metric derivative
-      auto dg00i = - 2*alp[ijk]*dalp
+      auto dg00i = - 2*alpha*dalp
                    + 2*contract(dbeta,contract(gamma,beta))
                    + contract(beta,contract(beta,dgamma));
 
@@ -135,8 +143,8 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       dg.set<-2,-2,-2>(dgamma);
 
       // helper for four velocity u
-      const double u0 =  w_lorentz[ijk]/alp[ijk];
-      auto ui = u0*(alp[ijk]*vel_field[ijk] - beta);
+      const double u0 =  w_lorentz_field[ijk]/alpha;
+      auto ui = u0*(alpha*vel_field[ijk] - beta);
 
       // four velocity u^mu
       vector4_t<CCTK_REAL> u;
@@ -147,11 +155,11 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       auto uu = sym2_cast(tensor_cat(u,u));
 
       // construct energy-momentum tensor
-      sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> T = (rho[ijk]*(1+eps[ijk])+press[ijk])*uu
-                                                     +  press[ijk]*inv_g;
+      sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> T = (rho_field[ijk]*(1+eps_field[ijk])+press_field[ijk])*uu
+                                                     +  press_field[ijk]*inv_g;
 
       // slice expression to contain only the spatial components
-      rhs_sources[ijk] = slice<-2>(0.5*alp[ijk] * sqrt_det
+      rhs_sources[ijk] = slice<-2>(0.5*alpha * sqrt_det
                                    *(trace(contract(T,dg))));
 
       // slice em tensor in different ways
@@ -163,7 +171,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       auto bb = sym2_cast(tensor_cat(beta,beta));
       auto T0ib = tensor_cat(T0i,beta);
 
-      rhs_tau_temp[ijk] = alp[ijk] * sqrt_det
+      rhs_tau_temp[ijk] = alpha * sqrt_det
                         * (trace(
                              contract(
                                T.c<0,0>()*bb + 2 * T0ib + Tij,
