@@ -47,8 +47,8 @@ public:
   // leads to larger relative errors when compared to the original FDCore derivatives
   template<int N, int dpoint, typename T>
   struct stencil_sum {
-    static inline __attribute__ ((always_inline)) decltype(auto) sum(int const stride,
-                                     T const * const grid_ptr) {
+    static inline __attribute__ ((always_inline)) decltype(auto)
+      sum(int const stride, T const * const grid_ptr) {
 
       // grid values to be summed are at non-unit stride locations
       // this makes it inefficient to load them, so a simple loop is used
@@ -56,26 +56,27 @@ public:
       for(int i = 0; i < Vc::Vector<T>::Size; ++i) {
         T const * const vector_index_ptr = grid_ptr + i;
 
-        weighted_value[i] = vector_index_ptr[(order-N-dpoint)*stride]*fd_stencils<order>::stencil[dpoint][order-N];
+        weighted_value[i] = vector_index_ptr[(order-N-dpoint)*stride];
       }
 
-      return weighted_value
+      return weighted_value * fd_stencils<order>::stencil[dpoint][order-N]
            + stencil_sum<N-1,dpoint,T>::sum(stride,grid_ptr);
     }
   };
   template<int dpoint, typename T>
   struct stencil_sum<0,dpoint,T> {
-    static inline __attribute__ ((always_inline)) decltype(auto) sum(int const stride,
-                                     T const * const grid_ptr) {
+    static inline __attribute__ ((always_inline)) decltype(auto)
+      sum(int const stride, T const * const grid_ptr) {
       // grid values to be summed are at non-unit stride locations
       // this makes it inefficient to load them, so a simple loop is used
       Vc::Vector<T> weighted_value;
       for(int i = 0; i < Vc::Vector<T>::Size; ++i) {
         T const * const vector_index_ptr = grid_ptr + i;
-        weighted_value[i] = vector_index_ptr[(order-dpoint)*stride]*fd_stencils<order>::stencil[dpoint][order];
+
+        weighted_value[i] = vector_index_ptr[(order-dpoint)*stride];
       }
 
-      return weighted_value;
+      return weighted_value * fd_stencils<order>::stencil[dpoint][order];
     }
   };
 

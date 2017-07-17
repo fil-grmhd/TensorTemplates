@@ -19,8 +19,7 @@
 #define TENSORS_VECTORTYPES_HH
 
 namespace tensors {
-
-// Vectorized typedefs, just for conveniece
+// Vectorized tensor typedefs
 // Tensor of rank index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
 using tensor_vt = tensor_t<Vc::Vector<T>, ndim_, frame_t_, ranks...>;
@@ -84,6 +83,7 @@ using metric_tensor_vt = sym2_tensor_vt<T, ndim, any_frame_t, 0, 1, lower_t, low
 template<typename T, size_t ndim>
 using invmetric_tensor_vt = sym2_tensor_vt<T, ndim, any_frame_t, 0, 1, upper_t, upper_t>;
 */
+
 } // namespace tensors
 
 #endif

@@ -20,7 +20,7 @@
 // if not, Vc headers fail to compile, not sure why yet
 // activates vectorized types and implementations
 #define TENSORS_VECTORIZED
-// needed for cactus fd interface
+// activates cactus fd interface
 #define TENSORS_CACTUS
 #include "tensor_templates.hh"
 
@@ -42,30 +42,34 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     using namespace tensors;
 
     // init tensor fields with GF pointers
+    scalar_field_t<CCTK_REAL> const alpha_field(alp);
+    scalar_field_t<CCTK_REAL> const w_lorentz_field(w_lorentz);
+    scalar_field_t<CCTK_REAL> const rho_field(rho);
+    scalar_field_t<CCTK_REAL> const eps_field(eps);
+    scalar_field_t<CCTK_REAL> const press_field(press);
 
-    // these are only here to make it symmetric to the vectorized version
-    scalar_field_t<CCTK_REAL> alpha_field(alp);
-    scalar_field_t<CCTK_REAL> w_lorentz_field(w_lorentz);
-    scalar_field_t<CCTK_REAL> rho_field(rho);
-    scalar_field_t<CCTK_REAL> eps_field(eps);
-    scalar_field_t<CCTK_REAL> press_field(press);
+    scalar_field_t<CCTK_REAL> rhs_tau_field(rhs_tau_temp);
 
-    tensor_field_t<vector3_t<CCTK_REAL>> beta_field(betax,
-                                                    betay,
-                                                    betaz);
+    tensor_field_t<vector3_t<CCTK_REAL>> const beta_field(betax,
+                                                          betay,
+                                                          betaz);
 
-    tensor_field_t<vector3_t<CCTK_REAL>> vel_field(&vel[0*gsiz],
-                                                   &vel[1*gsiz],
-                                                   &vel[2*gsiz]);
+    tensor_field_t<vector3_t<CCTK_REAL>> const vel_field(&vel[0*gsiz],
+                                                         &vel[1*gsiz],
+                                                         &vel[2*gsiz]);
 
     tensor_field_t<covector3_t<CCTK_REAL>> rhs_sources(&rhs_scon_temp[0*gsiz],
                                                        &rhs_scon_temp[1*gsiz],
                                                        &rhs_scon_temp[2*gsiz]);
 
-    tensor_field_t<sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t>> gamma_field(gxx,gxy,gxz,gyy,gyz,gzz);
+    tensor_field_t<metric_tensor3_t<CCTK_REAL>> const gamma_field(gxx,gxy,gxz,
+                                                                      gyy,gyz,
+                                                                          gzz);
 
-    tensor_field_t<sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t>> K_field(kxx,kxy,kxz,kyy,kyz,kzz);
-
+    tensor_field_t<sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t>> K_field(kxx,kxy,kxz,
+                                                                             kyy,kyz,
+                                                                                 kzz);
+    // data type, in this case a POD
     using data_t = CCTK_REAL;
 
     // get grid spacing
@@ -86,46 +90,47 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
 
       // 3-metric and its determinant
-      metric_tensor3_t<CCTK_REAL> gamma(gamma_field[ijk]);
-      data_t det = gamma.det();
-      data_t sqrt_det = std::sqrt(det);
+      // evaluate doesn't work here (yet)
+      metric_tensor3_t<CCTK_REAL> const gamma = gamma_field[ijk];
+      data_t const det = gamma.det();
+      data_t const sqrt_det = std::sqrt(det);
 
-      auto beta = beta_field[ijk];
-      auto alpha = alpha_field[ijk];
+      auto const beta = evaluate(beta_field[ijk]);
+      data_t const alpha = alpha_field[ijk];
 
       // inverse 4-metric, needed for energy-momentum tensor
-      auto inv_g = gamma.inverse_spacetime_metric(alpha,beta,det);
+      auto const inv_g = gamma.inverse_spacetime_metric(alpha,beta,det);
 
       // Derivatives of the lapse, metric and shift
-      // this could be simplified by a specialized scalar field type
+      // this could be simplified within the scalar field type
       #ifdef COMPUTE_DERIVATIVES
-      covector3_t<CCTK_REAL> dalp(cdiff.diff<0>(alp, ijk),
-                                  cdiff.diff<1>(alp, ijk),
-                                  cdiff.diff<2>(alp, ijk));
+      covector3_t<CCTK_REAL> const dalp(cdiff.diff<0>(alp, ijk),
+                                        cdiff.diff<1>(alp, ijk),
+                                        cdiff.diff<2>(alp, ijk));
       #else
-      covector3_t<CCTK_REAL> dalp;
+      covector3_t<CCTK_REAL> const dalp;
       #endif
 
       // get central finite difference of beta components, defined by cdiff
       #ifdef COMPUTE_DERIVATIVES
-      tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta = beta_field[ijk].finite_diff(cdiff);
+      tensor3_t<CCTK_REAL,upper_t,lower_t> const dbeta = beta_field[ijk].finite_diff(cdiff);
       #else
-      tensor3_t<CCTK_REAL,upper_t,lower_t> dbeta;
+      tensor3_t<CCTK_REAL,upper_t,lower_t> const dbeta;
       #endif
 
       #ifdef COMPUTE_DERIVATIVES
-      sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma = gamma_field[ijk].finite_diff(cdiff);
+      sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> const dgamma = gamma_field[ijk].finite_diff(cdiff);
       #else
-      sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> dgamma;
+      sym_tensor3_t<CCTK_REAL,0,1,lower_t,lower_t,lower_t> const dgamma;
       #endif
 
       // helpers to construct four metric derivative
-      auto dg00i = - 2*alpha*dalp
-                   + 2*contract(dbeta,contract(gamma,beta))
-                   + contract(beta,contract(beta,dgamma));
+      auto const dg00i = - 2*alpha*dalp
+                       + 2*contract(dbeta,contract(gamma,beta))
+                       + contract(beta,contract(beta,dgamma));
 
-      auto dg0ji = contract(gamma,dbeta)
-                 + contract(dgamma,beta);
+      auto const dg0ji = contract(gamma,dbeta)
+                       + contract(dgamma,beta);
 
       // gj0i is the same due to symmetry
       // gjki is dgamma
@@ -143,8 +148,8 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       dg.set<-2,-2,-2>(dgamma);
 
       // helper for four velocity u
-      const double u0 =  w_lorentz_field[ijk]/alpha;
-      auto ui = u0*(alpha*vel_field[ijk] - beta);
+      data_t const u0 =  w_lorentz_field[ijk]/alpha;
+      auto const ui = u0*(alpha*vel_field[ijk] - beta);
 
       // four velocity u^mu
       vector4_t<CCTK_REAL> u;
@@ -152,36 +157,38 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       u.set<-2>(ui);
 
       // construct tensor product of u^mu u^nu
-      auto uu = sym2_cast(tensor_cat(u,u));
+      auto const uu = sym2_cast(tensor_cat(u,u));
 
       // construct energy-momentum tensor
-      sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> T = (rho_field[ijk]*(1+eps_field[ijk])+press_field[ijk])*uu
-                                                     +  press_field[ijk]*inv_g;
+      sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> const
+        T = (rho_field[ijk]*(1+eps_field[ijk])+press_field[ijk])*uu
+          +  press_field[ijk]*inv_g;
 
       // slice expression to contain only the spatial components
       rhs_sources[ijk] = slice<-2>(0.5*alpha * sqrt_det
                                    *(trace(contract(T,dg))));
 
       // slice em tensor in different ways
-      auto T0i = slice<0,-2>(T);
+      auto const T0i = slice<0,-2>(T);
 
-      auto Tij = sym2_cast(slice<-2,-2>(T));
+      auto const Tij = sym2_cast(slice<-2,-2>(T));
 
       // construct tensor products
-      auto bb = sym2_cast(tensor_cat(beta,beta));
-      auto T0ib = tensor_cat(T0i,beta);
+      auto const bb = sym2_cast(tensor_cat(beta,beta));
+      auto const T0ib = tensor_cat(T0i,beta);
 
-      rhs_tau_temp[ijk] = alpha * sqrt_det
-                        * (trace(
-                             contract(
-                               T.c<0,0>()*bb + 2 * T0ib + Tij,
-                               K_field[ijk]
-                             )
-                           )
-                         - contract(
-                             T.c<0,0>()*beta + T0i,
-                             dalp
-                           )
-                          );
+      data_t const rhs_tau = alpha * sqrt_det
+                           * (trace(
+                                contract(
+                                  T.c<0,0>()*bb + 2 * T0ib + Tij,
+                                  K_field[ijk]
+                                )
+                              )
+                            - contract(
+                                T.c<0,0>()*beta + T0i,
+                                dalp
+                              )
+                             );
+      rhs_tau_field.set(rhs_tau,ijk);
     }
 }

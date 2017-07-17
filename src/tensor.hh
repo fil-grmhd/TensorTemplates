@@ -111,15 +111,7 @@ public:
 	  static_assert(utilities::all_true<(std::is_convertible<data_t,TArgs>::value)...>::value, "The data_types are incompatible!");
   };
 
-/*
-  template <typename... TArgs>
-  general_tensor_t(const double * first_elem, TArgs... elem) : m_data({data_t(first_elem), data_t(static_cast<const double*>(elem))...}) {
-	  static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
-  };
-*/
   general_tensor_t() : m_data({0}){};
-
-  // CHECK: make this a var template
 
   //! Computes the GENERIC compressed index associated with the given indices
   //  All members are expecting a generic compressed index,
@@ -142,13 +134,22 @@ public:
   template <size_t... Ind>
   inline __attribute__ ((always_inline)) data_t & c() {
     return this->cc<compressed_index<Ind...>()>();
-  };
+  }
+  //  This gives back a const reference, for const tensors
+  template <size_t... Ind>
+  inline __attribute__ ((always_inline)) data_t c() const {
+    return this->cc<compressed_index<Ind...>()>();
+  }
 
   //! Get component reference at (generic) compressed index position
   //  Needed if one wants to assign something to a specific element,
   //  given a generic compressed index.
   template<size_t index>
-  inline __attribute__ ((always_inline)) T & cc() {
+  inline __attribute__ ((always_inline)) data_t & cc() {
+    return m_data[symmetry_t::template index_from_generic<index>::value];
+  }
+  template<size_t index>
+  inline __attribute__ ((always_inline)) data_t cc() const {
     return m_data[symmetry_t::template index_from_generic<index>::value];
   }
 

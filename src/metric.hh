@@ -52,7 +52,7 @@ public:
   static constexpr data_t SQ(data_t const & x) {return x*x;};
 
   //! Computes the determinant of this 3-metric
-  inline __attribute__ ((always_inline)) data_t det() {
+  inline __attribute__ ((always_inline)) data_t det() const {
 
     constexpr size_t GXX = this_tensor_t::template compressed_index<0,0>();
     constexpr size_t GXY = this_tensor_t::template compressed_index<0,1>();
@@ -68,12 +68,12 @@ public:
            + this->evaluate<GXX>() * this->evaluate<GYY>() * this->evaluate<GZZ>();
   }
 
-  inline __attribute__ ((always_inline)) data_t sqrt_det() {
+  inline __attribute__ ((always_inline)) data_t sqrt_det() const {
     return std::sqrt(this->det());
   }
 
   //! Computes the inverse of this 3-metric
-  inline __attribute__ ((always_inline)) decltype(auto) inverse(data_t const det) {
+  inline __attribute__ ((always_inline)) decltype(auto) inverse(data_t const det) const {
     constexpr size_t GXX = this_tensor_t::template compressed_index<0,0>();
     constexpr size_t GXY = this_tensor_t::template compressed_index<0,1>();
     constexpr size_t GXZ = this_tensor_t::template compressed_index<0,2>();
@@ -101,7 +101,7 @@ public:
   }
 
   //! Computes the inverse of this 3-metric
-  inline __attribute__ ((always_inline)) decltype(auto) inverse() {
+  inline __attribute__ ((always_inline)) decltype(auto) inverse() const {
     return this->inverse(this->det());
   }
 
@@ -109,7 +109,7 @@ public:
   inline __attribute__ ((always_inline)) decltype(auto)
   spacetime_metric(data_t const alpha,
                    vector3_t<data_t> const & beta,
-                   covector3_t<data_t> const & beta_lower) {
+                   covector3_t<data_t> const & beta_lower) const {
     // 4-metric
     metric4_t g;
 
@@ -127,7 +127,7 @@ public:
   //! Computes the 4-metric from this 3-metric
   inline __attribute__ ((always_inline)) decltype(auto)
   spacetime_metric(data_t const alpha,
-                   vector3_t<data_t> const & beta) {
+                   vector3_t<data_t> const & beta) const {
     // lower index of beta
     auto beta_lower = contract(*this,beta);
     // pass both to general routine
@@ -138,7 +138,7 @@ public:
   inline __attribute__ ((always_inline)) decltype(auto)
   inverse_spacetime_metric(data_t const alpha,
                            vector3_t<data_t> const & beta,
-                            data_t const det) {
+                            data_t const det) const {
 
     // inverse 4-metric
     inv_metric4_t inv_g;
@@ -210,7 +210,7 @@ public:
   //! Computes the inverse 4-metric from lapse, shift, the 3-metric and det(gamma)
   inline __attribute__ ((always_inline)) decltype(auto)
   inverse_spacetime_metric(data_t const alpha,
-                           vector3_t<data_t> const & beta) {
+                           vector3_t<data_t> const & beta) const {
     return this->inverse_spacetime_metric(alpha,beta,this->det());
   }
 

@@ -171,7 +171,7 @@ class scalar_field_vt {
       return vec_register;
     }
     //! Set value(s) at (pointer) index i ( + Size)
-    inline __attribute__ ((always_inline)) void set(data_t const & data, size_t const i) {
+    inline __attribute__ ((always_inline)) void set(vec_t const & data, size_t const i) {
       data.store(&grid_ptr[i]);
     }
 /*

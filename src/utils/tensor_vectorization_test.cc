@@ -11,54 +11,50 @@
 
 #define SCA
 #define VEC
+#define COMPUTE_DERIVATIVES
 
 using namespace tensors;
 
 // some artificial diff classes
+// scalar version
 struct test_diff {
-  double idx;
+  const double idx;
+  const int stride[3];
 
-  test_diff(double idx_) : idx(idx_) {}
-
-  template<size_t dir>
-  static inline __attribute__ ((always_inline)) size_t stride() {
-    return dir+1;
-  }
+  test_diff() : idx(0.1), stride {1,2,3} {}
 
   template<size_t dir, typename T>
   inline __attribute__ ((always_inline)) T diff(T const * const ptr, size_t const index) const {
-    return idx*fd::c_diff<dir,4>(ptr, index, test_diff::stride<dir>());
+    return idx*fd::c_diff<dir,4>(ptr, index, stride[dir]);
   }
 };
-
+// vectorized version
 struct test_diff_v {
   Vc::double_v idx;
+  const int stride[3];
 
-  test_diff_v(double idx_) : idx(idx_) {}
-
-  template<size_t dir>
-  static inline __attribute__ ((always_inline)) size_t stride() {
-    return dir+1;
-  }
+  test_diff_v() : idx(0.1), stride {1,2,3} {}
 
   template<size_t dir, typename T>
   inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
-    return idx*fd::c_diff_v<dir,4>(ptr, index, test_diff_v::stride<dir>());
+    return idx*fd::c_diff_v<dir,4>(ptr, index, stride[dir]);
   }
 };
+// version how it is implemented atm
+struct test_diff_v_atm {
+  double idx;
+  const int stride[3];
 
-struct test_diff_v_old {
-  Vc::double_v idx;
-
-  test_diff_v_old(double idx_) : idx(idx_) {}
+  test_diff_v_atm() : idx(0.1), stride {1,2,3} {}
 
   template<size_t dir, typename T>
   inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
+
 
     Vc::Vector<T> vec_register;
 
     for(size_t i = 0; i < Vc::Vector<T>::Size; ++i) {
-      vec_register[i] = fd::c_diff<dir,4>(ptr, index + i, test_diff::stride<dir>());
+      vec_register[i] = fd::c_diff<dir,4>(ptr, index + i, stride[dir]);
     }
 
     return idx*vec_register;
@@ -131,25 +127,6 @@ int main() {
     data_110[i] = dist_uni(gen);
     data_120[i] = dist_uni(gen);
     data_220[i] = dist_uni(gen);
-/*
-    data_0[i] = 1;
-    data_1[i] = 2;
-    data_2[i] = 3;
-
-    data_000[i] = 4;
-    data_010[i] = 5;
-    data_020[i] = 6;
-    data_110[i] = 7;
-    data_120[i] = 8;
-    data_220[i] = 9;
-
-    data_000[i] = 10;
-    data_010[i] = 11;
-    data_020[i] = 12;
-    data_110[i] = 13;
-    data_120[i] = 14;
-    data_220[i] = 15;
-*/
   }
 
   auto t0 = std::chrono::high_resolution_clock::now();
@@ -161,24 +138,26 @@ int main() {
   t0 = std::chrono::high_resolution_clock::now();
 
 {
-  test_diff diff(0.1);
+  test_diff diff;
+
+  scalar_field_t<sca_type> alpha_field(&data_0[0]);
 
   tensor_field_t<vector3_t<sca_type>> beta(&data_0[0],&data_1[0],&data_2[0]);
 
   tensor_field_t<covector3_t<sca_type>> rhs_scon(&result0[0],&result1[0],&result2[0]);
 
-  tensor_field_t<metric_tensor_t<sca_type,3>> gamma(&data_000[0],&data_010[0],&data_020[0],
-                                                                 &data_110[0],&data_120[0],
-                                                                              &data_220[0]);
+  tensor_field_t<metric_tensor3_t<sca_type>> gamma(&data_000[0],&data_010[0],&data_020[0],
+                                                                &data_110[0],&data_120[0],
+                                                                             &data_220[0]);
 
-  tensor_field_t<metric_tensor_t<sca_type,3>> K(&data_001[0],&data_011[0],&data_021[0],
-                                                             &data_111[0],&data_121[0],
-                                                                          &data_221[0]);
+  tensor_field_t<metric_tensor3_t<sca_type>> K(&data_001[0],&data_011[0],&data_021[0],
+                                                            &data_111[0],&data_121[0],
+                                                                         &data_221[0]);
 
 
   #pragma forceinline recursive
   for(int i = 0; i < num_data; ++i) {
-    sca_type alp = data_0[i];
+    sca_type alp = alpha_field[i];
 
     // this is only because we have not special scalar type
     covector3_t<double> dalp(diff.diff<0>(&data_0[0],i),
@@ -255,24 +234,26 @@ int main() {
   t0 = std::chrono::high_resolution_clock::now();
 
 {
-//  test_diff_v diff(0.1);
-  test_diff_v_old diff(0.1);
+//  test_diff_v diff;
+  test_diff_v_atm diff;
+
+  scalar_field_vt<sca_type> alpha_field(&data_0[0]);
 
   tensor_field_vt<vector3_vt<sca_type>> beta(&data_0[0],&data_1[0],&data_2[0]);
 
   tensor_field_vt<covector3_vt<sca_type>> rhs_scon(&result_vec0[0],&result_vec1[0],&result_vec2[0]);
 
-  tensor_field_vt<metric_tensor_vt<sca_type,3>> gamma(&data_000[0],&data_010[0],&data_020[0],
-                                                                   &data_110[0],&data_120[0],
-                                                                                &data_220[0]);
+  tensor_field_vt<metric_tensor3_vt<sca_type>> gamma(&data_000[0],&data_010[0],&data_020[0],
+                                                                  &data_110[0],&data_120[0],
+                                                                               &data_220[0]);
 
-  tensor_field_vt<metric_tensor_vt<sca_type,3>> K(&data_001[0],&data_011[0],&data_021[0],
-                                                               &data_111[0],&data_121[0],
-                                                                            &data_221[0]);
+  tensor_field_vt<metric_tensor3_vt<sca_type>> K(&data_001[0],&data_011[0],&data_021[0],
+                                                              &data_111[0],&data_121[0],
+                                                                           &data_221[0]);
 
   #pragma forceinline recursive
   for(int i = 0; i < num_data; i += vec_size) {
-    vec_type alp(&data_0[i]);
+    vec_type alp = alpha_field[i];
 
     covector3_vt<sca_type> dalp(diff.diff<0>(&data_0[0],i),
                                 diff.diff<1>(&data_0[0],i),

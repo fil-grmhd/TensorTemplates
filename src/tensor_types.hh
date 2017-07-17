@@ -19,6 +19,7 @@
 #define TENSORS_TYPES_HH
 
 namespace tensors {
+// general tensor types
 
 // forward decleration of general tensor class
 template <typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typename index_t_,

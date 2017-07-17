@@ -179,6 +179,7 @@ public:
   // at the ith point when the derivative is computed at the pth point
   // of the stencil, for example, if order == 6, stencil[3][i] gives
   // the weights for the centered finite-difference
+//  one can access the static constexpr fd_stencils directly
 //  static constexpr double stencil[order+1][order+1] = fd_stencils<order>::stencil;
 
   // template recursion to compute all terms of the fd
