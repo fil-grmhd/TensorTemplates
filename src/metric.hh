@@ -21,6 +21,7 @@
 #define TENSORS_METRIC_HH
 
 namespace tensors {
+namespace general {
 
 template <typename T>
 class metric_tensor3_t
@@ -32,9 +33,23 @@ public:
 
   //! This tensor type, symmetric in both indices
   using this_tensor_t = sym2_tensor_t<T, 3, any_frame_t, 0, 1, lower_t, lower_t>;
+//  using this_tensor_t = metric_tensor3_t<T>;
 
   using property_t = typename this_tensor_t::property_t;
-
+/* property_t::this_tensor_t is still plain sym2_tensor_t
+  replace this with metric_property_t
+  using property_t = general_tensor_property_t<
+                       sym2_tensor_t<
+                         data_t,
+                         3,
+                         any_frame_t,
+                         0,
+                         1,
+                         lower_t,
+                         lower_t
+                       >
+                     >;
+*/
   //! Constructor from tensor expression given a index sequence
   //! Generates components from arbitrary tensor expression type (e.g. chained
   //! ones)
@@ -215,6 +230,7 @@ public:
   }
 
 };
+} // namespace general
 } // namespace tensors
 
 #endif

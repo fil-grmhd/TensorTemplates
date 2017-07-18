@@ -12,16 +12,13 @@
 #define COMPARE
 
 #define SYMMETRIC
-// not vectorized yet
-//#define TENSORS_VECTORIZED
+#define TENSORS_VECTORIZED
+#define TENSORS_AUTOVEC
 #include "../tensor_templates.hh"
 
 int main(void) {
   using namespace tensors;
-//  constexpr size_t n = 30000000;
-//  constexpr size_t n = 100000;
-  constexpr size_t n = 500000;
-
+  constexpr size_t n = 100000 * loop_inc<double>;
 
   // init random gens
   std::random_device rd;
@@ -79,6 +76,7 @@ int main(void) {
             << " ms )." << std::endl;
 
 #ifdef TEMPLATES
+
   #ifdef SYMMETRIC
   using tensor_t = sym_tensor3_t<double,0,1,lower_t,upper_t>;
   #else
@@ -105,6 +103,8 @@ int main(void) {
   auto vry = std::make_unique<double[]>(n);
   auto vrz = std::make_unique<double[]>(n);
 
+  auto sr = std::make_unique<double[]>(n);
+
   // output tensor fields
   tensor_field_t<resulting_tensor_t> contracted_tensors(&trxx[0],&tryx[0],&trzx[0],
                                                         &trxy[0],&tryy[0],&trzy[0],
@@ -112,7 +112,7 @@ int main(void) {
 
   tensor_field_t<vector_t> contracted_vectors(&vrx[0],&vry[0],&vrz[0]);
 
-  std::array<double,n> traces;
+  scalar_field_t<double> traces(&sr[0]);
 
   // random input tensor fields
   #ifdef SYMMETRIC
@@ -130,7 +130,7 @@ int main(void) {
   // start timing
   t0 = std::chrono::high_resolution_clock::now();
 
-  for(size_t i = 0; i<n; ++i) {
+  for(size_t i = 0; i < n; i += loop_inc<double>) {
     // contracted tensor of dim = 3, rank = 2
     // evaluation is triggered in set_components
     auto contracted_tensor = contract<0,1>(tensor_field[i],tensor_field[i]);
@@ -145,7 +145,7 @@ int main(void) {
     contracted_vectors[i] = contracted_vector;
 
     // traces of rank = 2 tensors
-    traces[i] = trace<0,1>(tensor_field[i]);
+    traces.set(trace<0,1>(tensor_field[i]),i);
   }
 
   t1 = std::chrono::high_resolution_clock::now();
@@ -296,9 +296,10 @@ int main(void) {
 
   tensor_field_t<vector_t> array_vector_field(&cx[0],&cy[0],&cz[0]);
 
-  constexpr int exp = 15;
+  scalar_field_t<double> array_scalar_field(&d0[0]);
 
-  for(size_t i = 0; i<n; ++i) {
+  constexpr int exp = 15;
+  for(size_t i = 0; i < n; i += loop_inc<double>) {
     if(!resulting_tensor_t(array_field[i]).compare_components<exp>(contracted_tensors[i]).first) {
       std::cout << "Tensors differ at " << i << std::endl;
       std::cout << array_field[i] << std::endl;
@@ -311,7 +312,11 @@ int main(void) {
       std::cout << contracted_vectors[i] << std::endl;
       std::cout << vector_t(array_vector_field[i]).compare_components<exp>(contracted_vectors[i]).second << std::endl;
     }
-    if(d0[i] != traces[i]) {
+    #ifdef TENSORS_VECTORIZED
+    if(!(array_scalar_field[i] != traces[i]).isEmpty()) {
+    #else
+    if(array_scalar_field[i] != traces[i]) {
+    #endif
       std::cout << "Trace differ at " << i << std::endl;
       std::cout << d0[i] << std::endl;
       std::cout << traces[i] << std::endl;

@@ -223,6 +223,100 @@ inline __attribute__ ((always_inline)) T c_diff(T const * const ptr, int const i
   return fd<order>::template sdiff<dpoint>(index_ptr, stride);
 }
 
+#ifdef TENSORS_VECTORIZED
+// THE FOLLOWING IS NOT USED
+// the repeated loads into vector registers is not efficient
+
+///////////////////////////////////////////////////////////////////////////////
+// Vectorized finite differences
+///////////////////////////////////////////////////////////////////////////////
+template<int order_>
+class fd_vt {
+public:
+  // Order of the fd
+  static constexpr int order = order_;
+
+  // Width of the stencil
+  static constexpr int width = order + 1;
+
+  // Weights of the stencil: so that stencil[p][i] is the weight of
+  // at the ith point when the derivative is computed at the pth point
+  // of the stencil, for example, if order == 6, stencil[3][i] gives
+  // the weights for the centered finite-difference
+//  static constexpr double stencil[order+1][order+1] = fd_stencils<order>::stencil;
+
+  // template recursion to compute all terms of the fd
+  //
+  // testing showed that doing this more naturally in a reversed order N-dpoint -> N
+  // leads to larger relative errors when compared to the original FDCore derivatives
+  template<int N, int dpoint, typename T>
+  struct stencil_sum {
+    static inline __attribute__ ((always_inline)) decltype(auto)
+      sum(int const stride, T const * const grid_ptr) {
+
+      // grid values to be summed are at non-unit stride locations
+      // this makes it inefficient to load them, so a simple loop is used
+      Vc::Vector<T> weighted_value;
+      for(int i = 0; i < Vc::Vector<T>::Size; ++i) {
+        T const * const vector_index_ptr = grid_ptr + i;
+
+        weighted_value[i] = vector_index_ptr[(order-N-dpoint)*stride];
+      }
+
+      return weighted_value * fd_stencils<order>::stencil[dpoint][order-N]
+           + stencil_sum<N-1,dpoint,T>::sum(stride,grid_ptr);
+    }
+  };
+  template<int dpoint, typename T>
+  struct stencil_sum<0,dpoint,T> {
+    static inline __attribute__ ((always_inline)) decltype(auto)
+      sum(int const stride, T const * const grid_ptr) {
+      // grid values to be summed are at non-unit stride locations
+      // this makes it inefficient to load them, so a simple loop is used
+      Vc::Vector<T> weighted_value;
+      for(int i = 0; i < Vc::Vector<T>::Size; ++i) {
+        T const * const vector_index_ptr = grid_ptr + i;
+
+        weighted_value[i] = vector_index_ptr[(order-dpoint)*stride];
+      }
+
+      return weighted_value * fd_stencils<order>::stencil[dpoint][order];
+    }
+  };
+
+  // Static diff: compute the finite difference using the given stencil
+  // dpoint: Point in the stencil in which to compute the derivative
+  template<int dpoint, typename T>
+  static inline __attribute__ ((always_inline)) decltype(auto) sdiff(
+          // Grid function to differentiate at the diff. point
+          T const * const grid_ptr,
+          // Vector stride
+          int const  stride) {
+
+    // sum all terms from order...0
+    return stencil_sum<order,dpoint,T>::sum(stride,grid_ptr);
+  }
+};
+
+// "Vectorized" central fd interface
+// Unfortunately slower than the non-vectorized version
+template<int dir, int order, typename T>
+inline __attribute__ ((always_inline)) decltype(auto) c_diff_v(T const * const grid_ptr, int const grid_index, int const stride) {
+
+  constexpr int dpoint = order/2;
+  T const * const index_ptr = grid_ptr + grid_index;
+
+  return fd_vt<order>::template sdiff<dpoint>(index_ptr, stride);
+}
+
+/* since this is slower than the scalar version, we don't want to do this
+#ifdef TENSORS_AUTOVEC
+template<int dir, int order, typename T>
+using c_diff = c_diff_v<dir,order,T>;
+#endif
+*/
+#endif
+
 } // namespace fd
 } // namespace tensors
 

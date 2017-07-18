@@ -287,7 +287,7 @@ int main(){
 //            METRIC TESTS
 //
 /////////////////////////////////////////////////////////////////////
-
+/* old interface, needs to be updated to the new metric type
 
 //Flat space-time test
 double lapse = 1.;
@@ -337,7 +337,7 @@ double norm2_am14 = contract<0,0>(metric4,am14,am14);
 
 std::cout << "norm2 am14 :" << norm2_am14 <<std::endl;
 
-
+*/
 
 
 // Symmetry of two indices

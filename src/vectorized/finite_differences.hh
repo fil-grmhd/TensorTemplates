@@ -20,6 +20,9 @@
 
 #include <iostream>
 
+// THIS IS NOT USED
+// the repeated loads into vector registers is not efficient
+
 namespace tensors {
 namespace fd {
 
@@ -105,6 +108,12 @@ inline __attribute__ ((always_inline)) decltype(auto) c_diff_v(T const * const g
   return fd_vt<order>::template sdiff<dpoint>(index_ptr, stride);
 }
 
+/* since this is slower than the scalar version, we don't want to do this
+#ifdef TENSORS_AUTOVEC
+template<int dir, int order, typename T>
+using c_diff = c_diff_v<dir,order,T>;
+#endif
+*/
 } // namespace fd
 } // namespace tensors
 

@@ -59,6 +59,11 @@ struct cactus_cdiff_v {
   }
 };
 
+#ifdef TENSORS_AUTOVEC
+template<size_t order_>
+using cactus_cdiff = cactus_cdiff_v<order_>;
+#endif
+
 } // namespace fd
 } // namespace tensors
 

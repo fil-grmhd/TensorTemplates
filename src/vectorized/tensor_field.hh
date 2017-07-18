@@ -19,6 +19,7 @@
 #define TENSOR_FIELD_VEC_HH
 
 namespace tensors {
+namespace vector {
 
 //! Template for generic vectorized tensor field expression
 //! This represents a vector register of tensors at Vc::Vector<T>::Size successive grid points
@@ -184,7 +185,14 @@ class scalar_field_vt {
 */
 };
 
+#ifdef TENSORS_AUTOVEC
+template<typename T>
+using tensor_field_t = tensor_field_vt<T>;
 
+template<typename T>
+using scalar_field_t = scalar_field_vt<T>;
+#endif
 
-}
+} // namespace vector
+} // namespace tensors
 #endif

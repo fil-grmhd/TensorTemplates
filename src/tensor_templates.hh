@@ -20,49 +20,60 @@
 
 
 #ifdef TENSORS_VECTORIZED
-  #pragma message ("TensorTemplates: Vectorization support activated.")
+  #pragma message ("TensorTemplates: Vectorization support enabled.")
   #include <Vc/Vc>
+#else
+  #pragma message ("TensorTemplates: Vectorization support disabled.")
 #endif
 
-
 #ifdef TENSORS_CACTUS
+  #pragma message ("TensorTemplates: Cactus support enabled.")
   #include "cctk.h"
 #endif
 
+// some helpers
 #include "utilities.hh"
+// core typedefs, like index types
 #include "tensor_core_types.hh"
+// symmetry types, implementing index transformations and compessed indices
 #include "tensor_symmetry.hh"
+// general tensor typedefs
 #include "tensor_types.hh"
+// index helpers
 #include "tensor_index.hh"
+// property types of tensors and tensor expressions
 #include "tensor_property.hh"
+// general tensor expression and simple expressions
 #include "tensor_expressions.hh"
+// some tensor expression helpers
 #include "tensor_helpers.hh"
+// THE general tensor class
 #include "tensor.hh"
+// slice expressions, cutting tensors into pieces
 #include "tensor_slice.hh"
+// a general finite difference expression, i.e. the partial derivative of a tensor
 #include "tensor_derivative.hh"
-#include "tensor_field.hh"
+// symmetry casts of tensor expressions, useful to make expressions explicitly symmetric
 #include "tensor_symmetry_expressions.hh"
+// general contraction expression of two tensor expressions
 #include "tensor_contraction.hh"
+// general trace expression of a tensor expression
 #include "tensor_trace.hh"
+// general tensor product expression
 #include "tensor_concat.hh"
+// general index reordering expression
 #include "tensor_index_reordering.hh"
+// metric tensor implementing useful things, like det, inverse etc.
 #include "metric.hh"
+// tensor field and tensor field expressions, loading / storing tensors from / to memory
+#include "tensor_field.hh"
+
+// general central finite difference routines
 #include "finite_differences.hh"
 
 #ifdef TENSORS_CACTUS
+  // specialized Cactus FD routines
   #include "cactus_types.hh"
-#endif
-
-#ifdef TENSORS_VECTORIZED
-
-  #include "vectorized/tensor_types.hh"
-  #include "vectorized/tensor_field.hh"
-  #include "vectorized/finite_differences.hh"
-
-  #ifdef TENSORS_CACTUS
-    #include "vectorized/cactus_types.hh"
-  #endif
-
 #endif
 
 //! main namespace

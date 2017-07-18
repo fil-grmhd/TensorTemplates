@@ -215,15 +215,21 @@ public:
 
     double max_rel_err = 0;
     for(size_t i = 0; i<ndof; ++i) {
-      double rel_err = 2*std::abs(m_data[i] - t[i])
-                     /(std::abs(m_data[i])+std::abs(t[i]));
-      if(rel_err > max_rel_err)
+      auto rel_err_ = 2*std::abs(m_data[i] - t[i])
+                      /(std::abs(m_data[i])+std::abs(t[i]));
+      #ifdef TENSORS_VECTORIZED
+      double rel_err = rel_err_.max();
+      #else
+      double rel_err = rel_err_;
+      #endif
+      if(rel_err > max_rel_err) {
         max_rel_err = rel_err;
+      }
       if(rel_err > eps) {
-        return std::pair<bool,double>(false,rel_err);
+        return std::pair<bool,decltype(rel_err)>(false,rel_err);
       }
     }
-    return std::pair<bool,double>(true,max_rel_err);
+    return std::pair<bool,decltype(max_rel_err)>(true,max_rel_err);
   }
 
   //! Easy print to out stream, e.g. std::out
