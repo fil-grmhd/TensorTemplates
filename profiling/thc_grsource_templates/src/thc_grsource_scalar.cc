@@ -80,8 +80,8 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     CCTK_REAL const dy  = CCTK_DELTA_SPACE(1);
     CCTK_REAL const dz  = CCTK_DELTA_SPACE(2);
 
-    // create a (specialized) cactus central differentiator
-    fd::cactus_cdiff<fd_order> cdiff(cctkGH,dx,dy,dz);
+    // create a (specialized) cactus central differentiator, in this case a central FD for the 1st derivative
+    fd::cactus_diff<1,fd_order,fd::central_nodes> cdiff(cctkGH,dx,dy,dz);
 
     // loop over local grid
     #pragma omp parallel for

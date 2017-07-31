@@ -23,64 +23,71 @@ namespace tensors {
 namespace fd {
 
 #if !defined(TENSORS_VECTORIZED) || !defined(TENSORS_AUTOVEC)
-template<size_t order_>
-struct cactus_cdiff {
+//! Computes d'th derivative by a FD with order+1 terms on a Cactus GF using a node_t stencil
+//  BE AWARE that order+1 is really just the number of terms and in general NOT the order of accuracy
+template<size_t d_, size_t order_, typename node_t_>
+struct cactus_diff {
   static constexpr size_t order = order_;
+  static constexpr size_t d = d_;
+
+  using node_t = node_t_;
 
   cGH const * const cctkGH;
-  // one over dx,dy,dz
+  // one over dx^d, dy^d, dz^d
   std::array<double,3> const idx;
   // unit stride in x,y,z
   std::array<int,3> const stride;
 
-  cactus_cdiff(cGH const * const cctkGH_, double dx, double dy, double dz)
+  // the d'th derivative expects dx_i^d as prefactor
+  cactus_diff(cGH const * const cctkGH_, double dxd, double dyd, double dzd)
              : cctkGH(cctkGH_),
-               idx({1.0/dx,1.0/dy,1.0/dz}),
+               idx({1.0/dxd,1.0/dyd,1.0/dzd}),
                stride({CCTK_GFINDEX3D(cctkGH, 1, 0, 0) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0),
                        CCTK_GFINDEX3D(cctkGH, 0, 1, 0) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0),
                        CCTK_GFINDEX3D(cctkGH, 0, 0, 1) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0)}) {}
 
-  // compute central difference, uses general cdiff interface
+  //! The actual FD routine called within a tensor field
   template<size_t dir, typename T>
   inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
-    return idx[dir]*c_diff<dir,order>(ptr, index, stride[dir]);
+    return idx[dir]*auto_diff<d,order,node_t>(ptr, index, stride[dir]);
   }
 };
 #endif
 
 #ifdef TENSORS_VECTORIZED
-template<size_t order_>
-struct cactus_cdiff_v {
+//! Computes d'th derivative by a FD with order+1 terms on a Cactus GF using a node_t stencil
+//  BE AWARE that order+1 is really just the number of terms and in general NOT the order of accuracy
+template<size_t d_, size_t order_, typename node_t_>
+struct cactus_diff_v {
   static constexpr size_t order = order_;
+  static constexpr size_t d = d_;
+
+  using node_t = node_t_;
 
   cGH const * const cctkGH;
 
-  // one over dx,dy,dz
+  // one over dx^d, dy^d, dz^d
   std::array<double,3> const idx;
 
   // unit stride in x,y,z
   std::array<int,3> const stride;
 
-  cactus_cdiff_v(cGH const * const cctkGH_, double dx, double dy, double dz)
+  // the d'th derivative expects dx_i^d as prefactor
+  cactus_diff_v(cGH const * const cctkGH_, double dxd, double dyd, double dzd)
              : cctkGH(cctkGH_),
-               idx({1.0/dx,1.0/dy,1.0/dz}),
+               idx({1.0/dxd,1.0/dyd,1.0/dzd}),
                stride({CCTK_GFINDEX3D(cctkGH, 1, 0, 0) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0),
                        CCTK_GFINDEX3D(cctkGH, 0, 1, 0) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0),
                        CCTK_GFINDEX3D(cctkGH, 0, 0, 1) - CCTK_GFINDEX3D(cctkGH, 0, 0, 0)}) {}
 
-  // compute central difference, uses general cdiff interface
+  //! The actual FD routine called within a tensor field
   template<size_t dir, typename T>
   inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
-    // this is sufficient, in principle, but generates less optimal code
-    // due to repeated loads into vector registers for every point on the stencil
-    //return idx[dir]*c_diff_v<dir,order>(ptr,index,stride[dir]);
-
-
     // in this case we want to get a vector register of derivatives
     Vc::Vector<T> vec_register;
 
     for(size_t i = 0; i < Vc::Vector<T>::Size; ++i) {
-      vec_register[i] = idx[dir]*c_diff<dir,order>(ptr,index+i,stride[dir]);
+      vec_register[i] = idx[dir]*auto_diff<d,order,node_t>(ptr, index + i, stride[dir]);
     }
     return vec_register;
   }
@@ -88,8 +95,8 @@ struct cactus_cdiff_v {
 
 // define default type, if vectorization agnostic code is used
 #ifdef TENSORS_AUTOVEC
-template<size_t order_>
-using cactus_cdiff = cactus_cdiff_v<order_>;
+template<size_t d, size_t order, typename node_t>
+using cactus_diff = cactus_diff_v<d,order,node_t>;
 #endif
 
 #endif

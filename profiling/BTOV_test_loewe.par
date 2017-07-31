@@ -69,8 +69,6 @@ ActiveThorns = "
     WatchDog
 "
 
-thc_grsource_comparison:: cut = 1e-15
-
 Cactus::terminate			= "iteration"
 Cactus::cctk_itlast = 256
 

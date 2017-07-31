@@ -68,7 +68,7 @@
 // tensor field and tensor field expressions, loading / storing tensors from / to memory
 #include "tensor_field.hh"
 
-// general central finite difference routines
+// general finite difference routines
 #include "finite_differences.hh"
 
 #ifdef TENSORS_CACTUS

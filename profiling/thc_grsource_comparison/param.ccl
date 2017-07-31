@@ -1,4 +1,0 @@
-real cut "Lower bound for compared quantities"
-{
-  * :: "Any value"
-} 1e-10

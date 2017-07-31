@@ -130,6 +130,8 @@ int main(void) {
   // start timing
   t0 = std::chrono::high_resolution_clock::now();
 
+  // this speeds up the expressions considerably, making them much faster than the c-tran version below
+  #pragma forceinline recursive
   for(size_t i = 0; i < n; i += loop_inc<double>) {
     // contracted tensor of dim = 3, rank = 2
     // evaluation is triggered in set_components

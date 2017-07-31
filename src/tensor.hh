@@ -156,11 +156,11 @@ public:
 // CHECK: OBSOLETE but still used in expressions test, we should convert that and remove this
 // in that case we also need to remove it in expression base class
   //! Access the components of a tensor using a (generic) compressed index
-  inline __attribute__ ((always_inline)) T &operator[](size_t const a) {
+  inline __attribute__ ((always_inline)) T & operator[](size_t const a) {
     return m_data[a];
   }
   //! Access the components of a tensor using a (generic) compressed index
-  inline __attribute__ ((always_inline)) T const &operator[](size_t const a) const {
+  inline __attribute__ ((always_inline)) T const & operator[](size_t const a) const {
     return m_data[a];
   }
 

@@ -20,213 +20,133 @@
 
 namespace tensors {
 namespace fd {
-///////////////////////////////////////////////////////////////////////////////
-// Finite difference stencils (taken from Cactus Thorn FDCore by David Radice)
-///////////////////////////////////////////////////////////////////////////////
 
-//! Template for stencils
-template<int order>
-struct fd_stencils {
-  static_assert(order == order, "Can't find a stencil for the given fd order!");
-};
-
-//! Template specializations for every (known) stencil
-template<>
-struct fd_stencils<1> {
-  static constexpr int width = 2;
-  static constexpr double stencil[width][width] = {
-    {-1.0, 1.0},
-    {-1.0, 1.0}
-  };
-};
-
-template<>
-struct fd_stencils<2> {
-  static constexpr int width = 3;
-  static constexpr double stencil[width][width] = {
-    {-1.5,  2.0, -0.5},
-    {-0.5,  0,    0.5},
-    { 0.5, -2.0,  1.5}
-  };
-};
-
-template<>
-struct fd_stencils<3> {
-  static constexpr int width = 4;
-  static constexpr double stencil[width][width] = {
-    {-1.8333333333333333, 3., -1.5, 0.33333333333333333},
-    {-0.33333333333333333, -0.5, 1.0, -0.16666666666666667},
-    {0.16666666666666667, -1.0, 0.5, 0.33333333333333333},
-    {-0.33333333333333333, 1.5, -3.0, 1.8333333333333333}
-  };
-};
-
-template<>
-struct fd_stencils<4> {
-  static constexpr int width = 5;
-  static constexpr double stencil[width][width] = {
-    {-2.0833333333333335, 4, -3, 1.3333333333333333, -0.25},
-    {-0.25,-0.8333333333333334,1.5,-0.5,0.08333333333333333},
-    {0.08333333333333333,-0.6666666666666666,0, 0.6666666666666666,
-        -0.08333333333333333},
-    {-0.08333333333333333,0.5,-1.5,0.8333333333333334,0.25},
-    {0.25,-1.3333333333333333,3,-4,2.0833333333333335}
-
-  };
-};
-
-template<>
-struct fd_stencils<5> {
-  static constexpr int width = 6;
-  static constexpr double stencil[width][width] = {
-    {-2.2833333333333333, 5.0, -5.0, 3.3333333333333333, -1.25, 0.2},
-    {-0.2, -1.0833333333333333, 2.0, -1.0, 0.33333333333333333, -0.05},
-    {0.05, -0.5, -0.33333333333333333, 1.0, -0.25, 0.033333333333333333},
-    {-0.033333333333333333, 0.25, -1.0, 0.33333333333333333, 0.5, -0.05},
-    {0.05, -0.33333333333333333, 1.0, -2.0, 1.0833333333333333, 0.2},
-    {-0.2, 1.25, -3.3333333333333333, 5.0, -5.0, 2.2833333333333333}
-  };
-};
-
-template<>
-struct fd_stencils<6> {
-  static constexpr int width = 7;
-  static constexpr double stencil[width][width] = {
-    {-2.45,6,-7.5,6.666666666666667,-3.75,1.2, -0.16666666666666666},
-    {-0.16666666666666666,-1.2833333333333334,2.5,-1.6666666666666667,
-        0.8333333333333334,-0.25,0.03333333333333333},
-    {0.03333333333333333,-0.4,-0.5833333333333334,1.3333333333333333,-0.5,
-        0.13333333333333333,-0.016666666666666666},
-    {-0.016666666666666666,0.15,-0.75,0,0.75,-0.15,0.016666666666666666},
-    {0.016666666666666666,-0.13333333333333333,0.5,-1.3333333333333333,
-        0.5833333333333334,0.4,-0.03333333333333333},
-    {-0.03333333333333333,0.25,-0.8333333333333334,1.6666666666666667,-2.5,
-        1.2833333333333334,0.16666666666666666},
-    {0.16666666666666666,-1.2,3.75,-6.666666666666667,7.5,-6,2.45}
-  };
-};
-
-template<>
-struct fd_stencils<7> {
-  static constexpr int width = 8;
-  static constexpr double stencil[width][width] = {
-    {-2.5928571428571429, 7.0, -10.5, 11.666666666666667, -8.75, 4.2,
-        -1.1666666666666667, 0.14285714285714286},
-    {-0.14285714285714286, -1.45, 3.0, -2.5, 1.6666666666666667, -0.75, 0.2,
-        -0.023809523809523810},
-    {0.023809523809523810, -0.33333333333333333, -0.78333333333333333,
-        1.6666666666666667, -0.83333333333333333, 0.33333333333333333,
-        -0.083333333333333333, 0.0095238095238095238},
-    {-0.0095238095238095238, 0.1, -0.6, -0.25, 1.0, -0.3,
-        0.066666666666666667, -0.0071428571428571429},
-    {0.0071428571428571429, -0.066666666666666667, 0.3, -1.0, 0.25,
-        0.6, -0.1, 0.0095238095238095238},
-    {-0.0095238095238095238, 0.083333333333333333, -0.33333333333333333,
-        0.83333333333333333, -1.6666666666666667, 0.78333333333333333,
-        0.33333333333333333, -0.023809523809523810},
-    {0.023809523809523810, -0.2, 0.75, -1.6666666666666667, 2.5, -3.0,
-        1.45, 0.14285714285714286},
-    {-0.14285714285714286, 1.1666666666666667, -4.2, 8.75,
-        -11.666666666666667, 10.5, -7.0, 2.5928571428571429}
-  };
-};
-
-template<>
-struct fd_stencils<8> {
-  static constexpr int width = 9;
-  static constexpr double stencil[width][width] = {
-    {-2.717857142857143,8,-14,18.666666666666668,-17.5,11.2,
-        -4.666666666666667,1.1428571428571428,-0.125},
-    {-0.125,-1.5928571428571427,3.5,-3.5,2.9166666666666665,-1.75,0.7,
-        -0.16666666666666666,0.017857142857142856},
-    {0.017857142857142856,-0.2857142857142857,-0.95,2,-1.25,
-        0.6666666666666666,-0.25,0.05714285714285714,-0.005952380952380952},
-    {-0.005952380952380952,0.07142857142857142,-0.5,-0.45,1.25,-0.5,
-        0.16666666666666666,-0.03571428571428571,0.0035714285714285713},
-    {0.0035714285714285713,-0.0380952380952381,0.2,-0.8,0,0.8,-0.2,
-        0.0380952380952381,-0.0035714285714285713},
-    {-0.0035714285714285713,0.03571428571428571,-0.16666666666666666,0.5,
-        -1.25,0.45,0.5,-0.07142857142857142,0.005952380952380952},
-    {0.005952380952380952,-0.05714285714285714,0.25,-0.6666666666666666,1.25,
-        -2,0.95,0.2857142857142857,-0.017857142857142856},
-    {-0.017857142857142856,0.16666666666666666,-0.7,1.75,-2.9166666666666665,
-            3.5,-3.5,1.5928571428571427,0.125},
-    {0.125,-1.1428571428571428,4.666666666666667,-11.2,17.5,
-            -18.666666666666668,14,-8,2.717857142857143}
-  };
-};
-
-// declare storage of static weight arrays
-constexpr double fd_stencils<1>::stencil[2][2];
-constexpr double fd_stencils<2>::stencil[3][3];
-constexpr double fd_stencils<3>::stencil[4][4];
-constexpr double fd_stencils<4>::stencil[5][5];
-constexpr double fd_stencils<5>::stencil[6][6];
-constexpr double fd_stencils<6>::stencil[7][7];
-constexpr double fd_stencils<7>::stencil[8][8];
-constexpr double fd_stencils<8>::stencil[9][9];
-
-///////////////////////////////////////////////////////////////////////////////
-// Finite differences (based on Cactus Thorn FDCore by David Radice)
-///////////////////////////////////////////////////////////////////////////////
-template<int order>
-class fd {
-public:
-  // Width of the stencil
-  static constexpr int width = order + 1;
-
-  // Weights of the stencil: so that stencil[p][i] is the weight of
-  // at the ith point when the derivative is computed at the pth point
-  // of the stencil, for example, if order == 6, stencil[3][i] gives
-  // the weights for the centered finite-difference
-//  one can access the static constexpr fd_stencils directly
-//  static constexpr double stencil[order+1][order+1] = fd_stencils<order>::stencil;
-
-  // template recursion to compute all terms of the fd
-  //
-  // testing showed that doing this more naturally in a reversed order N-dpoint -> N
-  // leads to larger relative errors when compared to the original FDCore derivatives
-  template<int N, int dpoint, typename T>
-  struct stencil_sum {
-    static inline __attribute__ ((always_inline)) T sum(int const stride, T const * const grid_ptr) {
-      return fd_stencils<order>::stencil[dpoint][order-N] * grid_ptr[(order-N-dpoint)*stride]
-           + stencil_sum<N-1,dpoint,T>::sum(stride,grid_ptr);
-    }
-  };
-  template<int dpoint, typename T>
-  struct stencil_sum<0,dpoint,T> {
-    static inline __attribute__ ((always_inline)) T sum(int const stride, T const * const grid_ptr) {
-      return fd_stencils<order>::stencil[dpoint][order] * grid_ptr[(order-dpoint)*stride];
-    }
-  };
-
-  // Static diff, compute the finite difference using the given stencil
-  // dpoint: Point in the stencil in which to compute the derivative
-  template<int dpoint, typename T>
-  static inline __attribute__ ((always_inline)) T sdiff(
-          // Grid function to differentiate at the diff. point
-          T const * const grid_ptr,
-          // Vector stride
-          int const stride) {
-
-    // sum all terms from order...0
-    return stencil_sum<order,dpoint,T>::sum(stride,grid_ptr);
+//! Defines nodes for a onesided stencil
+struct onesided_nodes {
+  inline static constexpr int node(int const i) {
+    return i;
   }
 };
 
-template<int dir, int order, typename T>
-inline __attribute__ ((always_inline)) T c_diff(T const * const ptr, int const index, int const stride) {
+//! Defines nodes for a central stencil
+struct central_nodes {
+  inline static constexpr int node(int const i) {
+    int half = i / 2;
+    int node = half + (i % 2);
+    return (i % 2) ?  node
+                   : -node;
+  }
+};
 
-  constexpr int dpoint = order/2;
-  T const * const index_ptr = ptr + index;
+//! Computes FD weights based on the given stencil / nodes
+//  See https://www.researchgate.net/publication/242922236_Generation_of_Finite_Difference_Formulas_on_Arbitrarily_Spaced_Grids
+//  for the algorithm, here x0 = 0 and equidistant nodes are assumed.
+//  Could in principle be generalized, see
+//  https://doi.org/10.1137/S0036144596322507
+//
+//  BE AWARE that order+1 is not really the order of accuracy of the FD
+//           but the number of terms used to compute the FD
+template<int deriv_, int order_, typename node_t_>
+struct fd_weights {
+  //! Some constants
+  //! This includes weights up to deriv'th derivative
+  static constexpr int deriv = deriv_;
+  //! This includes weights for up to order terms
+  static constexpr int order = order_;
 
-  return fd<order>::template sdiff<dpoint>(index_ptr, stride);
+  //! The nodes / stencil type
+  using node_t = node_t_;
+
+  //! Weights array
+  double ws[deriv+1][order+1][order+1];
+
+  //! Returns weight of i'th node of deriv'th derivative with order+1 terms
+  constexpr double weight(int i) const {
+    return ws[deriv][order][i];
+  }
+
+  //! Constructor filling the constexpr weights array
+  constexpr fd_weights() : ws{0} {
+    // For more information on the algorithm see ref above
+    ws[0][0][0] = 1;
+    double c1 = 1;
+
+    for(int n = 1; n<=order; ++n) {
+      double c2 = 1;
+      for(int v = 0; v < n; ++v) {
+        double c3 = node_t::node(n) - node_t::node(v);
+        c2 *= c3;
+        for(int m = 0; m <= std::min(n,deriv); ++m) {
+          double c4 = ws[m][n-1][v];
+          if(m-1 >= 0)
+            ws[m][n][v] = (node_t::node(n)*c4 - m*ws[m-1][n-1][v])/c3;
+          else
+            ws[m][n][v] = node_t::node(n)*c4/c3;
+        }
+      }
+      for(int m = 0; m <= std::min(n,deriv); ++m) {
+        double c4 = ws[m][n-1][n-1];
+        double c5 = 1;
+        if(m-1 >= 0)
+          c5 = ws[m-1][n-1][n-1];
+
+        ws[m][n][n] = c1/c2*(m*c5 - node_t::node(n-1) * c4);
+      }
+      c1 = c2;
+    }
+  }
+};
+
+//! Template recursion to compute FD given the weights
+template<int N, typename weights_t, typename T>
+struct fd_add_recursion {
+  static inline __attribute__ ((always_inline)) T sum(T const * const grid_ptr, int const stride) {
+    // Generate fd weights given the nodes / stencil type
+    // we don't care regenerating this over and over again, because it is all computed at compile-time,
+    // if compile-time is slow, check if computing this only once helps
+    constexpr weights_t fd_w;
+    constexpr double w = fd_w.weight(N);
+    constexpr int node = weights_t::node_t::node(N);
+
+    return w * grid_ptr[node * stride]<
+         + fd_add_recursion<N-1,weights_t,T>::sum(grid_ptr,stride);
+  }
+};
+template<typename weights_t, typename T>
+struct fd_add_recursion<0,weights_t,T> {
+  static inline __attribute__ ((always_inline)) T sum(T const * const grid_ptr, int const stride) {
+    // Generate fd weights given the nodes / stencil type
+    // we don't care regenerating this over and over again, because it is all computed at compile-time,
+    // if compile-time is slow, check if computing this only once helps
+    constexpr weights_t fd_w;
+    constexpr double w = fd_w.weight(0);
+    constexpr int node = weights_t::node_t::node(0);
+
+    return w * grid_ptr[node * stride];
+  }
+};
+
+
+//! Computes deriv_order'th FD of given nodes / stencil type with order+1 terms
+template<int deriv_order, int order, typename node_t, typename T>
+inline __attribute__ ((always_inline)) T auto_diff(T const * const ptr, int const index, int const stride) {
+  // Consistency check
+  static_assert(deriv_order <= order,
+                "n'th derivative needs at least n nodes (order >= deriv_order).");
+
+  using weights_t = fd_weights<deriv_order,order,node_t>;
+  // Shift grid pointer to x0
+  T const * const x0_ptr = ptr + index;
+
+  // Sum order+1 terms of FD to get deriv_order'th derivative
+  return fd_add_recursion<order,weights_t,T>::sum(x0_ptr,stride);
 }
 
 #ifdef TENSORS_VECTORIZED
 // THE FOLLOWING IS NOT USED
 // the repeated loads into vector registers is not efficient
 
+/*
 ///////////////////////////////////////////////////////////////////////////////
 // Vectorized finite differences
 ///////////////////////////////////////////////////////////////////////////////
@@ -309,7 +229,6 @@ inline __attribute__ ((always_inline)) decltype(auto) c_diff_v(T const * const g
   return fd_vt<order>::template sdiff<dpoint>(index_ptr, stride);
 }
 
-/* since this is slower than the scalar version, we don't want to do this
 #ifdef TENSORS_AUTOVEC
 template<int dir, int order, typename T>
 using c_diff = c_diff_v<dir,order,T>;
