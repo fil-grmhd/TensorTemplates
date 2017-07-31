@@ -110,7 +110,7 @@ struct fd_add_recursion {
     constexpr double w = fd_w.weight(N);
     constexpr int node = weights_t::node_t::node(N);
 
-    return w * grid_ptr[node * stride]<
+    return w * grid_ptr[node * stride]
          + fd_add_recursion<N-1,weights_t,T>::sum(grid_ptr,stride);
   }
 };
