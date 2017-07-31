@@ -64,7 +64,7 @@ public:
   using metric4_t = general_metric_t<4, lower_t, lower_t>;
   using inv_metric4_t = general_metric_t<4, upper_t, upper_t>;
 
-  static constexpr data_t SQ(data_t const & x) {return x*x;};
+  inline __attribute__ ((always_inline)) static constexpr data_t SQ(data_t const & x) {return x*x;};
 
   //! Computes the determinant of this 3-metric
   inline __attribute__ ((always_inline)) data_t det() const {
@@ -76,11 +76,11 @@ public:
     constexpr size_t GYZ = this_tensor_t::template compressed_index<1,2>();
     constexpr size_t GZZ = this_tensor_t::template compressed_index<2,2>();
 
-    return - this->SQ(this->evaluate<GXZ>()) * this->evaluate<GYY>()
-           + 2.0 * this->evaluate<GXY>() * this->evaluate<GXZ>() * this->evaluate<GYZ>()
-           - this->evaluate<GXX>() * this->SQ(this->evaluate<GYZ>())
-           - this->SQ(this->evaluate<GXY>()) * this->evaluate<GZZ>()
-           + this->evaluate<GXX>() * this->evaluate<GYY>() * this->evaluate<GZZ>();
+    return - this->SQ(this->template evaluate<GXZ>()) * this->template evaluate<GYY>()
+           + 2.0 * this->template evaluate<GXY>() * this->template evaluate<GXZ>() * this->template evaluate<GYZ>()
+           - this->template evaluate<GXX>() * this->SQ(this->template evaluate<GYZ>())
+           - this->SQ(this->template evaluate<GXY>()) * this->template evaluate<GZZ>()
+           + this->template evaluate<GXX>() * this->template evaluate<GYY>() * this->template evaluate<GZZ>();
   }
 
   inline __attribute__ ((always_inline)) data_t sqrt_det() const {
@@ -99,18 +99,18 @@ public:
     // inverse has upper indices
     inv_metric3_t inverse_metric;
 
-    inverse_metric.template cc<GXX>() = (-this->SQ(this->evaluate<GYZ>())
-                                      + this->evaluate<GYY>() * this->evaluate<GZZ>()) / det;
-    inverse_metric.template cc<GXY>() = ((this->evaluate<GYZ>() * this->evaluate<GXZ>())
-                                      - this->evaluate<GXY>() * this->evaluate<GZZ>()) / det;
-    inverse_metric.template cc<GYY>() = (-this->SQ(this->evaluate<GXZ>())
-                                      + this->evaluate<GXX>() * this->evaluate<GZZ>()) / det;
-    inverse_metric.template cc<GXZ>() = (-(this->evaluate<GXZ>() * this->evaluate<GYY>())
-                                      + this->evaluate<GXY>() * this->evaluate<GYZ>()) / det;
-    inverse_metric.template cc<GYZ>() = ((this->evaluate<GXY>() * this->evaluate<GXZ>())
-                                      - this->evaluate<GXX>() * this->evaluate<GYZ>()) / det;
-    inverse_metric.template cc<GZZ>() = (-this->SQ(this->evaluate<GXY>())
-                                      + this->evaluate<GXX>() * this->evaluate<GYY>()) / det;
+    inverse_metric.template cc<GXX>() = (-this->SQ(this->template evaluate<GYZ>())
+                                      + this->template evaluate<GYY>() * this->template evaluate<GZZ>()) / det;
+    inverse_metric.template cc<GXY>() = ((this->template evaluate<GYZ>() * this->template evaluate<GXZ>())
+                                      - this->template evaluate<GXY>() * this->template evaluate<GZZ>()) / det;
+    inverse_metric.template cc<GYY>() = (-this->SQ(this->template evaluate<GXZ>())
+                                      + this->template evaluate<GXX>() * this->template evaluate<GZZ>()) / det;
+    inverse_metric.template cc<GXZ>() = (-(this->template evaluate<GXZ>() * this->template evaluate<GYY>())
+                                      + this->template evaluate<GXY>() * this->template evaluate<GYZ>()) / det;
+    inverse_metric.template cc<GYZ>() = ((this->template evaluate<GXY>() * this->template evaluate<GXZ>())
+                                      - this->template evaluate<GXX>() * this->template evaluate<GYZ>()) / det;
+    inverse_metric.template cc<GZZ>() = (-this->SQ(this->template evaluate<GXY>())
+                                      + this->template evaluate<GXX>() * this->template evaluate<GYY>()) / det;
 
     return inverse_metric;
   }
@@ -184,18 +184,18 @@ public:
     inv_g.template set<0,-2>( - inv_g.template cc<GTT>() * beta);
 
 
-    inv_g.template cc<GXX>() = (-this->SQ(this->evaluate<YZ3>())
-                             + this->evaluate<YY3>() * this->evaluate<ZZ3>()) / det;
-    inv_g.template cc<GXY>() = ((this->evaluate<YZ3>() * this->evaluate<XZ3>())
-                             - this->evaluate<XY3>() * this->evaluate<ZZ3>()) / det;
-    inv_g.template cc<GYY>() = (-this->SQ(this->evaluate<XZ3>())
-                             + this->evaluate<XX3>() * this->evaluate<ZZ3>()) / det;
-    inv_g.template cc<GXZ>() = (-(this->evaluate<XZ3>() * this->evaluate<YY3>())
-                             + this->evaluate<XY3>() * this->evaluate<YZ3>()) / det;
-    inv_g.template cc<GYZ>() = ((this->evaluate<XY3>() * this->evaluate<XZ3>())
-                             - this->evaluate<XX3>() * this->evaluate<YZ3>()) / det;
-    inv_g.template cc<GZZ>() = (-this->SQ(this->evaluate<XY3>())
-                             + this->evaluate<XX3>() * this->evaluate<YY3>()) / det;
+    inv_g.template cc<GXX>() = (-this->SQ(this->template evaluate<YZ3>())
+                             + this->template evaluate<YY3>() * this->template evaluate<ZZ3>()) / det;
+    inv_g.template cc<GXY>() = ((this->template evaluate<YZ3>() * this->template evaluate<XZ3>())
+                             - this->template evaluate<XY3>() * this->template evaluate<ZZ3>()) / det;
+    inv_g.template cc<GYY>() = (-this->SQ(this->template evaluate<XZ3>())
+                             + this->template evaluate<XX3>() * this->template evaluate<ZZ3>()) / det;
+    inv_g.template cc<GXZ>() = (-(this->template evaluate<XZ3>() * this->template evaluate<YY3>())
+                             + this->template evaluate<XY3>() * this->template evaluate<YZ3>()) / det;
+    inv_g.template cc<GYZ>() = ((this->template evaluate<XY3>() * this->template evaluate<XZ3>())
+                             - this->template evaluate<XX3>() * this->template evaluate<YZ3>()) / det;
+    inv_g.template cc<GZZ>() = (-this->SQ(this->template evaluate<XY3>())
+                             + this->template evaluate<XX3>() * this->template evaluate<YY3>()) / det;
 
   // FIXME Doesn't work yet...
   //assign_slice<-2,-2>(inv_g) += inv_g.template c<0,0>()*sym2_cast(tensor_cat(shift,shift));
