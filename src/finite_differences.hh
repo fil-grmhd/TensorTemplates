@@ -22,11 +22,11 @@ namespace tensors {
 namespace fd {
 
 //! Defines nodes for a onesided stencil, in positive or negative direction
-template<bool flip>
+template<bool flip, size_t shift = 0>
 struct onesided_nodes {
   inline static constexpr int node(int const i) {
-    return  flip ?  i
-                 : -i;
+    return  flip ?   i - shift
+                 : -(i - shift);
   }
 };
 

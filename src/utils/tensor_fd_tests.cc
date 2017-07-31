@@ -8,11 +8,11 @@ using namespace tensors;
 
 int main() {
   constexpr int deg = 1;
-  constexpr int order = 2;
+  constexpr int order = 3;
 
   using central_w_t = fd::fd_weights<deg,order,fd::central_nodes>;
-  using side_pos_w_t = fd::fd_weights<deg,order,fd::onesided_nodes<false>>;
-  using side_neg_w_t = fd::fd_weights<deg,order,fd::onesided_nodes<true>>;
+  using side_pos_w_t = fd::fd_weights<deg,order,fd::onesided_nodes<false,1>>;
+  using side_neg_w_t = fd::fd_weights<deg,order,fd::onesided_nodes<true,1>>;
 
   constexpr central_w_t central_w;
   constexpr side_pos_w_t side_pos_w;
