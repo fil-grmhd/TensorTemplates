@@ -153,7 +153,7 @@ public:
     constexpr size_t tensor_sym_index = E::property_t::symmetry_t
                                           ::template index_from_generic<index>::value;
     // compute fd at point grid_index of tensor_sym_index' component
-    return beta_dE<tensor_sym_index,ndim-1, beta_t,fd_u_t,fd_d_t,array_t>(beta,fdu,fdd, ptr_array, grid_index);
+    return beta_dE<tensor_sym_index,ndim-1, beta_t,fd_u_t,fd_d_t,array_t>::value(beta,fdu,fdd, ptr_array, grid_index);
   }
 };
 
