@@ -493,7 +493,19 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
     std::cout<<std::endl;
   }
 
-  
+
+  std::cout << "Kronecker test" << std::endl;
+
+  std::cout << kronecker3_t<double>::template evaluate<0>()<< std::endl; 
+  std::cout << kronecker3_t<double>::template evaluate<1>()<< std::endl; 
+  std::cout << kronecker3_t<double>::template evaluate<2>()<< std::endl;
+  std::cout << kronecker3_t<double>::template evaluate<3>()<< std::endl;
+  std::cout << kronecker3_t<double>::template evaluate<4>()<< std::endl;
+  std::cout << kronecker3_t<double>::template evaluate<5>()<< std::endl;
+  std::cout << kronecker3_t<double>::template evaluate<6>()<< std::endl;
+  std::cout << kronecker3_t<double>::template evaluate<7>()<< std::endl;
+  std::cout << kronecker3_t<double>::template evaluate<8>()<< std::endl;
+
 
 
 }

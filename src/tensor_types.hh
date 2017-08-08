@@ -238,6 +238,19 @@ using metric_tensor3_t = metric_tensor3_vt<T>;
 
 #endif // TENSORS_VECTORIZED
 
+//Kronecker delta has no underlying data structure so define globally.
+
+namespace general{
+template <typename T, typename frame_t_,  size_t ndim_>
+class kronecker_t;
+}
+
+template<typename T>
+using kronecker3_t = general::kronecker_t<T,any_frame_t,3>;
+template<typename T>
+using kronecker4_t = general::kronecker_t<T,any_frame_t,4>;
+
+
 } // namespace tensors
 
 #endif
