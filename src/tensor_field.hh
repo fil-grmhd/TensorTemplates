@@ -61,6 +61,12 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
       return tensor_partial_derivative_t<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
     }
 
+    //! Returns the upwind derivative of this tensor field
+    template<typename fd_u_t,typename fd_d_t,typename beta_t>
+    inline __attribute__ ((always_inline)) decltype(auto) upwind_finite_diff(fd_u_t const & fdu, fd_d_t const & fdd, beta_t const & beta) const {
+      return tensor_advective_derivative_t<T,ptr_array_t,beta_t,fd_u_t,fd_d_t>(grid_index,ptr_array, beta, fdu, fdd);
+    }
+
     template<typename E>
     inline __attribute__ ((always_inline)) void operator=(E const &e) {
       // this only a check of compatibility of T and E
@@ -210,6 +216,13 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
     inline __attribute__ ((always_inline)) decltype(auto) finite_diff(fd_t const & fd) const {
       return tensor_partial_derivative_t<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
     }
+
+    //! Returns the upwind derivative of this tensor field
+    template<typename fd_u_t,typename fd_d_t,typename beta_t>
+    inline __attribute__ ((always_inline)) decltype(auto) upwind_finite_diff(fd_u_t const & fdu, fd_d_t const & fdd, beta_t const & beta) const {
+      return tensor_advective_derivative_t<T,ptr_array_t,beta_t,fd_u_t,fd_d_t>(grid_index,ptr_array, beta, fdu, fdd);
+    }
+
 
     template<typename E>
     inline __attribute__ ((always_inline)) void operator=(E const &e) {
