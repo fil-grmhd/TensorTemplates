@@ -147,7 +147,7 @@ int main(void) {
     contracted_vectors[i] = contracted_vector;
 
     // traces of rank = 2 tensors
-    traces.set(trace<0,1>(tensor_field[i]),i);
+    traces[i] = trace(tensor_field[i]);
   }
 
   t1 = std::chrono::high_resolution_clock::now();
@@ -287,6 +287,7 @@ int main(void) {
 #ifdef COMPARE
 #ifdef TEMPLATES
 #ifdef ARRAYS
+  // the following is only for debugging and far from optimal!
   std::cout << "Testing equality..." << std::endl;
 
   t0 = std::chrono::high_resolution_clock::now();
@@ -315,13 +316,13 @@ int main(void) {
       std::cout << vector_t(array_vector_field[i]).compare_components<exp>(contracted_vectors[i]).second << std::endl;
     }
     #ifdef TENSORS_VECTORIZED
-    if(!(array_scalar_field[i] != traces[i]).isEmpty()) {
+    if(!((comp_t<double>) array_scalar_field[i] != (comp_t<double>) traces[i]).isEmpty()) {
     #else
     if(array_scalar_field[i] != traces[i]) {
     #endif
       std::cout << "Trace differ at " << i << std::endl;
       std::cout << d0[i] << std::endl;
-      std::cout << traces[i] << std::endl;
+      std::cout << (comp_t<double>) traces[i] << std::endl;
     }
   }
 

@@ -43,8 +43,15 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     // get grid size to know position of GF array component pointers
     int const gsiz = cctkGH->cctk_ash[0]*cctkGH->cctk_ash[1]*cctkGH->cctk_ash[2];
 
-    // import namespace
     using namespace tensors;
+
+    // either one or Vc::double_v::Size
+    size_t inc = loop_inc<CCTK_REAL>;
+
+    // get the used types into this namespace
+
+    // this is either a double or a Vc::double_v, "tensor component type"
+    using scalar_t = comp_t<CCTK_REAL>;
 
     // init tensor fields with GF pointers
     scalar_field_t<CCTK_REAL> const alpha_field(alp);
@@ -94,29 +101,26 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
     #pragma forceinline recursive
     // CHECK: this loop shoots over into the ghost zones for vectorized code,
     //        one should check that loop_inc < cctk_nghostzones[0] + 1
-    for(int i = cctk_nghostzones[0]; i < cctk_lsh[0]-cctk_nghostzones[0]; i += loop_inc<CCTK_REAL>) {
+    for(int i = cctk_nghostzones[0]; i < cctk_lsh[0]-cctk_nghostzones[0]; i += inc) {
       // get compressed GF index
       int const ijk = CCTK_GFINDEX3D(cctkGH, i, j, k);
 
       // 3-metric and its determinant
-      // CHECK: evaluate doesn't work here (yet)
+      // CHECK: evaluate doesn't work here (yet), thus the explicit tensor type is given here
       metric_tensor3_t<CCTK_REAL> const gamma = gamma_field[ijk];
-      comp_t<CCTK_REAL> const det = gamma.det();
-      comp_t<CCTK_REAL> const sqrt_det = std::sqrt(det);
+      scalar_t const det = gamma.det();
+      scalar_t const sqrt_det = std::sqrt(det);
 
       // if vectorization is enabled, we want to load from memory only once
       auto const beta = evaluate(beta_field[ijk]);
-      comp_t<CCTK_REAL> const alpha = alpha_field[ijk];
+      scalar_t const alpha = alpha_field[ijk];
 
       // inverse 4-metric, needed for energy-momentum tensor
       auto const inv_g = gamma.inverse_spacetime_metric(alpha,beta,det);
 
       // derivatives of the lapse, metric and shift
-      // CHECK: this could be simplified within the scalar field type
       #ifdef COMPUTE_DERIVATIVES
-      covector3_t<CCTK_REAL> const dalp(cdiff.diff<0>(alp, ijk),
-                                        cdiff.diff<1>(alp, ijk),
-                                        cdiff.diff<2>(alp, ijk));
+      covector3_t<CCTK_REAL> const dalp = alpha_field[ijk].finite_diff(cdiff);
       #else
       covector3_t<CCTK_REAL> const dalp;
       #endif
@@ -136,8 +140,8 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
       // helpers to construct four metric derivative
       auto const dg00i = - 2*alpha*dalp
-                       + 2*contract(dbeta,contract(gamma,beta))
-                       + contract(beta,contract(beta,dgamma));
+                         + 2*contract(dbeta,contract(gamma,beta))
+                         + contract(beta,contract(beta,dgamma));
 
       auto const dg0ji = contract(gamma,dbeta)
                        + contract(dgamma,beta);
@@ -159,7 +163,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       dg.set<-2,-2,-2>(dgamma);
 
       // helper for four velocity u
-      comp_t<CCTK_REAL> const u0 =  w_lorentz_field[ijk]/alpha;
+      scalar_t const u0 =  w_lorentz_field[ijk]/alpha;
       auto const ui = u0*(alpha*vel_field[ijk] - beta);
 
       // four velocity
@@ -170,12 +174,15 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       // construct tensor product of u^mu u^nu
       auto const uu = sym2_cast(tensor_cat(u,u));
 
-      // this maybe saves one load from memory in the next expression
-      auto const pressure = press_field[ijk];
+      // implicit conversion doesn't work, have to cast explicitly
+      scalar_t const pressure = press_field[ijk];
+      scalar_t const density = rho_field[ijk];
+      scalar_t const int_energy = eps_field[ijk];
+
       // construct energy-momentum tensor
       sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> const
-        T = (rho_field[ijk]*(1+eps_field[ijk])+pressure)*uu
-          +  pressure*inv_g;
+        T = (density * (1 + int_energy) + pressure) * uu
+          + pressure * inv_g;
 
       // slice expression to contain only the spatial components
       // hence the result is a covector3_t
@@ -194,7 +201,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       auto const T0ib = tensor_cat(T0i,beta);
 
       // the operations result in a scalar or vector register
-      comp_t<CCTK_REAL> const rhs_tau = alpha * sqrt_det
+      rhs_tau_field[ijk] = alpha * sqrt_det
                            * (trace(
                                 contract(
                                   T.c<0,0>()*bb + 2 * T0ib + Tij,
@@ -206,9 +213,5 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
                                 dalp
                               )
                              );
-      // set the scalar field
-      // [] operator not available here,
-      // because a vector register needs to call a store to memory
-      rhs_tau_field.set(rhs_tau,ijk);
     }
 }

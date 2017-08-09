@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <random>
 #include <chrono>
+#include <limits>
 
 #define TENSORS_VECTORIZED
 #include "../tensor_templates.hh"
@@ -17,6 +18,7 @@ using namespace tensors;
 
 // some artificial diff classes
 // scalar version
+template<typename node_t, size_t order>
 struct test_diff {
   const double idx;
   const int stride[3];
@@ -25,49 +27,38 @@ struct test_diff {
 
   template<size_t dir, typename T>
   inline __attribute__ ((always_inline)) T diff(T const * const ptr, size_t const index) const {
-    return idx*fd::c_diff<dir,4>(ptr, index, stride[dir]);
+    return idx*fd::auto_diff<1,order,node_t>(ptr, index, stride[dir]);
   }
 };
-// vectorized version
+// version how it is implemented atm, without vectorization of the FD terms
+template<typename node_t, size_t order>
 struct test_diff_v {
-  Vc::double_v idx;
+  double idx;
   const int stride[3];
 
   test_diff_v() : idx(0.1), stride {1,2,3} {}
 
   template<size_t dir, typename T>
   inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
-    return idx*fd::c_diff_v<dir,4>(ptr, index, stride[dir]);
-  }
-};
-// version how it is implemented atm
-struct test_diff_v_atm {
-  double idx;
-  const int stride[3];
-
-  test_diff_v_atm() : idx(0.1), stride {1,2,3} {}
-
-  template<size_t dir, typename T>
-  inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
-
-
     Vc::Vector<T> vec_register;
-
     for(size_t i = 0; i < Vc::Vector<T>::Size; ++i) {
-      vec_register[i] = fd::c_diff<dir,4>(ptr, index + i, stride[dir]);
+      vec_register[i] = fd::auto_diff<1,order,node_t>(ptr, index + i, stride[dir]);
     }
-
     return idx*vec_register;
   }
 };
 
 
 int main() {
+  std::cout.setf(std::ios_base::scientific, std::ios_base::floatfield);
+  std::cout.precision(std::numeric_limits<double>::max_digits10);
 
   using sca_type = double;
 //  using sca_type = float;
 
   using vec_type = Vc::Vector<sca_type>;
+  using node_t = fd::central_nodes;
+  constexpr size_t fd_order = 8;
 
 //  constexpr size_t N = 80000000;
   constexpr size_t N = 800000;
@@ -138,7 +129,7 @@ int main() {
   t0 = std::chrono::high_resolution_clock::now();
 
 {
-  test_diff diff;
+  test_diff<node_t,fd_order> diff;
 
   scalar_field_t<sca_type> alpha_field(&data_0[0]);
 
@@ -160,10 +151,13 @@ int main() {
     sca_type alp = alpha_field[i];
 
     // this is only because we have not special scalar type
+    covector3_t<double> dalp = alpha_field[i].finite_diff(diff);
+
+/*
     covector3_t<double> dalp(diff.diff<0>(&data_0[0],i),
                              diff.diff<1>(&data_0[0],i),
                              diff.diff<2>(&data_0[0],i));
-
+*/
     tensor3_t<double,upper_t,lower_t> dbeta = beta[i].finite_diff(diff);
 
     sym_tensor3_t<double,0,1,lower_t,lower_t,lower_t> dgamma = gamma[i].finite_diff(diff);
@@ -234,8 +228,7 @@ int main() {
   t0 = std::chrono::high_resolution_clock::now();
 
 {
-//  test_diff_v diff;
-  test_diff_v_atm diff;
+  test_diff_v<node_t,fd_order> diff;
 
   scalar_field_vt<sca_type> alpha_field(&data_0[0]);
 
@@ -255,10 +248,13 @@ int main() {
   for(int i = 0; i < num_data; i += vec_size) {
     vec_type alp = alpha_field[i];
 
+    covector3_vt<sca_type> dalp = alpha_field[i].finite_diff(diff);
+
+/*
     covector3_vt<sca_type> dalp(diff.diff<0>(&data_0[0],i),
                                 diff.diff<1>(&data_0[0],i),
                                 diff.diff<2>(&data_0[0],i));
-
+*/
     tensor3_vt<sca_type,upper_t,lower_t> dbeta = beta[i].finite_diff(diff);
 
     sym_tensor3_vt<sca_type,0,1,lower_t,lower_t,lower_t> dgamma = gamma[i].finite_diff(diff);
@@ -328,7 +324,6 @@ int main() {
   std::cout << "t_vector / t_scalar = " << (double) t_vector/t_scalar << std::endl;
   #endif
   #endif
-
 
   for(int i = 0; i < num_data; i+=num_data / (dist_uni(gen) * 10 + 5)) {
     std::cout << "s(" << i << "): " << result0[i] << " " << result1[i] << " " << result2[i] << " " << result3[i] << std::endl;

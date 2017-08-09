@@ -1,5 +1,5 @@
-#ifndef TENSOR_FIELD_HH
-#define TENSOR_FIELD_HH
+#ifndef TENSORS_TENSOR_FIELD_HH
+#define TENSORS_TENSOR_FIELD_HH
 
 namespace tensors {
 
@@ -14,11 +14,11 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     using data_t = typename property_t::data_t;
     static constexpr size_t ndof = property_t::ndof;
 
-  private:
-    //! Reference to pointer array of underlying tensor field
+  protected:
+    //! Reference to grid pointer array of underlying tensor field
     ptr_array_t const & ptr_array;
 
-    //! Internal (pointer) index
+    //! Internal (grid pointer) index
     size_t const grid_index;
 
     // Template recursion to set components, fastest for chained expressions
@@ -93,61 +93,24 @@ class tensor_field_t {
     using data_t = typename property_t::data_t;
     static constexpr size_t ndof = property_t::ndof;
 
-  private:
-    //! Storage for ndof pointers
+  protected:
+    //! Storage for ndof grid pointers
     const std::array<data_t * __restrict__ const,ndof> ptr_array;
 
   public:
-    //! Constructor from pointer parameters
+    //! Constructor from grid pointer parameters
     template <typename... TArgs>
     tensor_field_t(data_t * __restrict__ const first_elem, TArgs... elem)
         : ptr_array({first_elem, elem...}) {
       static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
     };
 
-    //! Returns a tensor field expression at (pointer) index i
+    //! Returns a tensor field expression at (grid pointer) index i
     inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t const i) const {
       return tensor_field_expression_t<T,decltype(ptr_array)>(ptr_array,i);
     }
 };
 
-//! Template for a scalar field
-// A scalar field is not a tensor expression,
-// but delivers scalar values at different grid points.
-// This is a thin-wrapper around a grid pointer,
-// which is needed to write vectorization-agnostic code.
-template<typename T>
-class scalar_field_t {
-  public:
-    // The actual data type
-    using data_t = T;
-
-  protected:
-    //! Storage for the grid pointer
-    data_t * __restrict__ const grid_ptr;
-
-  public:
-    //! Constructor from pointer parameter
-    scalar_field_t(data_t * __restrict__ const grid_ptr_)
-        : grid_ptr(grid_ptr_) {};
-
-    //! Returns value at (pointer) index i
-    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t const i) const {
-      return grid_ptr[i];
-    }
-    //! Set value(s) at (pointer) index i ( + Size)
-    inline __attribute__ ((always_inline)) void set(data_t const & data, size_t const i) {
-      grid_ptr[i] = data;
-    }
-/*
-    //! Returns a partial derivative of this tensor field
-    template<typename fd_t>
-    inline __attribute__ ((always_inline)) decltype(auto) finite_diff(fd_t const & fd) const {
-      
-      return tensor_partial_derivative_t<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
-    }
-*/
-};
 #endif
 
 #ifdef TENSORS_VECTORIZED
@@ -165,11 +128,11 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
 
     static constexpr size_t ndof = property_t::ndof;
 
-  private:
-    //! Reference to pointer array of underlying tensor field
+  protected:
+    //! Reference to grid pointer array of underlying tensor field
     ptr_array_t const & ptr_array;
 
-    //! Internal (pointer) index
+    //! Internal (grid pointer) index
     size_t const grid_index;
 
     // Template recursion to set components, fastest for chained expressions
@@ -253,71 +216,27 @@ class tensor_field_vt {
     using data_t = typename vec_t::EntryType;
     static constexpr size_t ndof = property_t::ndof;
 
-  private:
-    //! Storage for ndof pointers
+  protected:
+    //! Storage for ndof grid pointers
     const std::array<data_t * __restrict__ const,ndof> ptr_array;
 
   public:
-    //! Constructor from pointer parameters
+    //! Constructor from grid pointer parameters
     template <typename... TArgs>
     tensor_field_vt(data_t * __restrict__ const first_elem, TArgs... elem)
         : ptr_array({first_elem, elem...}) {
       static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
     };
 
-    //! Returns a tensor field expression at (pointer) index i
+    //! Returns a tensor field expression at (grid pointer) index i
     inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t const i) const {
       return tensor_field_expression_vt<T,decltype(ptr_array)>(ptr_array,i);
     }
 };
 
-//! Template for a vectorized scalar field
-// A scalar field is not a tensor expression,
-// but delivers scalar values at different grid points.
-template<typename T>
-class scalar_field_vt {
-  public:
-    // Data is stored as vector register
-    using vec_t = Vc::Vector<T>;
-    // The actual data type
-    using data_t = T;
-
-  protected:
-    //! Storage for grid pointer
-    data_t * __restrict__ const grid_ptr;
-
-  public:
-    //! Constructor from pointer parameter
-    scalar_field_vt(data_t * __restrict__ const grid_ptr_)
-        : grid_ptr(grid_ptr_) {};
-
-    //! Returns value at (pointer) index i
-    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t const i) const {
-      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[i]);
-
-      return vec_register;
-    }
-    //! Set value(s) at (pointer) index i ( + Size)
-    inline __attribute__ ((always_inline)) void set(vec_t const & data, size_t const i) {
-      data.store(&grid_ptr[i]);
-    }
-/*
-    //! Returns a partial derivative of this tensor field
-    template<typename fd_t>
-    inline __attribute__ ((always_inline)) decltype(auto) finite_diff(fd_t const & fd) const {
-      
-      return tensor_partial_derivative_t<T,ptr_array_t,fd_t>(grid_index,ptr_array,fd);
-    }
-*/
-};
-
 #ifdef TENSORS_AUTOVEC
 template<typename T>
 using tensor_field_t = tensor_field_vt<T>;
-
-template<typename T>
-using scalar_field_t = scalar_field_vt<T>;
 #endif
 
 #endif

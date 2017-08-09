@@ -123,25 +123,26 @@ public:
                "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
 
-
+  // Template recursion to compute the contracted advective derivative
   template<size_t tensor_sym_index, size_t index>
   struct beta_dE{
     public:
       inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta, fd_u_t const & fdu, fd_d_t const & fdd,
 	                                                                array_t const & ptr_array, size_t const grid_index) {
        return beta_dE<tensor_sym_index,index-1>::value(beta,fdu,fdd,ptr_array,grid_index)
-            + beta.template evaluate<index>() * ((beta.template evaluate<index>() > 0)
+            + beta.template evaluate<index>()
+            * ((beta.template evaluate<index>() > 0)
             ? fdu.template diff<index>(ptr_array[tensor_sym_index],grid_index)
   	        : fdd.template diff<index>(ptr_array[tensor_sym_index],grid_index));
     }
   };
-
   template<size_t tensor_sym_index>
   struct beta_dE<tensor_sym_index,0>{
     public:
       inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta, fd_u_t const & fdu, fd_d_t const & fdd,
 	                                                                array_t const & ptr_array, size_t const grid_index) {
-       return beta.template evaluate<0>() * ((beta.template evaluate<0>() > 0)
+       return beta.template evaluate<0>()
+            * ((beta.template evaluate<0>() > 0)
             ? fdu.template diff<0>(ptr_array[tensor_sym_index],grid_index)
   	        : fdd.template diff<0>(ptr_array[tensor_sym_index],grid_index) );
     }
