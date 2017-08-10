@@ -16,6 +16,12 @@ class scalar_wrapper_t {
     size_t const grid_index;
 
   public:
+
+    struct property_t {
+      using this_tensor_t = T;
+    };
+
+
     //! Constructor (called from a scalar field)
     scalar_wrapper_t(ptr_t const grid_ptr_, size_t const grid_index_)
         : grid_ptr(grid_ptr_), grid_index(grid_index_) {}
@@ -55,9 +61,6 @@ class scalar_wrapper_t {
 // which is needed to write vectorization-agnostic code.
 template<typename T>
 class scalar_field_t {
-  public:
-    // The actual data type
-
   protected:
     //! Storage for the grid pointer
     T * __restrict__ const grid_ptr;
@@ -92,6 +95,10 @@ class scalar_wrapper_vt {
     size_t const grid_index;
 
   public:
+    struct property_t {
+      using this_tensor_t = vec_t;
+    };
+
     //! Constructor (called from a scalar field)
     scalar_wrapper_vt(ptr_t const grid_ptr_, size_t const grid_index_)
         : grid_ptr(grid_ptr_), grid_index(grid_index_) {}
@@ -152,7 +159,6 @@ class scalar_field_vt {
 template<typename T>
 using scalar_field_t = scalar_field_vt<T>;
 #endif
-
 #endif
 
 } // namespace tensors

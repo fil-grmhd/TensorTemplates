@@ -113,7 +113,7 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
 
       // if vectorization is enabled, we want to load from memory only once
       auto const beta = evaluate(beta_field[ijk]);
-      scalar_t const alpha = alpha_field[ijk];
+      auto const alpha = evaluate(alpha_field[ijk]);
 
       // inverse 4-metric, needed for energy-momentum tensor
       auto const inv_g = gamma.inverse_spacetime_metric(alpha,beta,det);
@@ -163,8 +163,8 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       dg.set<-2,-2,-2>(dgamma);
 
       // helper for four velocity u
-      scalar_t const u0 =  w_lorentz_field[ijk]/alpha;
-      auto const ui = u0*(alpha*vel_field[ijk] - beta);
+      auto const u0 =  evaluate(w_lorentz_field[ijk])/alpha;
+      auto const ui = u0 * (alpha * vel_field[ijk] - beta);
 
       // four velocity
       vector4_t<CCTK_REAL> u;
@@ -175,9 +175,9 @@ extern "C" void THC_GRSource_temp(CCTK_ARGUMENTS) {
       auto const uu = sym2_cast(tensor_cat(u,u));
 
       // implicit conversion doesn't work, have to cast explicitly
-      scalar_t const pressure = press_field[ijk];
-      scalar_t const density = rho_field[ijk];
-      scalar_t const int_energy = eps_field[ijk];
+      auto const pressure = evaluate(press_field[ijk]);
+      auto const density = evaluate(rho_field[ijk]);
+      auto const int_energy = evaluate(eps_field[ijk]);
 
       // construct energy-momentum tensor
       sym_tensor4_t<CCTK_REAL,0,1,upper_t,upper_t> const
