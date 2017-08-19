@@ -133,7 +133,7 @@ public:
     public:
       inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta, fd_u_t const & fdu, fd_d_t const & fdd,
       	                                                          ptr_t grid_ptr, size_t const grid_index) {
-       return beta_dE<index-1>::value(beta,fdu,fdd,grid_ptr,grid_index)
+       return beta_dE<_,index-1>::value(beta,fdu,fdd,grid_ptr,grid_index)
             + beta.template evaluate<index>()
             * ((beta.template evaluate<index>() > 0)
             ? fdu.template diff<index>(grid_ptr,grid_index)
