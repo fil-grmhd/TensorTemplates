@@ -66,8 +66,7 @@ public:
 
 //! Expression template for an advective derivative of a scalar, e.g. beta^i \partial_i scalar
 template <typename T, typename ptr_t, typename beta_t, typename fd_u_t, typename fd_d_t>
-class scalar_advective_derivative_t
-    : public tensor_expression_t<scalar_advective_derivative_t<T,ptr_t, beta_t, fd_u_t, fd_d_t>> {
+class scalar_advective_derivative_t {
 
 protected:
   //! Objects defining the (up/down) finite difference operation on a pointer
@@ -87,14 +86,10 @@ public:
   // A partial derivative adds a new lower index (to the right),
   // thus a special property class is needed.
 
-  // adds a lower index
-  using index_t = std::tuple<lower_t>;
 
   // up to now, only considering patial FDs here
   // CHECK: could we generalize to include time derivatives?
   static constexpr size_t ndim = 3;
-  // adds an index
-  static constexpr size_t rank = 1;
 
   static_assert(beta_t::property_t::rank == 1,
       	 	      "Characteristic vector needs to have rank 1!");
@@ -105,18 +100,13 @@ public:
                 >::value,
       	 	      "Characteristic vector needs to be contravariant!");
 
+    struct property_t {
+      using this_tensor_t = T;
+    };
+
+
   // no symmetry reconstruction here, please cast expression to given symmetry
   // no symmetry reconstruction here, please cast expression to given symmetry
-  using property_t = general_tensor_property_t<
-                       general_tensor_t<
-                         T,
-                         any_frame_t,
-                         generic_symmetry_t<ndim,rank>,
-                         rank,
-                         index_t,
-                         ndim
-                       >
-                     >;
 
   scalar_advective_derivative_t(size_t const grid_index_, ptr_t const grid_ptr_, beta_t const & beta_,
      			                      fd_u_t const & fdu_, fd_d_t const & fdd_)
@@ -153,9 +143,9 @@ public:
   };
 
 
-  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
+inline operator T const () const {
     // compute advective fd at point grid_index
-    return beta_dE<true,ndim-1>::value(beta,fdu,fdd, grid_ptr, grid_index);
+    return T(beta_dE<true,ndim-1>::value(beta,fdu,fdd, grid_ptr, grid_index));
   }
 };
 
