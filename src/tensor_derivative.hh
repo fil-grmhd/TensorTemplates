@@ -107,7 +107,7 @@ public:
 
   static_assert(std::is_same<
                   typename std::tuple_element<0, typename beta_t::property_t::index_t>::type,
-                  lower_t
+                  upper_t
                 >::value,
       	 	      "Characteristic vector needs to be contravariant!");
 
