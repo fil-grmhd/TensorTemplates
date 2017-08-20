@@ -20,6 +20,19 @@ protected:
   //! Index representing a position on the grid
   size_t const grid_index;
 
+  
+  template<size_t d=1, bool _ =true>
+  struct get_index_t{
+      using index_t = decltype(std::tuple_cat(
+	                     std::declval<typename get_index_t<d-1>::index_t>(),
+                                          std::declval<std::tuple<lower_t>>()));
+  };
+  template<bool _>
+  struct get_index_t<0,_>{
+      using index_t = std::tuple<>;
+  };
+
+
 public:
   using data_t = T;
 
@@ -27,12 +40,12 @@ public:
   // thus a special property class is needed.
 
   // adds a lower index
-  using index_t = std::tuple<lower_t>;
+  using index_t = typename get_index_t<fd_t::d>::index_t;
 
   // up to now, only considering patial FDs here
   static constexpr size_t ndim = 3;
   // adds an index
-  static constexpr size_t rank = 1;
+  static constexpr size_t rank = fd_t::d;
 
   // no symmetry reconstruction here, please cast expression to given symmetry
   using property_t = general_tensor_property_t<
