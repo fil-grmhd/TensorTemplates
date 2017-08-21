@@ -135,24 +135,43 @@ public:
   template<size_t tensor_sym_index, size_t index>
   struct beta_dE{
     public:
-      inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta, fd_u_t const & fdu, fd_d_t const & fdd,
+      static inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta, fd_u_t const & fdu, fd_d_t const & fdd,
 	                                                                array_t const & ptr_array, size_t const grid_index) {
+#if !defined(TENSORS_VECTORIZED) || !defined(TENSORS_AUTOVEC)
        return beta_dE<tensor_sym_index,index-1>::value(beta,fdu,fdd,ptr_array,grid_index)
             + beta.template evaluate<index>()
             * ((beta.template evaluate<index>() > 0)
             ? fdu.template diff<index>(ptr_array[tensor_sym_index],grid_index)
   	        : fdd.template diff<index>(ptr_array[tensor_sym_index],grid_index));
+#else
+        typename E::property_t::data_t tmp;
+	where(beta.template evaluate<index>() > 0) | tmp = fdu.template diff<index>(ptr_array[tensor_sym_index],grid_index);
+	where(beta.template evaluate<index>() < 0) | tmp = fdd.template diff<index>(ptr_array[tensor_sym_index],grid_index);
+
+	return beta_dE<tensor_sym_index,index-1>::value(beta,fdu,fdd,ptr_array,grid_index)
+            + beta.template evaluate<index>() * tmp;
+       
+#endif
     }
   };
   template<size_t tensor_sym_index>
   struct beta_dE<tensor_sym_index,0>{
     public:
-      inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta, fd_u_t const & fdu, fd_d_t const & fdd,
+      static inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta, fd_u_t const & fdu, fd_d_t const & fdd,
 	                                                                array_t const & ptr_array, size_t const grid_index) {
+#if !defined(TENSORS_VECTORIZED) || !defined(TENSORS_AUTOVEC)
        return beta.template evaluate<0>()
             * ((beta.template evaluate<0>() > 0)
             ? fdu.template diff<0>(ptr_array[tensor_sym_index],grid_index)
   	        : fdd.template diff<0>(ptr_array[tensor_sym_index],grid_index) );
+#else
+        typename E::property_t::data_t tmp;
+	where(beta.template evaluate<0>() > 0) | tmp = fdu.template diff<0>(ptr_array[tensor_sym_index],grid_index);
+	where(beta.template evaluate<0>() < 0) | tmp = fdd.template diff<0>(ptr_array[tensor_sym_index],grid_index);
+
+	return beta.template evaluate<0>() * tmp;
+       
+#endif
     }
   };
 
