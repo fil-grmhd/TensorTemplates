@@ -15,8 +15,8 @@ protected:
   //  returning the finite difference at the point represented by index
   fd_t const & fd;
 
-  static_assert(fd_t::d == 1, "Only first derivatives are well defined."
-                              "Anything higher needs to be constructed more carefully.");
+//  static_assert(fd_t::d == 1, "Only first derivatives are well defined."
+//                              "Anything higher needs to be constructed more carefully.");
 
   //! Array to the raw tensor field component pointers
   ptr_t const grid_ptr;
