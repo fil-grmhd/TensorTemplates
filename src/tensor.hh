@@ -297,6 +297,13 @@ public:
 
   };
 
+  //Divide tensor by scalar
+  inline __attribute__ ((always_inline)) void operator/=(data_t const & lambda){
+  
+   multiply_tensor_with_t<this_tensor_t,ndof-1>::multiply_tensor_with(1./lambda,*this);
+ 
+  };
+
 };
 
 template<typename E>
