@@ -33,11 +33,12 @@ protected:
 public:
   // A partial derivative adds a new lower index (to the right),
   // thus a special property class is needed.
-  using index_t = typename get_index_t<fd_t::d>::index_t;
+//FIXME!!
+  using index_t = typename get_index_t<1>::index_t;
 
   static constexpr size_t ndim = E::property_t::ndim;
   // adds an index
-  static constexpr size_t rank = E::property_t::rank + fd_t::d;
+  static constexpr size_t rank = E::property_t::rank + 1; //FIXME //fd_t::d;
 
   // no symmetry reconstruction here, please cast expression to given symmetry
   using property_t = general_tensor_property_t<

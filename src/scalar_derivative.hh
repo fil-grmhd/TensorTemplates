@@ -40,12 +40,13 @@ public:
   // thus a special property class is needed.
 
   // adds a lower index
-  using index_t = typename get_index_t<fd_t::d>::index_t;
+//FIXME!!
+  using index_t = typename get_index_t<1>::index_t;
 
   // up to now, only considering patial FDs here
   static constexpr size_t ndim = 3;
   // adds an index
-  static constexpr size_t rank = fd_t::d;
+  static constexpr size_t rank = 1; //FIXME //fd_t::d;
 
   // no symmetry reconstruction here, please cast expression to given symmetry
   using property_t = general_tensor_property_t<
