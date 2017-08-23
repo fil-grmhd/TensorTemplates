@@ -21,13 +21,10 @@
 namespace tensors {
 namespace fd {
 
-//Important shift needs to be int, not size_t, to not trigger a bug in the Intel compiler
 //! Defines nodes for a onesided stencil, in positive or negative direction
 template<bool flip, int shift = 0>
 struct onesided_nodes {
   inline static constexpr int node(int const i) {
-//    return  flip ?   i - shift
-//                 : -(i - shift);
       return (i-shift)*(-1 + 2*flip);
   }
 };
@@ -62,17 +59,15 @@ struct fd_weights {
   using node_t = node_t_;
 
   //! Weights array
-  //double ws[deriv+1][order+1][order+1];
   double ws[(deriv+1)*(order+1)*(order+1)];
 
-//The Intel compiler likes Fortran indexing of 1d arrays instead of nested pointers...
+  //! The Intel compiler likes Fortran indexing of 1d arrays instead of nested pointers
   constexpr int index(int const i, int const j, int const k) const{
-      return k + (order+1)*( j + (order+1)*i);
+      return k + (order + 1)*(j + (order + 1) * i);
   };
 
   //! Returns weight of i'th node of deriv'th derivative with order+1 terms
   constexpr double weight(int const i) const {
-    //return ws[deriv][order][i];
     return ws[index(deriv,order,i)];
   }
 
@@ -81,7 +76,6 @@ struct fd_weights {
 
     // For more information on the algorithm see ref above
     ws[index(0,0,0)] = 1;
-//    ws[0][0][0] = 1;
     double c1 = 1;
 
     for(int n = 1; n<=order; ++n) {
@@ -90,26 +84,20 @@ struct fd_weights {
         double c3 = node_t::node(n) - node_t::node(v);
         c2 *= c3;
         for(int m = 0; m <= std::min(n,deriv); ++m) {
-//          double c4 = ws[m][n-1][v];
           double c4 = ws[index(m,n-1,v)];
           if(m-1 >= 0)
             ws[index(m,n,v)] = (node_t::node(n)*c4 - m*ws[index(m-1,n-1,v)])/c3;
-//            ws[m][n][v] = (node_t::node(n)*c4 - m*ws[m-1][n-1][v])/c3;
           else
             ws[index(m,n,v)] = node_t::node(n)*c4/c3;
-//            ws[m][n][v] = node_t::node(n)*c4/c3;
         }
       }
       for(int m = 0; m <= std::min(n,deriv); ++m) {
-//        double c4 = ws[m][n-1][n-1];
         double c4 = ws[index(m,n-1,n-1)];
         double c5 = 1;
         if(m-1 >= 0)
           c5 = ws[index(m-1,n-1,n-1)];
-//          c5 = ws[m-1][n-1][n-1];
 
         ws[index(m,n,n)] = c1/c2*(m*c5 - node_t::node(n-1) * c4);
-//        ws[m][n][n] = c1/c2*(m*c5 - node_t::node(n-1) * c4);
       }
       c1 = c2;
     }

@@ -15,17 +15,22 @@ protected:
   //  returning the finite difference at the point represented by index
   fd_t const & fd;
 
+  static_assert(fd_t::d == 1, "Only first derivatives are well defined."
+                              "Anything higher needs to be constructed more carefully.");
+
   //! Array to the raw tensor field component pointers
   ptr_t const grid_ptr;
   //! Index representing a position on the grid
   size_t const grid_index;
 
-  
-  template<size_t d=1, bool _ =true>
+  //! Helper struct to generate the index type
+  //  Useless atm, because d > 1 is not consistent
+  template<size_t d = 1, bool _ = true>
   struct get_index_t{
-      using index_t = decltype(std::tuple_cat(
-	                     std::declval<typename get_index_t<d-1>::index_t>(),
-                                          std::declval<std::tuple<lower_t>>()));
+    using index_t = decltype(
+                      std::tuple_cat(
+	                      std::declval<typename get_index_t<d-1>::index_t>(),
+                        std::declval<std::tuple<lower_t>>()));
   };
   template<bool _>
   struct get_index_t<0,_>{
@@ -40,13 +45,14 @@ public:
   // thus a special property class is needed.
 
   // adds a lower index
-//FIXME!!
+  // CHECK: higher derivatives would add multiple indices
   using index_t = typename get_index_t<1>::index_t;
 
-  // up to now, only considering patial FDs here
+  // up to now, only considering spatial FDs here
   static constexpr size_t ndim = 3;
   // adds an index
-  static constexpr size_t rank = 1; //FIXME //fd_t::d;
+  // CHECK: higher derivatives would add multiple indices
+  static constexpr size_t rank = 1;
 
   // no symmetry reconstruction here, please cast expression to given symmetry
   using property_t = general_tensor_property_t<
@@ -100,9 +106,7 @@ public:
   // A partial derivative adds a new lower index (to the right),
   // thus a special property class is needed.
 
-
-  // up to now, only considering patial FDs here
-  // CHECK: could we generalize to include time derivatives?
+  // up to now, only considering spatial FDs here
   static constexpr size_t ndim = 3;
 
   static_assert(beta_t::property_t::rank == 1,
@@ -114,12 +118,11 @@ public:
                 >::value,
       	 	      "Characteristic vector needs to be contravariant!");
 
-    struct property_t {
-      using this_tensor_t = T;
-    };
+  struct property_t {
+    using this_tensor_t = T;
+  };
 
 
-  // no symmetry reconstruction here, please cast expression to given symmetry
   // no symmetry reconstruction here, please cast expression to given symmetry
 
   scalar_advective_derivative_t(size_t const grid_index_, ptr_t const grid_ptr_, beta_t const & beta_,
@@ -130,25 +133,25 @@ public:
                "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
   operator[](size_t i) const = delete;
 
-  // Template recursion to compute the contracted advective derivative
+  //! Template recursion to compute the contracted advective derivative
   // The bool is only a placeholder, since explicit specialization is forbidden in class scope
   template<bool _, size_t index>
   struct beta_dE {
     public:
       static inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta, fd_u_t const & fdu, fd_d_t const & fdd,
-      	                                                          ptr_t grid_ptr, size_t const grid_index) {
+      	                                                                 ptr_t grid_ptr, size_t const grid_index) {
 #if !defined(TENSORS_VECTORIZED) || !defined(TENSORS_AUTOVEC)
        return beta_dE<_,index-1>::value(beta,fdu,fdd,grid_ptr,grid_index)
             + beta.template evaluate<index>()
             * ((beta.template evaluate<index>() > 0)
-            ? fdu.template diff<index>(grid_ptr,grid_index)
-      	    : fdd.template diff<index>(grid_ptr,grid_index));
+               ? fdu.template diff<index>(grid_ptr,grid_index)
+      	       : fdd.template diff<index>(grid_ptr,grid_index));
 #else
        T tmp;
        where(beta.template evaluate<index>() > 0) | tmp = fdu.template diff<index>(grid_ptr,grid_index);
        where(beta.template evaluate<index>() < 0) | tmp = fdd.template diff<index>(grid_ptr,grid_index);
        return beta_dE<_,index-1>::value(beta,fdu,fdd,grid_ptr,grid_index)
-	      +beta.template evaluate<index>() *tmp;
+	          + beta.template evaluate<index>() * tmp;
 #endif
     }
   };
@@ -156,17 +159,17 @@ public:
   struct beta_dE<_,0> {
     public:
       static inline __attribute__ ((always_inline)) decltype(auto) value(beta_t const & beta , fd_u_t const & fdu, fd_d_t const & fdd,
-	                                                                ptr_t const grid_ptr, size_t const grid_index){
+	                                                                       ptr_t const grid_ptr, size_t const grid_index){
 #if !defined(TENSORS_VECTORIZED) || !defined(TENSORS_AUTOVEC)
        return beta.template evaluate<0>()
             * ((beta.template evaluate<0>() > 0)
-            ? fdu.template diff<0>(grid_ptr,grid_index)
-  	        : fdd.template diff<0>(grid_ptr,grid_index));
+               ? fdu.template diff<0>(grid_ptr,grid_index)
+  	           : fdd.template diff<0>(grid_ptr,grid_index));
 #else
        T tmp;
        where(beta.template evaluate<0>() > 0) | tmp = fdu.template diff<0>(grid_ptr,grid_index);
        where(beta.template evaluate<0>() < 0) | tmp = fdd.template diff<0>(grid_ptr,grid_index);
-       return beta.template evaluate<0>() *tmp;
+       return beta.template evaluate<0>() * tmp;
 #endif
     }
   };
