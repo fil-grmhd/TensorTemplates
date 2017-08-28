@@ -42,15 +42,14 @@ public:
   template <size_t c_index ,size_t ind0, size_t... Indices>
   struct compute_new_cindex{
     static constexpr size_t value = compute_new_cindex<c_index,Indices...>::value
-      		  + generic_symmetry_t<property_t::ndim,property_t::rank>::template uncompress_index<ind0,
+      		  + generic_symmetry_t<property_t::ndim,property_t::rank>::template uncompress_index<property_t::rank -sizeof...(Indices)-1,
 				      c_index>::value *
-		           (utilities::static_pow<property_t::ndim,
-		            property_t::rank -sizeof...(Indices)-1>::value);
+		           (utilities::static_pow<property_t::ndim, ind0>::value);
   };
   template <size_t c_index, size_t ind0>
   struct compute_new_cindex<c_index,ind0>{
-    static constexpr size_t value = generic_symmetry_t<property_t::ndim,property_t::rank>::template uncompress_index<ind0,c_index>::value
-				    *(utilities::static_pow<property_t::ndim,property_t::rank-1>::value);
+    static constexpr size_t value = generic_symmetry_t<property_t::ndim,property_t::rank>::template uncompress_index<property_t::rank-1,c_index>::value
+				    *(utilities::static_pow<property_t::ndim, ind0>::value);
   };
 
 
