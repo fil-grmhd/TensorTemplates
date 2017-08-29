@@ -3,6 +3,12 @@
 //#define TENSORS_VECTORIZED
 #include "../tensor_templates.hh"
 
+double rel_diff(double d0, double d1) {
+  return 2 * std::abs(d0 - d1)
+         / (std::abs(d0) + std::abs(d1));
+}
+constexpr double eps = 1e-14;
+
 
 template<typename node_t, size_t order>
 struct test_diff {
@@ -151,11 +157,8 @@ struct check_slopes : public index_recursion_t<check_slopes<T,print>,0,T::ncomp-
   inline static decltype(auto) call(T const & t, V const & slopes) {
     constexpr int sym_cind = T::symmetry_t::template index_from_generic<cind>::value;
     constexpr int comp_index = T::symmetry_t::template uncompress_index<0,sym_cind>::value;
-    constexpr double eps = 1e-14;
 
-    double rel_err = 2 * std::abs(t.template evaluate<cind>() - slopes.template evaluate<comp_index>())
-                       / (std::abs(t.template evaluate<cind>()) + std::abs(slopes.template evaluate<comp_index>()));
-
+    double rel_err = rel_diff(t.template evaluate<cind>(),slopes.template evaluate<comp_index>());
     if(rel_err > eps) {
       if(print) {
         std::cout << "slope wrong [" << cind << "],";
@@ -175,7 +178,7 @@ int main(){
 
   using namespace tensors;
 
-  constexpr int i0 = 1;
+  constexpr int i0 = 0;
   constexpr int i1 = 2;
 
   using sym_type = sym_tensor3_t<double,i0,i1,lower_t,lower_t,lower_t,lower_t>;
@@ -204,6 +207,14 @@ int main(){
   auto gen_reorder3 = evaluate(reorder_index<2,0,3,1>(gen_reorder2));
 
   std::cout << "Comparing gen to reordered... " << gen_to_gen_comp<gen_type,gen_type>::traverse<op_and>(gen,gen_reorder3) << std::endl;
+
+  auto sym_reorder0 = reorder_index<1,0,2,3>(sym);
+  auto sym_reorder1 = reorder_index<0,1,3,2>(sym_reorder0);
+  auto sym_reorder2 = reorder_index<0,2,1,3>(sym_reorder1);
+//  auto sym_reorder3 = evaluate(sym2_cast<i0,i1>(reorder_index<2,0,3,1>(sym_reorder2)));
+  auto sym_reorder3 = evaluate(reorder_index<2,0,3,1>(sym_reorder2));
+
+  std::cout << "Comparing sym to reordered... " << gen_to_gen_comp<sym_type,gen_type>::traverse<op_and>(sym,sym_reorder3) << std::endl;
 
   constexpr int num_points = 20;
   double vec0[num_points], vec1[num_points], vec2[num_points];
