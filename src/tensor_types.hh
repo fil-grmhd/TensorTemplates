@@ -18,90 +18,239 @@
 #ifndef TENSORS_TYPES_HH
 #define TENSORS_TYPES_HH
 
-#include <cctk.h>
-
-#include <type_traits>
-#include <boost/type_traits.hpp>
-
 namespace tensors {
-// Forward declarations of tensor types
-
-// General tensor type, see tensor.hh
-template<typename T, size_t ndim, size_t rank, typename symmetry_t>
+// forward decleration of general tensor class
+template <typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typename index_t_,
+          size_t ndim_>
 class general_tensor_t;
 
-// Symmetry types, see symmetry_type.hh
-class generic_symmetry_t;
-class symmetric2_symmetry_t;
+namespace general {
+// forward decleration of metric type
+template <typename T>
+class metric_tensor3_t;
 
-// old types, deprecated
-template<typename T, size_t ndim, size_t rank>
-  using generic = general_tensor_t<T,ndim,rank,generic_symmetry_t>;
-template<typename T, size_t ndim, size_t rank>
-  using symmetric2 = general_tensor_t<T,ndim,rank,symmetric2_symmetry_t>;
-template<size_t ndim>
-class metric;
-template<size_t ndim>
-class inv_metric;
+// general tensor typedefs
 
-// Tensor specializations
-template<typename T, size_t ndim>
-  using vector_t = general_tensor_t<T,ndim,1,generic_symmetry_t>;
+// Tensor of rank index types, e.g. lower_t, upper_t, ...
+template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
+using tensor_t = general_tensor_t<T, frame_t_, generic_symmetry_t<ndim_,sizeof...(ranks)>,
+                                  sizeof...(ranks),
+                                  std::tuple<ranks...>, ndim_>;
 
-template<typename T, size_t ndim, size_t rank>
-  using generic_tensor_t = general_tensor_t<T,ndim,rank,generic_symmetry_t>;
-template<typename T, size_t ndim, size_t rank>
-  using symmetric_tensor_t = general_tensor_t<T,ndim,rank,symmetric2_symmetry_t>;
+// Symmetric tensor in two indices of rank index types, e.g. lower_t, upper_t, ...
+template <typename T, size_t ndim_, typename frame_t_, size_t i0, size_t i1, typename... ranks>
+using sym2_tensor_t = general_tensor_t<T, frame_t_, sym2_symmetry_t<ndim_,sizeof...(ranks),i0,i1>,
+                                  sizeof...(ranks),
+                                  std::tuple<ranks...>, ndim_>;
 
-template<size_t ndim>
-  using metric_t = metric<ndim>;
-template<size_t ndim>
-  using inv_metric_t = inv_metric<ndim>;
+template <typename T, size_t ndim_, typename frame_t_>
+using vector_t = tensor_t<T, ndim_, frame_t_, upper_t>;
 
+template <typename T> using vector3_t = tensor_t<T, 3, eulerian_t, upper_t>;
 
-// Tensor fields, see tensor_field.hh
-template<typename tensor_t>
-class tensor_field_t;
+template <typename T> using covector3_t = tensor_t<T, 3, eulerian_t, lower_t>;
 
-template<typename data_t>
-class scalar_field_t;
+template <typename T, typename... ranks>
+using tensor3_t = tensor_t<T, 3, eulerian_t, ranks...>;
 
-template<size_t ndim>
-  using metric_field_t = tensor_field_t<metric_t<ndim>>;
+template <typename T> using vector4_t = tensor_t<T, 4, eulerian_t, upper_t>;
 
-template<size_t ndim>
-  using inv_metric_field_t = tensor_field_t<inv_metric_t<ndim>>;
+template <typename T> using covector4_t = tensor_t<T, 4, eulerian_t, lower_t>;
 
-template<typename T, size_t ndim, size_t rank>
-  using generic_field_t = tensor_field_t<generic_tensor_t<T,ndim,rank>>;
+template <typename T, typename... ranks>
+using tensor4_t = tensor_t<T, 4, eulerian_t, ranks...>;
 
-template<typename T, size_t ndim, size_t rank>
-  using symmetric_field_t = tensor_field_t<symmetric_tensor_t<T,ndim,rank>>;
+template <typename T> using cm_vector3_t = tensor_t<T, 3, comoving_t, upper_t>;
 
-template<typename T, size_t ndim>
-  using vector_field_t = tensor_field_t<vector_t<T,ndim>>;
+template <typename T>
+using cm_covector3_t = tensor_t<T, 3, comoving_t, lower_t>;
 
+template <typename T, typename... ranks>
+using cm_tensor3_t = tensor_t<T, 3, comoving_t, ranks...>;
 
-// Common data type, both implicitly convertable to (e.g. int,float -> float)
-// Used in trace/contraction routines to get a well defined result
-template<typename tensor0_t, typename tensor1_t>
-  using common_data_t = typename boost::common_type<
-                                   typename tensor0_t::data_t,
-                                   typename tensor1_t::data_t
-                                 >::type;
+template <typename T> using cm_vector4_t = tensor_t<T, 4, comoving_t, upper_t>;
 
-// Common tensor type, using above common data type definition
-template<typename tensor0_t, typename tensor1_t>
-  using common_tensor_t = generic_tensor_t<
-                            common_data_t<
-                              tensor0_t,
-                              tensor1_t
-                            >,
-                            tensor0_t::ndim,
-                            tensor0_t::rank
-                          >;
+template <typename T>
+using cm_covector4_t = tensor_t<T, 4, comoving_t, lower_t>;
+
+template <typename T, typename... ranks>
+using cm_tensor4_t = tensor_t<T, 4, comoving_t, ranks...>;
+
+template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
+using sym_tensor3_t = sym2_tensor_t<T, 3, eulerian_t, i0, i1, ranks...>;
+template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
+using sym_tensor4_t = sym2_tensor_t<T, 4, eulerian_t, i0, i1, ranks...>;
+
+// component type
+template<typename T>
+using comp_t = T;
+
+// scalar loop inc
+template<typename T>
+constexpr size_t loop_inc = 1;
+} // namespace general
+
+#if !defined(TENSORS_VECTORIZED) || !defined(TENSORS_AUTOVEC)
+
+// import general tensor typedefs to tensors namespace,
+// if vectorization or autovec is disabled
+using namespace general;
+
+#endif // !TENSORS_VECTORIZED || !TENSORS_AUTOVEC
+
+#ifdef TENSORS_VECTORIZED
+// Vectorized tensor typedefs
+
+// Tensor of rank index types, e.g. lower_t, upper_t, ...
+template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
+using tensor_vt = general_tensor_t<Vc::Vector<T>, frame_t_, generic_symmetry_t<ndim_,sizeof...(ranks)>,
+                                  sizeof...(ranks),
+                                  std::tuple<ranks...>, ndim_>;
+
+// Symmetric tensor in two indices of rank index types, e.g. lower_t, upper_t, ...
+template <typename T, size_t ndim_, typename frame_t_, size_t i0, size_t i1, typename... ranks>
+using sym2_tensor_vt = general_tensor_t<Vc::Vector<T>, frame_t_, sym2_symmetry_t<ndim_,sizeof...(ranks),i0,i1>,
+                                  sizeof...(ranks),
+                                  std::tuple<ranks...>, ndim_>;
+
+template <typename T, size_t ndim_, typename frame_t_>
+using vector_vt = tensor_vt<T, ndim_, frame_t_, upper_t>;
+
+template <typename T>
+using vector3_vt = tensor_vt<T, 3, eulerian_t, upper_t>;
+
+template <typename T>
+using covector3_vt = tensor_vt<T, 3, eulerian_t, lower_t>;
+
+template <typename T, typename... ranks>
+using tensor3_vt = tensor_vt<T, 3, eulerian_t, ranks...>;
+
+template <typename T>
+using vector4_vt = tensor_vt<T, 4, eulerian_t, upper_t>;
+
+template <typename T>
+using covector4_vt = tensor_vt<T, 4, eulerian_t, lower_t>;
+
+template <typename T, typename... ranks>
+using tensor4_vt = tensor_vt<T, 4, eulerian_t, ranks...>;
+
+template <typename T>
+using cm_vector3_vt = tensor_vt<T, 3, comoving_t, upper_t>;
+
+template <typename T>
+using cm_covector3_vt = tensor_vt<T, 3, comoving_t, lower_t>;
+
+template <typename T, typename... ranks>
+using cm_tensor3_vt = tensor_vt<T, 3, comoving_t, ranks...>;
+
+template <typename T>
+using cm_vector4_vt = tensor_vt<T, 4, comoving_t, upper_t>;
+
+template <typename T>
+using cm_covector4_vt = tensor_vt<T, 4, comoving_t, lower_t>;
+
+template <typename T, typename... ranks>
+using cm_tensor4_vt = tensor_vt<T, 4, comoving_t, ranks...>;
+
+template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
+using sym_tensor3_vt = sym2_tensor_vt<T, 3, eulerian_t, i0, i1, ranks...>;
+template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
+using sym_tensor4_vt = sym2_tensor_vt<T, 4, eulerian_t, i0, i1, ranks...>;
+
+// component type
+template<typename T>
+using comp_vt = Vc::Vector<T>;
+
+// loop vector increment
+template<typename T>
+constexpr size_t loop_vinc = Vc::Vector<T>::Size;
+
+// metric type
+template<typename T>
+using metric_tensor3_vt = general::metric_tensor3_t<Vc::Vector<T>>;
+
+// deliver vectorized types as default types if code is vectorization agnostic
+#ifdef TENSORS_AUTOVEC
+
+template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
+using tensor_t = tensor_vt<T, ndim_, frame_t_, ranks...>;
+
+template <typename T, size_t ndim_, typename frame_t_, size_t i0, size_t i1, typename... ranks>
+using sym2_tensor_t = sym2_tensor_vt<T, ndim_, frame_t_, i0, i1, ranks...>;
+
+template <typename T, size_t ndim_, typename frame_t_>
+using vector_t = tensor_vt<T, ndim_, frame_t_, upper_t>;
+
+template <typename T>
+using vector3_t = tensor_vt<T, 3, eulerian_t, upper_t>;
+
+template <typename T>
+using covector3_t = tensor_vt<T, 3, eulerian_t, lower_t>;
+
+template <typename T, typename... ranks>
+using tensor3_t = tensor_vt<T, 3, eulerian_t, ranks...>;
+
+template <typename T>
+using vector4_t = tensor_vt<T, 4, eulerian_t, upper_t>;
+
+template <typename T>
+using covector4_t = tensor_vt<T, 4, eulerian_t, lower_t>;
+
+template <typename T, typename... ranks>
+using tensor4_t = tensor_vt<T, 4, eulerian_t, ranks...>;
+
+template <typename T>
+using cm_vector3_t = tensor_vt<T, 3, comoving_t, upper_t>;
+
+template <typename T>
+using cm_covector3_t = tensor_vt<T, 3, comoving_t, lower_t>;
+
+template <typename T, typename... ranks>
+using cm_tensor3_t = tensor_vt<T, 3, comoving_t, ranks...>;
+
+template <typename T>
+using cm_vector4_t = tensor_vt<T, 4, comoving_t, upper_t>;
+
+template <typename T>
+using cm_covector4_t = tensor_vt<T, 4, comoving_t, lower_t>;
+
+template <typename T, typename... ranks>
+using cm_tensor4_t = tensor_vt<T, 4, comoving_t, ranks...>;
+
+template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
+using sym_tensor3_t = sym2_tensor_vt<T, 3, eulerian_t, i0, i1, ranks...>;
+template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
+using sym_tensor4_t = sym2_tensor_vt<T, 4, eulerian_t, i0, i1, ranks...>;
+
+// component type
+template<typename T>
+using comp_t = comp_vt<T>;
+
+// loop vector increment
+template<typename T>
+constexpr size_t loop_inc = loop_vinc<T>;
+
+// metric type
+template<typename T>
+using metric_tensor3_t = metric_tensor3_vt<T>;
+
+#endif // TENSORS_AUTOVEC
+
+#endif // TENSORS_VECTORIZED
+
+//Kronecker delta has no underlying data structure so define globally.
+
+namespace general{
+template <typename T, typename frame_t_,  size_t ndim_>
+class kronecker_t;
+}
+
+template<typename T>
+using kronecker3_t = general::kronecker_t<T,any_frame_t,3>;
+template<typename T>
+using kronecker4_t = general::kronecker_t<T,any_frame_t,4>;
+
 
 } // namespace tensors
-
 
 #endif

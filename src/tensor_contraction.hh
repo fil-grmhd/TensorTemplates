@@ -1,184 +1,224 @@
-//  TensorTemplates: C++ tensor class templates
-//  Copyright (C) 2016, Ludwig Jens Papenfort
-//                      <papenfort@th.physik.uni-frankfurt.de>
-//
-//  This program is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License as published by
-//  the Free Software Foundation, either version 3 of the License, or
-//  (at your option) any later version.
-//
-//  This program is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU General Public License for more details.
-//
-//  You should have received a copy of the GNU General Public License
-//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#ifndef TENSORS_CONTRACTION_HH
-#define TENSORS_CONTRACTION_HH
-
-#include <type_traits>
-#include <boost/type_traits.hpp>
-
-#include "tensor_types.hh"
+#ifndef TENSOR_CONTRACT_HH
+#define TENSOR_CONTRACT_HH
 
 namespace tensors {
 
-// Some typedefs for better readability
+//! Expression template for generic tensor contractions
+template <size_t i1, size_t i2, typename E1, typename E2>
+class tensor_contraction_t
+    : public tensor_expression_t<tensor_contraction_t<i1, i2, E1, E2>> {
+  // references to both tensors
+  E1 const &_u;
+  E2 const &_v;
 
-// Contracted tensor type, tensor of rank n+m-2
-template<typename tensor0_t, typename tensor1_t>
-  using contracted_tensor_t = generic<
-                                common_data_t<tensor0_t,tensor1_t>,
-                                tensor0_t::ndim,
-                                tensor0_t::rank+tensor1_t::rank-2
-                              >;
+public:
+  // Contraction changes the tensor type, thus a special property class is
+  // needed.
+  // It gives all the relevant properties of a tensor resulting from a
+  // contraction
+  using property_t = contraction_property_t<i1,i2,E1,E2>;
 
-// Contraction return type, contracted vectors give a scalar
-template<typename tensor0_t, typename tensor1_t>
-  using contraction_result_t = typename std::conditional<
-                                          ((tensor0_t::rank == 1) &&
-                                          (tensor1_t::rank == 1)),
-                                          common_data_t<tensor0_t,tensor1_t>,
-                                          contracted_tensor_t<tensor0_t,tensor1_t>
-                                        >::type;
+  tensor_contraction_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
 
-///////////////////////////////////////////////////////////////////////////////
-// Tensor contractions
-///////////////////////////////////////////////////////////////////////////////
+  [[deprecated("Do not access the tensor expression via the [] operator, this "
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
+  operator[](size_t i) const = delete;
 
-// Contractor type, defining a general contraction over two indices
-/*
- *
- *  This is needed to get a return type specialization, since
- *
- *  (tensor,tensor) -> tensor
- *  (vector,vector) -> scalar
- *
- *  and there is no function template partial specialization
- *  (an alternative would be to use std::enable_if).
- *
- *  The vector specialization can be found further down below.
- *
- *  \tparam c_index0 contracted index of first tensor
- *  \tparam c_index1 contracted index of second tensor
- *  \tparam data0_t redundant parameter, needed for vector specialization
- *  \tparam data1_t redundant parameter, needed for vector specialization
- *  \tparam ndim redundant parameter, needed for vector specialization
- *  \tparam tensor0_t tensor type
- *  \tparam tensor1_t tensor type
- */
+  //! Sum of contracted components for a specific index computed by a template
+  //! recursion
+  template <int N, int stride1, int stride2> struct recursive_contract {
+    template <typename A, typename B>
+    static inline __attribute__ ((always_inline)) decltype(auto) contract(A const &_u, B const &_v) {
+      return recursive_contract<(N - 1), stride1, stride2>::contract(_u, _v)
+           + _u.template evaluate<
+                 stride1 +
+                 N * utilities::static_pow<property_t::ndim, i1>::value>()
+           * _v.template evaluate<
+                 stride2 +
+                 N * utilities::static_pow<property_t::ndim, i2>::value>();
+    };
+  };
+  template <int stride1, int stride2>
+  struct recursive_contract<0, stride1, stride2> {
+    template <typename A, typename B>
+    static inline __attribute__ ((always_inline)) decltype(auto) contract(A const &_u, B const &_v) {
+      return _u.template evaluate<stride1>() * _v.template evaluate<stride2>();
+    };
+  };
 
-template<size_t c_index0, size_t c_index1, typename data0_t, typename data1_t, size_t ndim, typename tensor0_t, typename tensor1_t>
+  template <size_t i, size_t index, size_t ndim>
+  static constexpr size_t restore_index_and_compute_stride() {
+    // if contracted index is the first one, just shift index by one power of ndim
+    return (i == 0)
+               ? index * ndim
+    // if not, shift all indices above by one power of ndim and keep the rest
+               : (index - (index % utilities::static_pow<ndim, i>::value)) *
+                         ndim +
+                     (index % utilities::static_pow<ndim, i>::value);
+  }
+
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
+
+    // TUPLE FREE TENSOR CONTRACTION, fix for problems with intel compiler
+    constexpr size_t max_pow_E1 = E1::property_t::rank - 1;
+
+    constexpr size_t ndim = E1::property_t::ndim;
+
+    // index is compressed with respect to E1::rank + E2::rank - 2 indices
+    // get part of index which belongs to E1 (without the contracted index)
+    constexpr size_t index_part_E1 =
+        index % (utilities::static_pow<ndim, max_pow_E1>::value);
+
+    // get part of index which belongs to E2 (without the contracted index)
+    constexpr size_t index_part_E2 = index - index_part_E1;
+    // normalize, i.e. remove excess powers of ndim coming from E1
+    constexpr size_t index_part_E2_n =
+        index_part_E2 / utilities::static_pow<ndim, max_pow_E1>::value;
+
+    // restore indices and compute the corresponding strides
+    constexpr size_t stride_1 =
+        restore_index_and_compute_stride<i1, index_part_E1, ndim>();
+    constexpr size_t stride_2 =
+        restore_index_and_compute_stride<i2, index_part_E2_n, ndim>();
+
+    static_assert(
+        stride_1 >= 0,
+        "contraction: stride is less than zero, this shouldn't happen");
+    static_assert(
+        stride_2 >= 0,
+        "contraction: stride is less than zero, this shouldn't happen");
+
+    // Compute sum over contracted index for index'th component by template
+    // recursion
+    return recursive_contract<property_t::ndim - 1, stride_1,
+                              stride_2>::contract(_u, _v);
+  }
+};
+
+//! Helper structure to compute contraction of two vectors by a template recursion
+template <typename E1, typename E2, size_t N>
+struct scalar_contraction_recursion {
+  static inline __attribute__ ((always_inline)) decltype(auto) contract(E1 const &u, E2 const &v) {
+    return scalar_contraction_recursion<E1,E2,N-1>::contract(u,v)
+         + u.template evaluate<N>() * v.template evaluate<N>();
+  }
+};
+// Termination definition of recursion
+template<typename E1, typename E2>
+struct scalar_contraction_recursion<E1,E2,0> {
+  static inline __attribute__ ((always_inline)) decltype(auto) contract(E1 const &u, E2 const &v) {
+    return u.template evaluate<0>() * v.template evaluate<0>();
+  }
+};
+
+//! Wrapper type for contraction with specialization for two vectors
+//  General contraction expression result
+template<typename E1, typename E2, size_t contracted_rank, size_t i1, size_t i2>
 struct contractor_t {
+  static inline __attribute__ ((always_inline)) decltype(auto) contract(E1 const &u, E2 const &v) {
+    // CHECK: should we check here for any index order?
+    return tensor_contraction_t<i1, i2, E1, E2>(u, v);
+  }
+};
+// Scalar contraction result (for E1,2::rank == 1)
+template<typename E1, typename E2, size_t i1, size_t i2>
+struct contractor_t<E1,E2,0,i1,i2> {
+  static_assert(is_reducible<i1,i2,E1,E2>::value, "Can only contract covariant with contravariant indices!");
 
-  static inline contracted_tensor_t<tensor0_t,tensor1_t>
-  contract(tensor0_t const & tensor0, tensor1_t const & tensor1) {
-    // Resulting tensor
-    contracted_tensor_t<tensor0_t,tensor1_t> contracted;
-
-    // Get multiindex objects, representing the natural indices
-    auto tensor0_mi = tensor0.get_mi();
-    auto tensor1_mi = tensor1.get_mi();
-
-    // Loop over all indices of the resulting tensor
-    for(auto c_mi = contracted.get_mi(); !c_mi.end(); ++c_mi) {
-      // Distribute current index to tensor indices
-      size_t offset_index = 0;
-      tensor0_mi.distribute<c_index0>(c_mi,offset_index);
-      tensor1_mi.distribute<c_index1>(c_mi,offset_index);
-
-      // Compute contraction for fixed indices of resulting tensor
-      // DO NOT REMOVE: the temporary seems to speed up the sum,
-      //                probably due to less index transformation in total.
-      common_data_t<tensor0_t,tensor1_t> sum = 0;
-      for(size_t i = 0; i<tensor0_t::ndim; ++i) {
-        // Fix contraction index
-        tensor0_mi[c_index0] = i;
-        tensor1_mi[c_index1] = i;
-
-        // Add product of the components
-        sum += tensor0(tensor0_mi)*tensor1(tensor1_mi);
-      }
-      contracted(c_mi) = sum;
-    }
-    return contracted;
+  static inline __attribute__ ((always_inline)) decltype(auto) contract(E1 const &u, E2 const &v) {
+    return scalar_contraction_recursion<E1,E2,E1::property_t::ndim-1>::contract(u,v);
   }
 };
 
-// Contractor type partial specialization for two vectors
-/*
- *  \tparam c_index0 contracted index of first tensor
- *  \tparam c_index1 contracted index of second tensor
- *  \tparam data0_t redundant parameter, needed for vector specialization
- *  \tparam data1_t redundant parameter, needed for vector specialization
- *  \tparam ndim redundant parameter, needed for vector specialization
- */
-
-template<size_t c_index0, size_t c_index1, typename data0_t, typename data1_t, size_t ndim>
-struct contractor_t<
-         c_index0,
-         c_index1,
-         data0_t,
-         data1_t,
-         ndim,
-         generic<data0_t,ndim,1>,
-         generic<data1_t,ndim,1>> {
-
-  static inline common_data_t<generic<data0_t,ndim,1>,generic<data1_t,ndim,1>>
-  contract(generic<data0_t,ndim,1> const & vec0, generic<data1_t,ndim,1> const & vec1) {
-
-    // Resulting scalar
-    common_data_t<
-      generic<data0_t,ndim,1>,
-      generic<data1_t,ndim,1>
-    > contracted;
-
-    contracted = 0;
-    for(size_t i = 0; i<ndim; ++i) {
-      contracted += vec0[i]*vec1[i];
-    }
-    return contracted;
-  }
-};
-
-// Contracts two tensors over one index and returns resulting tensor
-/*
- *
- *  Calls a (specialized) contractor type (s. above)
- *
- *  \tparam c_index0 contracted index of first tensor
- *  \tparam c_index1 contracted index of second tensor
- *  \tparam tensor0_t tensor type, automatically deduced from argument
- *  \tparam tensor1_t tensor type, automatically deduced from argument
- */
-template<size_t c_index0, size_t c_index1, typename tensor0_t, typename tensor1_t>
-inline contraction_result_t<tensor0_t,tensor1_t>
-contract(tensor0_t const & tensor0, tensor1_t const & tensor1) {
-
-  // Consistency checks
-  static_assert(tensor0_t::ndim == tensor1_t::ndim,
-                "utils::tensor::contract: "
-                "Number of dimensions of contracted tensors do not match.");
-  static_assert(tensor0_t::rank > c_index0,
-            "utils::tensor::contract: "
-            "Contracted index must be strictly smaller than rank of tensor.");
-  static_assert(tensor1_t::rank > c_index1,
-            "utils::tensor::contract: "
-            "Contracted index must be strictly smaller than rank of tensor.");
-
-  return contractor_t<
-           c_index0,
-           c_index1,
-           typename tensor0_t::data_t,
-           typename tensor1_t::data_t,
-           tensor0_t::ndim,
-           tensor0_t,
-           tensor1_t
-         >::contract(tensor0,tensor1);
+//! Contraction "operator" for two tensor expressions
+//  Returns a tensor_contraction_t or a scalar (if E1,2::rank == 1)
+template <size_t i1 = 0, size_t i2 = 0, typename E1, typename E2>
+decltype(auto) inline __attribute__ ((always_inline)) contract(E1 const &u, E2 const &v) {
+  return contractor_t<E1,
+                      E2,
+                      E1::property_t::rank + E2::property_t::rank - 2,
+                      i1,
+                      i2
+                      >::contract(u, v);
 }
 
-} // namespace tensor
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// CHECK: can we inherit from general tensor_contraction_t above?
+//! Expression template for raising and lowering indices
+template <size_t i2, typename E1, typename E2>
+class metric_contraction_t
+    : public tensor_expression_t<metric_contraction_t<i2, E1, E2>> {
+  // references to both tensors
+  E1 const &_u;
+  E2 const &_v;
+
+public:
+  // Contraction changes the tensor type, thus a special property class is
+  // needed.
+  // It gives all the relevant properties of a tensor resulting from a
+  // contraction
+  using property_t = metric_contraction_property_t<i2, E1, E2>;
+  static constexpr size_t i1 = 0;
+
+  metric_contraction_t(E1 const &u, E2 const &v) : _u(u), _v(v){};
+
+  [[deprecated("Do not access the tensor expression via the [] operator, this "
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
+  operator[](size_t i) const = delete;
+
+  //! Sum of contracted components for a specific index computed by a template
+  //! recursion
+  template <int N, int stride1, int stride2> struct recursive_contract {
+    template <typename A, typename B>
+    static inline __attribute__ ((always_inline)) decltype(auto) contract(A const &_u, B const &_v) {
+      return recursive_contract<(N - 1), stride1, stride2>::contract(_u, _v) +
+             _u.template evaluate<
+                 stride1 +
+                 N * utilities::static_pow<property_t::ndim, i1>::value>() *
+                 _v.template evaluate<
+                     stride2 +
+                     N * utilities::static_pow<property_t::ndim, i2>::value>();
+    };
+  };
+  template <int stride1, int stride2>
+  struct recursive_contract<0, stride1, stride2> {
+    template <typename A, typename B>
+    static inline __attribute__ ((always_inline)) decltype(auto) contract(A const &_u, B const &_v) {
+      return _u.template evaluate<stride1>() * _v.template evaluate<stride2>();
+    };
+  };
+
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
+    // TUPLE FREE TENSOR CONTRACTION, fix for problems with intel compiler
+    constexpr size_t max_pow_E1 = E1::property_t::rank - 1;
+
+    constexpr size_t ndim = E1::property_t::ndim;
+
+    // CHECK: please add some comments
+    constexpr size_t index_part_less_i2 =
+        index % (utilities::static_pow<ndim, i2 + 1>::value);
+    constexpr size_t index_part_less_i2_m1 =
+        index % (utilities::static_pow<ndim, i2>::value);
+    constexpr size_t index_part_metric =
+        (index_part_less_i2 - index_part_less_i2_m1) /
+        (utilities::static_pow<ndim, i2>::value);
+
+    constexpr size_t stride_1 = index_part_metric * ndim;
+    constexpr size_t stride_2 =
+        index - (index_part_less_i2 - index_part_less_i2_m1);
+
+    static_assert(
+        stride_1 >= 0,
+        "contraction: stride is less than zero, this shouldn't happen");
+    static_assert(
+        stride_2 >= 0,
+        "contraction: stride is less than zero, this shouldn't happen");
+
+    return recursive_contract<ndim - 1, stride_1, stride_2>::contract(_u, _v);
+  }
+};
+}
 #endif

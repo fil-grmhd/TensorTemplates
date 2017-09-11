@@ -1,183 +1,112 @@
-//  TensorTemplates: C++ tensor class templates
-//  Copyright (C) 2016, Ludwig Jens Papenfort
-//                      <papenfort@th.physik.uni-frankfurt.de>
-//
-//  This program is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU General Public License as published by
-//  the Free Software Foundation, either version 3 of the License, or
-//  (at your option) any later version.
-//
-//  This program is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//  GNU General Public License for more details.
-//
-//  You should have received a copy of the GNU General Public License
-//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-#ifndef TENSORS_TRACE_HH
-#define TENSORS_TRACE_HH
-
-#include <type_traits>
-#include <boost/type_traits.hpp>
-
-#include "tensor_types.hh"
+#ifndef TENSOR_TRACE_HH
+#define TENSOR_TRACE_HH
 
 namespace tensors {
 
-//! Traced tensor type, tensor of rank n-2
-template<typename tensor_t>
-  using traced_tensor_t = generic<
-                            typename tensor_t::data_t,
-                            tensor_t::ndim,
-                            tensor_t::rank-2
-                          >;
+//! Expression template for generic tensor trace
+template<size_t i1, size_t i2, typename E>
+class tensor_trace_t : public tensor_expression_t<tensor_trace_t<i1,i2,E> > {
+    // references to traced tensor
+    E const& _u;
 
-//! Trace return type, traced rank 2 tensors give a scalar
-template<typename tensor_t>
-  using trace_result_t = typename std::conditional<
-                                    (tensor_t::rank == 2),
-                                    typename tensor_t::data_t,
-                                    traced_tensor_t<tensor_t>
-                                  >::type;
+  public:
+    // Trace changes the tensor type, thus a special property class is needed.
+    // It gives all the relevant properties of a tensor resulting from a trace
+    using property_t = trace_property_t<i1,i2,E>;
 
+    tensor_trace_t(E const& u) : _u(u) {};
 
-//! Tracer type, defining a trace over two indices for a general tensor
-/*!
- *
- *  This is needed to get a return type specialization, since
- *
- *  tensor<rank > 2> -> tensor<rank-2>
- *  tensor<rank == 2> -> scalar
- *
- *  and there is no function template partial specialization
- *  (an alternative would be to use std::enable_if).
- *
- *  The rank == 2 specialization can be found further down below.
- *
- *  \tparam t_index0 first traced index
- *  \tparam t_index1 second traced index
- *  \tparam data_t redundant parameter, needed for rank == 2 specialization
- *  \tparam ndim redundant parameter, needed for rank == 2 specialization
- *  \tparam tensor_t tensor type
- */
+    [[deprecated("Do not access the tensor expression via the [] operator, this is UNDEFINED!")]]
+    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const = delete;
 
-template<size_t t_index0, size_t t_index1, typename data_t, size_t ndim, typename tensor_t>
-struct tracer_t {
-  static inline traced_tensor_t<tensor_t>
-  trace(tensor_t const & tensor) {
-
-    // Resulting tensor
-    traced_tensor_t<tensor_t> traced;
-
-    // Get multiindex object, representing the natural indices
-    auto tensor_mi = tensor.get_mi();
-
-    // Loop over all indices of traced tensor
-    for(auto traced_mi = traced.get_mi(); !traced_mi.end(); ++traced_mi) {
-      // Distribute traced index on input tensor
-      tensor_mi.distribute<t_index0,t_index1>(traced_mi);
-
-      // Compute trace for fixed indices of resulting tensor
-      // DO NOT REMOVE: the temporary seems to speed up the sum,
-      //                probably due to less index transformation in total.
-      data_t sum = 0;
-      for(size_t i = 0; i<ndim; ++i) {
-        // Fix traced indices
-        tensor_mi[t_index0] = i;
-        tensor_mi[t_index1] = i;
-
-        // Add component to trace
-        sum += tensor(tensor_mi);
+    //! Sum of traced components for a specific index computed by a template recursion
+    template<size_t N, size_t stride>
+    struct recursive_component_trace {
+      template<typename A>
+      static inline __attribute__ ((always_inline)) decltype(auto) trace(A const & _u) {
+        return recursive_component_trace<(N-1),stride>::trace(_u)
+             + _u.template evaluate<
+                             stride
+                           + N*utilities::static_pow<property_t::ndim,i1>::value
+                           + N*utilities::static_pow<property_t::ndim,i2>::value
+                           >();
       }
-      traced(traced_mi) = sum;
+    };
+    template<size_t stride>
+    struct recursive_component_trace<0,stride> {
+      template<typename A>
+      static inline __attribute__ ((always_inline)) decltype(auto) trace(A const & _u) {
+        return _u.template evaluate<stride>();
+      }
+    };
+
+    template<size_t index>
+    inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
+      // tuple free stride computation
+      constexpr size_t ndim = E::property_t::ndim;
+
+      // get unaffected part of index
+      constexpr size_t stride_1 = index % utilities::static_pow<ndim,i1>::value;
+      // get intermediate part of index which gets shifted by ndim
+      constexpr size_t stride_2 = (index % utilities::static_pow<ndim,i2-1>::value) - stride_1;
+      // get trailing part of index which gets shifted by ndim^2
+      constexpr size_t stride_3 = index - stride_1 - stride_2;
+
+      // compute the actual stride
+      constexpr size_t stride = stride_1 + stride_2*ndim + stride_3*ndim*ndim;
+
+      static_assert(stride >= 0,
+                    "trace: stride is less than zero, this shouldn't happen");
+
+      // Compute sum over traced indices for index in a template recursion
+      return recursive_component_trace<property_t::ndim-1,stride>::trace(_u);
     }
-    return traced;
+};
+
+//! Helper structure to compute trace of rank 2 tensor by a template recursion
+template <typename E, size_t N>
+struct scalar_trace_recursion {
+  static inline __attribute__ ((always_inline)) decltype(auto) trace(E const &u) {
+    return scalar_trace_recursion<E,N-1>::trace(u)
+         + u.template evaluate<generic_symmetry_t<E::property_t::ndim,2>
+                                 ::template compressed_index<N,N>::value>();
+  }
+};
+// Termination definition of recursion
+template<typename E>
+struct scalar_trace_recursion<E,0> {
+  static inline __attribute__ ((always_inline)) decltype(auto) trace(E const &u) {
+    return u.template evaluate<0>();
   }
 };
 
-//! Tracer type partial specializations for rank == 2 tensors
-/*!
- *  \tparam t_index0 first traced index
- *  \tparam t_index1 second traced index
- *  \tparam data_t redundant parameter, needed for rank == 2 specialization
- *  \tparam ndim redundant parameter, needed for rank == 2 specialization
- */
-
-template<size_t t_index0, size_t t_index1, typename data_t, size_t ndim>
-struct tracer_t<
-         t_index0,
-         t_index1,
-         data_t,
-         ndim,
-         symmetric2<data_t,ndim,2>> {
-
-  static inline data_t trace(symmetric2<data_t,ndim,2> const & sym_tensor) {
-    data_t result = 0;
-    // Sum diagonal terms
-    for(size_t i = 0; i<ndim; ++i) {
-      result += sym_tensor(i,i);
-    }
-    return result;
+//! Wrapper type for trace with specialization for rank 2 tensor
+//  General trace expression result
+template<typename E, size_t rank, size_t i1, size_t i2>
+struct tracer_t {
+  static inline __attribute__ ((always_inline)) decltype(auto) trace(E const &u) {
+    // automatically change indices if they are not in ascending order
+    return tensor_trace_t<(i1 < i2) ? i1 : i2,(i1 > i2) ? i1 : i2,E>(u);
   }
 };
 
-template<size_t t_index0, size_t t_index1, typename data_t, size_t ndim>
-struct tracer_t<
-         t_index0,
-         t_index1,
-         data_t,
-         ndim,
-         generic<data_t,ndim,2>> {
+// Scalar trace result (for E::rank == 2)
+template<typename E, size_t i1, size_t i2>
+struct tracer_t<E,2,i1,i2> {
+  static_assert(is_reducible<i1,i2,E,E>::value, "Can only contract covariant with contravariant indices!");
 
-  static inline data_t trace(generic<data_t,ndim,2> const & tensor) {
-    data_t result = 0;
-    // Sum diagonal terms
-    for(size_t i = 0; i<ndim; ++i) {
-      result += tensor(i,i);
-    }
-    return result;
+  static inline __attribute__ ((always_inline)) decltype(auto) trace(E const &u) {
+    return scalar_trace_recursion<E,E::property_t::ndim-1>::trace(u);
   }
 };
 
-
-//! Traces a general tensor over two indices and returns resulting tensor
-/*!
- *
- *  Calls a (specialized) tracer type (s. above)
- *
- *  \tparam t_index0 first traced index
- *  \tparam t_index1 second traced index
- *  \tparam tensor_t tensor type, automatically deduced from argument
- */
-
-template<size_t t_index0, size_t t_index1, typename tensor_t>
-inline trace_result_t<tensor_t>
-trace(tensor_t const & tensor) {
-
-  // Consistency checks
-  static_assert(tensor_t::rank >= 2,
-                "utils::tensor::trace: "
-                "Traced tensor must be of rank >= 2.");
-  static_assert(tensor_t::rank > t_index0,
-                "utils::tensor::trace: "
-                "Traced index must be strictly smaller than rank of tensor.");
-  static_assert(tensor_t::rank > t_index1,
-                "utils::tensor::trace: "
-                "Traced index must be strictly smaller than rank of tensor.");
-  static_assert(t_index0 != t_index1,
-                "utils::tensor::trace: "
-                "Traced indinces must differ.");
-
-  return tracer_t<
-           t_index0,
-           t_index1,
-           typename tensor_t::data_t,
-           tensor_t::ndim,
-           tensor_t
-         >::trace(tensor);
+//! Trace "operator" for a tensor expression
+//  Returns a tensor_trace_t or a scalar (if E::rank == 2)
+template<size_t i1 = 0, size_t i2 = 1, typename E>
+decltype(auto)
+inline __attribute__ ((always_inline)) trace(E const &u) {
+  return tracer_t<E,E::property_t::rank,i1,i2>::trace(u);
 }
 
-} // namespace tensors
-
+}
 #endif

@@ -1,0 +1,13 @@
+# Schedule definitions for thorn THC_grsource_templates
+
+###############################################################################
+# Storage
+###############################################################################
+
+STORAGE: rhs_scon_temp
+STORAGE: rhs_tau_temp
+
+SCHEDULE THC_GRSource_temp IN GRSOURCE_COMP
+{
+    LANG: C
+} "Computes the geometric source terms"

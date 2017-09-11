@@ -1,6 +1,8 @@
 //  TensorTemplates: C++ tensor class templates
-//  Copyright (C) 2016, Ludwig Jens Papenfort
+//  Copyright (C) 2017, Ludwig Jens Papenfort
 //                      <papenfort@th.physik.uni-frankfurt.de>
+//  Copyright (C) 2017, Elias Roland Most
+//                      <emost@th.physik.uni-frankfurt.de>
 //
 //  This program is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -15,447 +17,299 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 #ifndef TENSORS_TENSOR_HH
 #define TENSORS_TENSOR_HH
 
+#include <array>
 #include <cmath>
-#include <cctk.h>
-
-#include "utilities.hh"
-#include "multiindex.hh"
-#include "symmetry_types.hh"
-#include "tensor_types.hh"
-
-#include <tensor_contraction.hh>
-#include <tensor_trace.hh>
-#include <utils.hh>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <iostream>
 
 namespace tensors {
 
-///////////////////////////////////////////////////////////////////////////////
-//! Tensor class
-///////////////////////////////////////////////////////////////////////////////
-/*!
- *  \tparam T data type
- *  \tparam ndim_ number of dimensions
- *  \tparam rank_ tensor rank
- *  \tparam symmetry_t_ tensor symmetry type
- */
-template<typename T, size_t ndim_, size_t rank_, typename symmetry_t_>
-class general_tensor_t {
-    public:
-        //! Data type
-        typedef T data_t;
-        //! This tensor type
-        typedef symmetry_t_ symmetry_t;
+template <typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typename index_t_,
+          size_t ndim_>
+class general_tensor_t
+    : public tensor_expression_t<
+          general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t_, ndim_>> {
+public:
+  //! Data type
+  using data_t = T;
+  //! tensor indices encoded in a std::tuple type
+  //! In fact we only care about the type here, which should be of size rank
+  using index_t = index_t_;
+  //! frame type
+  using frame_t = frame_t_;
+
+  //! Rank of the tensor
+  static constexpr size_t rank = rank_; // std::tuple_size<index_t>::value;
+  //! Number of dimensions
+  static constexpr size_t ndim = ndim_;
+
+  //! This tensor has no symmetry
+  using symmetry_t = symmetry_t_;
+
+  //! Number of degrees of freedom
+  static constexpr size_t ndof = symmetry_t::ndof;
+  //! Number of components (disregarding any symmetries)
+  static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
+
+  //! This tensor type
+  using this_tensor_t = general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t, ndim_>;
+
+  //! Fill property type with constexpr and types above (used in expressions)
+  using property_t = general_tensor_property_t<this_tensor_t>;
+
+protected:
+  //! Data storage for ndof elements
+  std::array<T, ndof> m_data{};
+
+public:
+  //! Constructor from tensor expression given a index sequence
+  //! Generates components from arbitrary tensor expression type (e.g. chained
+  //! ones)
+
+  // This is not a copy constructor, leading to (hopefully optimal) default copy
+  // and move constructors
+  // C++14 way to completely get around the for loop to initialize component
+  // array
+  template <typename E, std::size_t... I>
+  general_tensor_t(tensor_expression_t<E> const &tensor_expression,
+                   std::index_sequence<I...>)
+      : m_data({tensor_expression.template evaluate<
+                  symmetry_t::template index_to_generic<I>::value>()...}) {
+
+//    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
+//                  "Frame types don't match!");
+
+    static_assert(ndim == E::property_t::ndim, "Dimensions don't match!");
+
+    static_assert(rank == E::property_t::rank, "Ranks don't match!");
+
+    static_assert(std::is_same<data_t, typename E::property_t::data_t>::value,
+                  "Data types don't match!");
+
+    static_assert(
+        compare_index_types<index_t, typename E::property_t::index_t,
+                                 rank>(),
+        "Index types do not match (e.g. lower_t != upper_t)!");
+  };
+
+  //! Constructor from tensor expression
+  //! Calls constructor above with index sequence Indices
+  template <typename E, typename Indices = std::make_index_sequence<ndof>>
+  general_tensor_t(tensor_expression_t<E> const &tensor_expression)
+      : this_tensor_t(tensor_expression, Indices{}){};
+
+  //! Constructor from parameters
+  // SYM: this is in weird order for sym2 and rank > 2, first sym indices than rest
+  template <typename... TArgs>
+  general_tensor_t(data_t first_elem, TArgs... elem) : m_data({first_elem, static_cast<data_t>(elem)...}) {
+	  static_assert(sizeof...(TArgs)==ndof-1, "You need to specify exactly ndof arguments!");
+	  static_assert(utilities::all_true<(std::is_convertible<data_t,TArgs>::value)...>::value, "The data_types are incompatible!");
+  };
+
+  general_tensor_t() : m_data({0}){};
+
+  //! Computes the GENERIC compressed index associated with the given indices
+  //  All members are expecting a generic compressed index,
+  //  which is then transformed internally.
+  //  This makes it easier to write generic tensor expressions.
+  //  The symmetry dependence of ndof makes sure that only ndof expressions
+  //  are evaluated, when a tensor is instantiated.
+  template <size_t a, size_t... indices>
+  static inline __attribute__ ((always_inline)) constexpr size_t compressed_index() {
+    static_assert(rank == sizeof...(indices) + 1,
+                  "Number of indices must match rank!");
+    static_assert(utilities::all_true<(indices < ndim)...>::value,
+                  "Trying to access index > ndim!");
+
+    return generic_symmetry_t<ndim,rank>::template compressed_index<a, indices...>::value;
+  }
+
+  //! Access the components of a tensor using (compile-time) natural indices
+  //  This gives back a non-const reference, since this is a evaluated expression
+  template <size_t... Ind>
+  inline __attribute__ ((always_inline)) data_t & c() {
+    return this->cc<compressed_index<Ind...>()>();
+  }
+  //  This gives back a const reference, for const tensors
+  template <size_t... Ind>
+  inline __attribute__ ((always_inline)) data_t c() const {
+    return this->cc<compressed_index<Ind...>()>();
+  }
+
+  //! Get component reference at (generic) compressed index position
+  //  Needed if one wants to assign something to a specific element,
+  //  given a generic compressed index.
+  template<size_t index>
+  inline __attribute__ ((always_inline)) data_t & cc() {
+    return m_data[symmetry_t::template index_from_generic<index>::value];
+  }
+  template<size_t index>
+  inline __attribute__ ((always_inline)) data_t cc() const {
+    return m_data[symmetry_t::template index_from_generic<index>::value];
+  }
+
+// CHECK: OBSOLETE but still used in expressions test, we should convert that and remove this
+// in that case we also need to remove it in expression base class
+  //! Access the components of a tensor using a (generic) compressed index
+  inline __attribute__ ((always_inline)) T & operator[](size_t const a) {
+    return m_data[a];
+  }
+  //! Access the components of a tensor using a (generic) compressed index
+  inline __attribute__ ((always_inline)) T const & operator[](size_t const a) const {
+    return m_data[a];
+  }
+
+  //! Evaluation routine for expression templates
+  //  This is ALWAYS expecting index to be a GENERIC compressed index,
+  //  which is then transformed to the respective symmetry compressed index
+  template <size_t index> inline __attribute__ ((always_inline)) T const & evaluate() const {
+    return m_data[symmetry_t::template index_from_generic<index>::value];
+  }
+
+  //! Set (part) of the tensor to the given expression
+  //  Make sure to set a symmetric tensor to a symmetric tensor (cast), to remove redundant assignements
+  template<int... Ind, typename E>
+  inline __attribute__ ((always_inline)) void set(E const &e) {
+    // count free indices
+    constexpr size_t num_free_indices = count_free_indices<Ind...>::value;
+    constexpr size_t max_shift = (property_t::ndim - E::property_t::ndim);
+
+    static_assert(sizeof...(Ind) == property_t::rank, "You need to specify rank indices.");
+    static_assert(num_free_indices == E::property_t::rank, "You need to specify rank free indices.");
+    static_assert(utilities::all_true<
+                    ((Ind >= -static_cast<int>(max_shift + 1)) &&
+                     (Ind < static_cast<int>(property_t::ndim)))...
+                  >::value,
+                  "Indices out of range. Use 0..ndim-1 to fix indices "
+                  "and -1...-(ndim - ndim_in)-1 to indicate a (shifted) free index.");
+    static_assert(E::property_t::ndim <= property_t::ndim, "Can't set a lower dim tensor to a higher dim.");
+
+    // recursion over all components of e, sets all matching components of *this
+    setter_t<E,this_tensor_t,E::property_t::ndof-1,Ind...>::set(e,*this);
+  }
+
+  //! Sets tensor to zero for all components
+  inline __attribute__ ((always_inline)) void zero() {
+    for (size_t i = 0; i < ndof; ++i) {
+      m_data[i] = 0;
+    }
+  }
+
+  //! Compute the Frobenius norm
+  inline __attribute__ ((always_inline)) data_t norm() {
+    data_t squared_sum = sum_squares<this_tensor_t,ncomp-1>::sum(*this);
+    return std::sqrt(squared_sum);
+  }
+
+  //! Comparison routine to a tensor of the same kind
+  //  This is not optimally optimized, please change if used in non-debugging environment
+  //  Any expression passed as argument is converted to this_tensor_t automagically (if possible)
+  template<int exponent>
+  inline __attribute__ ((always_inline)) decltype(auto) compare_components(this_tensor_t const& t) {
+    double eps = 1.0/utilities::static_pow<10,exponent>::value;
+
+    double max_rel_err = 0;
+    for(size_t i = 0; i<ndof; ++i) {
+      auto rel_err_ = 2*std::abs(m_data[i] - t[i])
+                      /(std::abs(m_data[i])+std::abs(t[i]));
+      #ifdef TENSORS_VECTORIZED
+      double rel_err = rel_err_.max();
+      #else
+      double rel_err = rel_err_;
+      #endif
+      if(rel_err > max_rel_err) {
+        max_rel_err = rel_err;
+      }
+      if(rel_err > eps) {
+        return std::pair<bool,decltype(rel_err)>(false,rel_err);
+      }
+    }
+    return std::pair<bool,decltype(max_rel_err)>(true,max_rel_err);
+  }
+
+  //! Easy print to out stream, e.g. std::out
+  //  This stream operator is automatically called for any tensor expression,
+  //  since they are implicitly convertible (this_tensor_t constructor from an expression).
+  friend std::ostream& operator<< (std::ostream& stream, const this_tensor_t& t) {
+    stream << "[";
+    for(size_t i = 0; i<ndof-1; ++i) {
+      stream << t[i] << " ";
+    }
+    stream << t[ndof-1] << "]";
+    return stream;
+  }
 
 
-        //! Rank of the tensor
-        static size_t constexpr rank = rank_;
-        //! Number of dimensions
-        static size_t constexpr ndim = ndim_;
-        //! Number of degrees of freedom
-        static size_t constexpr ndof = symmetry_t::template ndof<ndim,rank>();
+  //Add expression to tensor
+  template <typename E>
+  inline __attribute__ ((always_inline)) void operator+=(tensor_expression_t<E> const &tensor_expression){
+//    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
+//                  "Frame types don't match!");
+
+    static_assert(ndim == E::property_t::ndim, "Dimensions don't match!");
+
+    static_assert(rank == E::property_t::rank, "Ranks don't match!");
+
+    static_assert(std::is_same<data_t, typename E::property_t::data_t>::value,
+                  "Data types don't match!");
+
+    static_assert(
+        compare_index_types<index_t, typename E::property_t::index_t,
+                                 rank>(),
+        "Index types do not match (e.g. lower_t != upper_t)!");
+
+   add_to_tensor_t<E,this_tensor_t,ndof-1>::add_to_tensor(tensor_expression,*this);
+
+  };
+
+  //Subtract expression from tensor
+  template <typename E>
+  inline __attribute__ ((always_inline)) void operator-=(tensor_expression_t<E> const &tensor_expression){
+//    static_assert(std::is_same<frame_t, typename E::property_t::frame_t>::value,
+//                  "Frame types don't match!");
+
+    static_assert(ndim == E::property_t::ndim, "Dimensions don't match!");
+
+    static_assert(rank == E::property_t::rank, "Ranks don't match!");
+
+    static_assert(std::is_same<data_t, typename E::property_t::data_t>::value,
+                  "Data types don't match!");
+
+    static_assert(
+        compare_index_types<index_t, typename E::property_t::index_t,
+                                 rank>(),
+        "Index types do not match (e.g. lower_t != upper_t)!");
+
+   subtract_from_tensor_t<E,this_tensor_t,ndof-1>::subtract_from_tensor(tensor_expression,*this);
+
+  };
 
 
-        //! This tensor type
-        typedef general_tensor_t<T,ndim,rank,symmetry_t> this_tensor_t;
+  //Multiply tensor with scalar
+  inline __attribute__ ((always_inline)) void operator*=(data_t const & lambda){
 
+   multiply_tensor_with_t<this_tensor_t,ndof-1>::multiply_tensor_with(lambda,*this);
 
+  };
 
-        //! Computes the compressed index associated with the given indices
-        //! Delegates the call to symmetry type
-        template<typename... indices_t>
-        static inline size_t compress_indices(indices_t... indices) {
-          return symmetry_t::template compress_indices<ndim,rank>(indices...);
-        }
-
-        //! Computes the compressed index from the given multiindex object
-        //! Delegates the call to symmetry type
-        static inline size_t compress_indices(multiindex_t<ndim,rank> const & mi) {
-          return symmetry_t::template compress_indices<ndim,rank>(mi);
-        }
-
-        //! Create a suitable multiindex
-        static inline multiindex_t<ndim,rank> get_mi() {
-          multiindex_t<ndim,rank> mi;
-          return mi;
-        }
-
-        //! Create an identity tensor
-        static inline this_tensor_t get_id() {
-          this_tensor_t id;
-          id.set_to_zero();
-          auto id_mi = id.get_mi();
-
-          for(size_t i = 0; i<ndim; ++i) {
-            for(size_t j = 0; j<rank; ++j) {
-              id_mi[j] = i;
-            }
-            id(id_mi) = 1;
-          }
-          return id;
-        }
-
-        //! Sets tensor to zero for all components
-        inline void set_to_zero() {
-          for(size_t i = 0; i<ndof; ++i) {
-            m_data[i] = 0;
-          }
-        }
-
-        //! Contract with another tensor and return resulting tensor
-        /*!
-         *
-         *  Implementation can be found in tensor_contraction.hh
-         *
-         *  \tparam c_index0 contracted index of this tensor
-         *  \tparam c_index1 contracted index of the other tensor
-         *  \tparam tensor_t tensor type, automatically deduced from argument
-         */
-        template<size_t c_index0, size_t c_index1, typename tensor_t>
-        inline contraction_result_t<this_tensor_t,tensor_t>
-               contract(tensor_t const & tensor) const {
-            return tensors::contract<c_index0,c_index1>(*this,tensor);
-        }
-
-        //! Trace over the two given indices and return resulting tensor
-        /*!
-         *
-         *  Implementation can be found in tensor_trace.hh
-         *
-         *  \tparam t_index0 first index to trace
-         *  \tparam t_index1 second index to trace
-         */
-        template<size_t t_index0, size_t t_index1>
-        inline trace_result_t<this_tensor_t> trace() const {
-          return tensors::trace<t_index0,t_index1>(*this);
-        }
-
-        //! Returns a lower dimensional sub-tensor
-        /*!
-         * \tparam max_dim number of dimensions of subtensor
-         */
-        template<size_t max_dim>
-        inline general_tensor_t<T,max_dim,rank,symmetry_t> subtensor() {
-          general_tensor_t<T,max_dim,rank,symmetry_t> subtensor;
-          auto subtensor_mi = subtensor.get_mi();
-
-          // compute dimensional offset
-          size_t index_diff = ndim-max_dim;
-          for(auto mi = get_mi(); !mi.end(); ++mi) {
-            // copy value to subtensor if all indices are greater
-            if(mi > index_diff-1) {
-              for(size_t i = 0; i<rank; ++i) {
-                subtensor_mi[i] = mi[i]-index_diff;
-              }
-              subtensor(subtensor_mi) = this->operator()(mi);
-            }
-          }
-          return subtensor;
-        }
-
-        //! Compute component-wise difference with tensor of same type
-        /*!
-         *  Only defined for same tensor type, for now
-         */
-        inline this_tensor_t operator-(const this_tensor_t& tensor) {
-            this_tensor_t diff;
-            for(size_t i = 0; i<ndof; ++i) {
-              diff[i] = this->operator[](i)-tensor[i];
-            }
-            return diff;
-        }
-
-        //! Compute component-wise sum with tensor of same type
-        /*!
-         *  Only defined for same tensor type, for now
-         */
-        inline this_tensor_t operator+(const this_tensor_t& tensor) {
-            this_tensor_t sum;
-            for(size_t i = 0; i<ndof; ++i) {
-              sum[i] = this->operator[](i)+tensor[i];
-            }
-            return sum;
-        }
-
-        //! Compute component-wise scalar multiplication
-        template<typename scalar_t_>
-        friend inline this_tensor_t operator*(const scalar_t_ scalar, const this_tensor_t& tensor) {
-          this_tensor_t result;
-          for(auto mi = tensor.get_mi(); !mi.end(); ++mi) {
-            result(mi) = scalar*tensor(mi);
-          }
-          return result;
-        }
-        template<typename scalar_t_>
-        friend inline this_tensor_t operator*(const this_tensor_t& tensor, const scalar_t_ scalar) {
-          this_tensor_t result;
-          for(auto mi = tensor.get_mi(); !mi.end(); ++mi) {
-            result(mi) = scalar*tensor(mi);
-          }
-          return result;
-        }
-
-        //! Compute component-wise scalar division
-        template<typename scalar_t_>
-        friend inline this_tensor_t operator/(const scalar_t_ scalar, const this_tensor_t& tensor) {
-          this_tensor_t result;
-          for(auto mi = tensor.get_mi(); !mi.end(); ++mi) {
-            result(mi) = tensor(mi)/scalar;
-          }
-          return result;
-        }
-        template<typename scalar_t_>
-        friend inline this_tensor_t operator/(const this_tensor_t& tensor, const scalar_t_ scalar) {
-          this_tensor_t result;
-          for(auto mi = tensor.get_mi(); !mi.end(); ++mi) {
-            result(mi) = tensor(mi)/scalar;
-          }
-          return result;
-        }
-
-        //! Compute the Euclidean or Frobenius norm
-        inline data_t norm() {
-            data_t squared_sum = 0;
-            for(auto mi = get_mi(); !mi.end(); ++mi) {
-              squared_sum += this->operator()(mi)*this->operator()(mi);
-            }
-            return std::sqrt(squared_sum);
-        }
-
-        //! Access the components of a tensor using a compressed index
-        /*!
-         *  The data is stored in a row major format
-         */
-        inline T & operator[](size_t const a) {
-            return m_data[a];
-        }
-        //! Access the components of a tensor using a compressed index
-        /*!
-         *  The data is stored in a row major format
-         */
-        inline T const & operator[](size_t const a) const {
-            return m_data[a];
-        }
-
-        //! Access the components of a tensor using the natural indices
-        template<typename... indices_t>
-        inline T & operator()(size_t const a, indices_t... indices) {
-            static_assert(sizeof...(indices)+1 == rank,
-                "utils::tensor::tensor: Number of indices must match rank.");
-
-            return this->operator[](compress_indices(a,indices...));
-        }
-        //! Access the components of a tensor using the natural indices
-        template<typename... indices_t>
-        inline T const & operator()(size_t const a, indices_t... indices) const {
-            static_assert(sizeof...(indices)+1 == rank,
-                "utils::tensor::tensor: Number of indices must match rank.");
-
-            return this->operator[](compress_indices(a,indices...));
-        }
-
-        //! Access the components of a tenser using multiindex objects
-        inline T const & operator()(multiindex_t<ndim,rank> const & mi) const {
-            return this->operator[](compress_indices(mi));
-        }
-        //! Access the components of a tenser using multiindex objects
-        inline T & operator()(multiindex_t<ndim,rank> const & mi) {
-            return this->operator[](compress_indices(mi));
-        }
-        //! Comparison routine
-        template<int exponent,typename tensor_t>
-        inline bool compare_components(tensor_t const & tensor) {
-          static_assert(rank == tensor_t::rank,
-                        "utils::tensor::tensor: "
-                        "Tensor ranks have to match.");
-          static_assert(ndim == tensor_t::ndim,
-                        "utils::tensor::compare_tensors: "
-                        "Tensor dimensions have to match.");
-          common_data_t<this_tensor_t,tensor_t> eps = 1.0/utilities::static_pow<10,exponent>::result;
-
-          for(auto mi = get_mi(); !mi.end(); ++mi) {
-            if(std::abs(this->operator()(mi) - tensor(mi)) > eps) {
-              return false;
-            }
-          }
-          return true;
-        }
-    private:
-        T m_data[ndof];
-
-};
-
-
-///////////////////////////////////////////////////////////////////////////////
-//! Metric tensor
-///////////////////////////////////////////////////////////////////////////////
-template<size_t ndim>
-class metric;
-
-template<size_t ndim>
-class inv_metric;
-
-//! Spatial metric
-template<>
-class metric<3>: public symmetric2<CCTK_REAL, 3, 2> {
-    public:
-        //! Computes the metric determinant at the given point
-        inline CCTK_REAL det() const {
-            return utils::metric::spatial_det(
-                    this->operator[](0),
-                    this->operator[](1),
-                    this->operator[](2),
-                    this->operator[](3),
-                    this->operator[](4),
-                    this->operator[](5));
-        }
-};
-
-//! Inverse of the spatial metric
-template<>
-class inv_metric<3>: public symmetric2<CCTK_REAL, 3, 2> {
-    public:
-        //! Constructs the inverse metric from the metric
-        inline void from_metric(
-                CCTK_REAL const gxx,
-                CCTK_REAL const gxy,
-                CCTK_REAL const gxz,
-                CCTK_REAL const gyy,
-                CCTK_REAL const gyz,
-                CCTK_REAL const gzz) {
-            CCTK_REAL const det = utils::metric::spatial_det(
-                    gxx, gxy, gxz, gyy, gyz, gzz);
-            CCTK_REAL uxx, uxy, uxz, uyy, uyz, uzz;
-            utils::metric::spatial_inv(det,
-                    gxx, gxy, gxz, gyy, gyz, gzz,
-                    &uxx, &uxy, &uxz, &uyy, &uyz, &uzz);
-            this->operator[](0) = uxx;
-            this->operator[](1) = uxy;
-            this->operator[](2) = uxz;
-            this->operator[](3) = uyy;
-            this->operator[](4) = uyz;
-            this->operator[](5) = uzz;
-        }
-        //! Constructs the inverse metric from the metric and the spatial det
-        inline void from_metric(
-                CCTK_REAL const gxx,
-                CCTK_REAL const gxy,
-                CCTK_REAL const gxz,
-                CCTK_REAL const gyy,
-                CCTK_REAL const gyz,
-                CCTK_REAL const gzz,
-                CCTK_REAL const det) {
-            CCTK_REAL uxx, uxy, uxz, uyy, uyz, uzz;
-            utils::metric::spatial_inv(det,
-                    gxx, gxy, gxz, gyy, gyz, gzz,
-                    &uxx, &uxy, &uxz, &uyy, &uyz, &uzz);
-            this->operator[](0) = uxx;
-            this->operator[](1) = uxy;
-            this->operator[](2) = uxz;
-            this->operator[](3) = uyy;
-            this->operator[](4) = uyz;
-            this->operator[](5) = uzz;
-        }
-        //! Constructs the inverse metric from the metric
-        inline void from_metric(metric<3> const & g) {
-            CCTK_REAL const det = g.det();
-            CCTK_REAL uxx, uxy, uxz, uyy, uyz, uzz;
-            utils::metric::spatial_inv(det,
-                    g[0], g[1], g[2], g[3], g[4], g[5],
-                    &uxx, &uxy, &uxz, &uyy, &uyz, &uzz);
-            this->operator[](0) = uxx;
-            this->operator[](1) = uxy;
-            this->operator[](2) = uxz;
-            this->operator[](3) = uyy;
-            this->operator[](4) = uyz;
-            this->operator[](5) = uzz;
-        }
-        //! Constructs the inverse metric from the metric and the spatial det
-        inline void from_metric_det(metric<3> const & g, CCTK_REAL const det) {
-            CCTK_REAL uxx, uxy, uxz, uyy, uyz, uzz;
-            utils::metric::spatial_inv(det,
-                    g[0], g[1], g[2], g[3], g[4], g[5],
-                    &uxx, &uxy, &uxz, &uyy, &uyz, &uzz);
-            this->operator[](0) = uxx;
-            this->operator[](1) = uxy;
-            this->operator[](2) = uxz;
-            this->operator[](3) = uyy;
-            this->operator[](4) = uyz;
-            this->operator[](5) = uzz;
-        }
-};
-
-//! Spacetime metric
-template<>
-class metric<4>: public symmetric2<CCTK_REAL, 4, 2> {
-    public:
-        //! Construct the spacetime metric from the ADM quantities
-        inline void from_adm(
-                CCTK_REAL const alp,
-                CCTK_REAL const betax,
-                CCTK_REAL const betay,
-                CCTK_REAL const betaz,
-                CCTK_REAL const gxx,
-                CCTK_REAL const gxy,
-                CCTK_REAL const gxz,
-                CCTK_REAL const gyy,
-                CCTK_REAL const gyz,
-                CCTK_REAL const gzz) {
-            CCTK_REAL g[16];
-            utils::metric::spacetime(alp, betax, betay, betaz, gxx, gxy, gxz,
-                    gyy, gyz, gzz, &g[0]);
-            for(int a = 0; a < 4; ++a)
-            for(int b = a; b < 4; ++b) {
-                this->operator()(a, b) = g[4*a + b];
-            }
-        }
-        inline metric<3> spatial_metric() const {
-            metric<3> s_metric;
-            for(int a = 1; a < 4; ++a)
-            for(int b = 1; b < 4; ++b) {
-                s_metric(a-1,b-1) = this->operator()(a,b);
-            }
-            return s_metric;
-        }
-};
-
-//! Spacetime inverse metric
-template<>
-class inv_metric<4>: public symmetric2<CCTK_REAL, 4, 2> {
-    public:
-        //! Construct the spacetime metric from the ADM quantities
-        inline void from_adm(
-                CCTK_REAL const alp,
-                CCTK_REAL const betax,
-                CCTK_REAL const betay,
-                CCTK_REAL const betaz,
-                CCTK_REAL const gxx,
-                CCTK_REAL const gxy,
-                CCTK_REAL const gxz,
-                CCTK_REAL const gyy,
-                CCTK_REAL const gyz,
-                CCTK_REAL const gzz) {
-            CCTK_REAL u[16];
-            utils::metric::spacetime_upper(alp, betax, betay,
-                    betaz, gxx, gxy, gxz, gyy, gyz, gzz, &u[0]);
-            for(int a = 0; a < 4; ++a)
-            for(int b = a; b < 4; ++b) {
-                this->operator()(a, b) = u[4*a + b];
-            }
-        }
-        inline inv_metric<3> spatial_metric() const {
-            inv_metric<3> s_metric;
-            for(int a = 1; a < 4; ++a)
-            for(int b = 1; b < 4; ++b) {
-                s_metric(a-1,b-1) = this->operator()(a,b);
-            }
-            return s_metric;
-        }
+  //Divide tensor by scalar
+  inline __attribute__ ((always_inline)) void operator/=(data_t const & lambda){
+  
+   multiply_tensor_with_t<this_tensor_t,ndof-1>::multiply_tensor_with(1./lambda,*this);
+ 
+  };
 
 };
+
+template<typename E>
+typename E::property_t::this_tensor_t evaluate(E const & u){
+   return typename E::property_t::this_tensor_t(u);
+}
 
 
 } // namespace tensors

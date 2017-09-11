@@ -1,5 +1,4 @@
-REQUIRES Boost FDCore CPPUtils
-
+REQUIRES libVc
 PROVIDES TensorTemplates
 {
     SCRIPT
