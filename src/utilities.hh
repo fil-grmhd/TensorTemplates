@@ -19,6 +19,7 @@
 #define TENSORS_UTILITIES_HH
 
 #include <tuple>
+#include <iostream>
 
 namespace tensors {
 namespace utilities {
