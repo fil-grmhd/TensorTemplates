@@ -70,7 +70,7 @@ class tensor_field_expression_t : public tensor_expression_t<tensor_field_expres
     template<typename E>
     inline __attribute__ ((always_inline)) void operator=(E const &e) {
       // this only a check of compatibility of T and E
-      using property_check = arithmetic_expression_property_t<T,E>;
+      /// using property_check = arithmetic_expression_property_t<T,E>; // unused
       // evaluate expression for every component
       // and set GFs at index i to that value
 

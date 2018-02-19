@@ -90,18 +90,18 @@ class tensor_advective_derivative_t
     : public tensor_expression_t<tensor_advective_derivative_t<E,array_t, beta_t ,fd_u_t, fd_d_t>> {
 
 protected:
+  //! Index representing a position on the grid
+  size_t const grid_index;
+  //! Array to the raw tensor field component pointers
+  array_t const & ptr_array;
+  //! Array to the beta vector field component pointers
+  beta_t const & beta;
+  
   //! Objects defining the (up/down) finite difference operation on a pointer
   //  Must implement a diff<direction>(pointer,grid_index) member function
   //  returning the finite difference at the point represented by index
   fd_u_t const & fdu;
   fd_d_t const & fdd;
-
-  //! Array to the raw tensor field component pointers
-  array_t const & ptr_array;
-  //! Array to the beta vector field component pointers
-  beta_t const & beta;
-  //! Index representing a position on the grid
-  size_t const grid_index;
 
 public:
   // A partial derivative adds a new lower index (to the right),
