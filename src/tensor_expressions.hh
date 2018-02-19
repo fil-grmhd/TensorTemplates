@@ -189,6 +189,12 @@ operator/(E const &u, typename E::property_t::data_t const &v) {
   return tensor_scalar_div_t<E>(u, v);
 }
 
+template <typename E>
+tensor_scalar_mult_t<E> const inline __attribute__ ((always_inline)) operator-(E const &u) {
+  typename E::property_t::data_t minus(-1);
+  return tensor_scalar_mult_t<E>(minus, u);
+}
+
 } // namespace tensors
 
 #endif
