@@ -311,6 +311,13 @@ typename E::property_t::this_tensor_t evaluate(E const & u){
    return typename E::property_t::this_tensor_t(u);
 }
 
+/**
+ * Bugfix to allow expressions such as evaluate(contract(...) + 42);
+ **/
+double evaluate(double const & u){
+   return u;
+}
+
 
 } // namespace tensors
 

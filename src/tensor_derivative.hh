@@ -9,18 +9,19 @@ class tensor_partial_derivative_t
     : public tensor_expression_t<tensor_partial_derivative_t<E,array_t,fd_t>> {
 
 protected:
+//  static_assert(fd_t::d == 1, "Only first derivatives are well defined."
+//                              "Anything higher needs to be constructed more carefully.");
+
+  //! Index representing a position on the grid
+  size_t const grid_index;
+  
+  //! Array to the raw tensor field component pointers
+  array_t const & ptr_array;
+  
   //! Object defining a finite difference operation on a pointer
   //  Must implement a diff<direction>(pointer,grid_index) member function
   //  returning the finite difference at the point represented by index
   fd_t const & fd;
-
-//  static_assert(fd_t::d == 1, "Only first derivatives are well defined."
-//                              "Anything higher needs to be constructed more carefully.");
-
-  //! Array to the raw tensor field component pointers
-  array_t const & ptr_array;
-  //! Index representing a position on the grid
-  size_t const grid_index;
 
   //! Helper struct to generate the index type
   //  Useless atm, because d > 1 is not consistent
