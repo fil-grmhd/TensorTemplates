@@ -1,0 +1,142 @@
+\documentclass{article}
+\usepackage{amsmath,hyperref,enumitem,braket}
+
+\begin{document}
+
+\title{TensorTemplates: Quick reference} 
+\author{SvenK}
+
+\maketitle
+
+\begin{abstract}
+This is a first approach for a quick
+reference for the TensorTemplates code,
+available at
+\url{https://bitbucket.org/infrastructuredevs/tensortemplates}
+\end{abstract}
+
+\section{Basics}
+
+Mathematically, a tensor is defined as $T^{a,b,c,\dots}_{i,j,k,\dots}$ with two independent sets of covariant and contravariant indices, i.e. the index lists have an order only within the list of covariant and the list of contravariant indices However, sometimes it is perferable to define a total order of indices. This is what TensorTemplate does. Such an object could be written as $T_a^{~b} {~}_c^{~d}$ instead of $T_{ac}^{bd}$. Especially, this attemp allows to write \texttt{T(a,b,c,d)}, resembling the notation and idea of a simple n-dimensional array.
+
+We therefore define a Tensor in TensorTemplates as an n-dimensional list where each index has a \emph{type} which defines it either as an upper or lower index (covariant or contravariant, respectively).
+
+\section{Short reference}
+In this reference, each index $x_i$ is
+associated with a type. The type decides whether
+the index shall be up or down. The fact that
+the indices are put as lower indices in the
+notation of this section is irrelevant.
+
+\begin{description}[style=nextline]
+\item[\texttt{contract$\braket{i,j}(T,U)$}]
+Does the contraction of the $i$'s index of $T$ with the $j$'s index of $U$. That is,
+\begin{align*}
+&\phantom{=}
+\mathtt{contract}\braket{i,j}\left(
+   T_{a_1,a_2,a_3,\dots,a_N},
+   U_{b_1,b_2,b_3,\dots,b_M}
+\right) \\
+&=
+\sum_c
+T_{a_1,\dots,a_{i-1},c,a_{i+1},\dots}
+U_{b_1,\dots,b_{j-1},c,b_{i+1},\dots}
+\\
+&=
+V_{a_1,\dots,a_{i-1},a_{i+1},\dots,a_{N-1},
+   b_1,\dots,b_{j-1},b_{j+1},\dots,b_{M-1}}
+\end{align*}
+Obviously, this is defined similiar to the
+mathematical contraction.
+
+\item[\texttt{trace$\braket{i,j}(T)$}]
+Computes the trace within a tensor. Note that
+since
+\texttt{contract$\braket{i,j}(T,T)$)}$=T_i T_j$,
+there is a need to express $T^i_j$ which is
+of course a different operation. The trace
+between to indices is defined as
+\begin{align*}
+&\phantom{=}
+\mathtt{trace}\braket{i,j}\left(
+   T_{a_1,a_2,a_3,\dots,a_N},
+\right) \\
+&=
+\sum_c
+T_{a_1,\dots,a_{i-1},c,a_{i+1},\dots,a_N}
+\\
+&=
+V_{a_1,\dots,a_{i-1},a_{i+1},\dots,a_{N-1}}
+\end{align*}
+
+\item[\texttt{tensor\_cat($T$,$U$)}]
+Computes the outer product between the tensors.
+That is,
+\begin{equation*}
+\mathtt{tensor\_cat}(
+  T_{a_1,\dots,a_N},
+  U_{b_1,\dots,b_N}
+) = V_{a_1,\dots,a_N,b_1,\dots,b_N}
+\end{equation*}
+Similiar as one would expect from the outer
+product.
+
+\item[\texttt{reorder\_index<$i$,$j$>($T$)}]
+This operation swaps the axes $i$ and $j$.
+It is defined as
+\begin{equation*}
+\mathtt{reorder\_index}\braket{i,j}\left(
+T_{a_1,\dots,a_i,\dots,a_j,\dots,a_N}
+\right)
+= T_{a_1,\dots,a_j,\dots,a_i,\dots,a_N}
+\end{equation*}
+
+\end{description}
+
+\section{What I am missing}
+
+The possibility to contract two or multiple
+indices in one operation without a chain
+of \texttt{trace} and \texttt{contract}
+operations, i.e. I want to compute $D$ in
+
+\begin{equation*}
+A^{ik} B^{nm} C_{knm}
+= D^i
+\end{equation*}
+%
+Then I can do this with
+%
+\begin{equation*}
+D=
+\mathtt{contract}\braket{1,0}\left(A,
+\mathtt{trace}\braket{0,2}\left(
+\mathtt{contract}\braket{0,2}\left(
+B,C
+\right)\right)\right)
+\end{equation*}
+%
+However this is really not well readable.
+Instead, one should be able to write something
+like this pseudocode:
+\begin{equation*}
+D = 
+\mathtt{contract}\braket{1,0}\left(A,
+\mathtt{contract}\braket{0,0}\braket{1,1}(B,C)
+\right)
+\end{equation*}
+A nice way of writing this down would probably
+be this pseudocode
+\begin{equation*}
+D=
+\mathtt{trace}\braket{2,5}\braket{2,4}\braket{3,6}
+\mathtt{tensor\_cat}\left(A,B,C\right)
+\end{equation*}
+because it avoid the headache of computing the
+indices of the intermediate results in the head.
+
+What is the TensorTemplate'y way of doing this?
+
+
+
+\end{document}
