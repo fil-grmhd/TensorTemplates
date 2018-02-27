@@ -314,7 +314,7 @@ typename E::property_t::this_tensor_t evaluate(E const & u){
 /**
  * Bugfix to allow expressions such as evaluate(contract(...) + 42);
  **/
-double evaluate(double const & u){
+inline double evaluate(double const & u){
    return u;
 }
 
