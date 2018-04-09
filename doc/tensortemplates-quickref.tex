@@ -1,5 +1,5 @@
-\documentclass{article}
-\usepackage{amsmath,hyperref,enumitem,braket}
+\documentclass[a4paper]{article}
+\usepackage{amsmath,hyperref,enumitem,braket,a4wide}
 
 \begin{document}
 
@@ -21,7 +21,7 @@ Mathematically, a tensor is defined as $T^{a,b,c,\dots}_{i,j,k,\dots}$ with two 
 
 We therefore define a Tensor in TensorTemplates as an n-dimensional list where each index has a \emph{type} which defines it either as an upper or lower index (covariant or contravariant, respectively).
 
-\section{Short reference}
+\section{Short reference of the tensor algebra}
 In this reference, each index $x_i$ is
 associated with a type. The type decides whether
 the index shall be up or down. The fact that
@@ -92,6 +92,16 @@ T_{a_1,\dots,a_i,\dots,a_j,\dots,a_N}
 \end{equation*}
 
 \end{description}
+
+\section{Constructing tensor objects}
+
+There should be something about input/output,
+i.e. how to setup a tensor object, how to extract
+the elements again?
+
+For tensors, there are actually the output stream
+carets \verb|<<| overloaded, this is convenient for
+debugging.
 
 \section{What I am missing}
 
