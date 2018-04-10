@@ -191,9 +191,9 @@ operator/(E const &u, typename E::property_t::data_t const &v) {
 
 template <typename E>
 tensor_scalar_mult_t<E> const inline __attribute__ ((always_inline)) operator-(E const &u) {
-  // Attention: This does not work properly and most likely spills out wrong numbers.
-  // I don't yet know why.
-  typename E::property_t::data_t minus(-1.0); // This must be a double, not an integer.
+//[[deprecated("Using -Tensor at the beginning of an expression might cause unexpected behaviour")]]
+  //IMPORTANT: The static keyword must NOT be removed!
+  static typename E::property_t::data_t minus(-1.0); // This must be a double, not an integer.
   return tensor_scalar_mult_t<E>(minus, u);
 }
 

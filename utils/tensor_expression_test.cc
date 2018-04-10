@@ -21,7 +21,7 @@
 
 // nothing vectorized yet
 //#define TENSORS_VECTORIZED
-#include "../tensor_templates.hh"
+#include "../src/tensor_templates.hh"
 
 
 int main(){
@@ -505,6 +505,29 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
   std::cout << kronecker3_t<double>::template evaluate<6>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<7>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<8>()<< std::endl;
+
+  auto H = evaluate(-A+B);
+
+  std::cout << "A = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< A.access(i,j) << " ";
+    std::cout<<std::endl;
+  }
+
+  std::cout << "B = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< B.access(i,j) << " ";
+    std::cout<<std::endl;
+  }
+
+  std::cout << "H = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< H.access(i,j) << " ";
+    std::cout<<std::endl;
+  }
 
 
 
