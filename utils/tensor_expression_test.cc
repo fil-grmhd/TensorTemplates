@@ -510,14 +510,34 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
 
   auto lc3 = evaluate(levi_civita3_up_t<double>());
 
-  std::cout << lc3 << std::endl;
-
+  int count = 0;
   for(int i=0; i<3; ++i) {
     for(int j=0; j<3; ++j)
-      for(int k=0; k<3; ++k)
-        std::cout << "(" << i  << "," << j << "," << k << ") = " << lc3.access(i,j,k) << " ";
+      for(int k=0; k<3; ++k) {
+        if(lc3.access(i,j,k) != 0) {
+          std::cout << "(" << i  << "," << j << "," << k << ") = " << lc3.access(i,j,k) << " ";
+          ++count;
+        }
+      }
     std::cout<<std::endl;
   }
+  std::cout << "Found " << count << " non-zero elements" << std::endl;
+
+  auto lc4 = evaluate(levi_civita4_up_t<double>());
+
+  count = 0;
+  for(int i=0; i<4; ++i) {
+    for(int j=0; j<4; ++j)
+      for(int k=0; k<4; ++k)
+        for(int l=0; l<4; ++l) {
+          if(lc4.access(i,j,k,l) != 0) {
+            std::cout << "(" << i  << "," << j << "," << k << "," << l << ") = " << lc4.access(i,j,k,l) << " ";
+            ++count;
+          }
+        }
+    std::cout<<std::endl;
+  }
+  std::cout << "Found " << count << " non-zero elements" << std::endl;
 
 
   auto H = evaluate(-A+B);
