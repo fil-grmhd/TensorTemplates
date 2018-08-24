@@ -34,7 +34,7 @@ public:
   //! This tensor type, symmetric in both indices
   using this_tensor_t = sym2_tensor_t<T, 3, any_frame_t, 0, 1, lower_t, lower_t>;
 //	using this_tensor_t = metric_tensor3_t<T>;
-  
+
   static constexpr size_t ndof = this_tensor_t::symmetry_t::ndof;
 
   // since this class is derived, it does not inherit any constructor...
@@ -42,10 +42,10 @@ public:
   template <typename E, typename Indices = std::make_index_sequence<ndof>>
   metric_tensor3_t(metric_tensor3_t<E> const &tensor_expression)
       : this_tensor_t(tensor_expression, Indices{}) {}
-  
+
   metric_tensor3_t() : m_data({0}) {};
   */
-  
+
   using property_t = typename this_tensor_t::property_t;
 /* property_t::this_tensor_t is still plain sym2_tensor_t
   replace this with metric_property_t
@@ -241,35 +241,6 @@ public:
   }
 
 };
-
-template <typename T, typename frame_t_,  size_t ndim_>
-class kronecker_t
-    : public tensor_expression_t<kronecker_t<T, frame_t_, ndim_>> {
-
-public:
-  // Concatination changes the tensor type, thus a special property class is
-  // needed.
-  //
-  using this_tensor_t = general_tensor_t<T, frame_t_, generic_symmetry_t<ndim_,2>, 2, std::tuple<upper_t,lower_t>,ndim_>;
-  using property_t = general_tensor_property_t<this_tensor_t>;
-
-  kronecker_t() = default;
-
-  [[deprecated("Do not access the tensor expression via the [] operator, this "
-               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
-  operator[](size_t i) const = delete;
-
-  template <size_t index>
-  inline __attribute__ ((always_inline)) static constexpr T evaluate(){ 
-
-    constexpr size_t i0 = generic_symmetry_t<ndim_,2>::template uncompress_index<0,index>::value;
-    constexpr size_t i1 = generic_symmetry_t<ndim_,2>::template uncompress_index<1,index>::value;
-
-
-    return (i0==i1);
-  }
-};
-
 
 } // namespace general
 } // namespace tensors

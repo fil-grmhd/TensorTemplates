@@ -173,16 +173,18 @@ public:
     return m_data[a];
   }
 
-  template <size_t... I>
-  inline T &access_guts(size_t indexL, std::index_sequence<I...>) {
+  template<size_t... I>
+  inline T & access_guts(size_t indexL, std::index_sequence<I...>) {
     constexpr size_t value[] = {
         symmetry_t::template index_from_generic<I>::value...};
     return m_data[value[indexL]];
   };
 
-  template <typename... Ind_t> inline T &access(Ind_t... ind) {
+  template<typename... Ind_t>
+  inline T & access(Ind_t... ind) {
 
-    static_assert(sizeof...(ind) == property_t::rank, "Ranks don't match!");
+    static_assert(sizeof...(ind) == property_t::rank,
+                  "Number of indices has to match rank!");
 
     size_t indices[rank]{static_cast<size_t>(ind)...};
 
@@ -354,6 +356,7 @@ typename E::property_t::this_tensor_t evaluate(E const &u) {
 /**
  * Bugfix to allow expressions such as evaluate(contract(...) + 42);
  **/
+[[deprecated("Be aware that calling this scalar evaluate doesn't generalize to vecorized code!")]]
 inline double evaluate(double const &u) { return u; }
 
 } // namespace tensors

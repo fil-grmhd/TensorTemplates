@@ -85,6 +85,9 @@
 // metric tensor implementing useful things, like det, inverse etc.
 #include "metric.hh"
 
+// special tensors, like the identity and levi civita
+#include "special.hh"
+
 // tensor field and tensor field expressions, loading / storing tensors from / to memory, get FDs
 #include "tensor_field.hh"
 

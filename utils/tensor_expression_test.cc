@@ -496,8 +496,8 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
 
   std::cout << "Kronecker test" << std::endl;
 
-  std::cout << kronecker3_t<double>::template evaluate<0>()<< std::endl; 
-  std::cout << kronecker3_t<double>::template evaluate<1>()<< std::endl; 
+  std::cout << kronecker3_t<double>::template evaluate<0>()<< std::endl;
+  std::cout << kronecker3_t<double>::template evaluate<1>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<2>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<3>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<4>()<< std::endl;
@@ -505,6 +505,20 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
   std::cout << kronecker3_t<double>::template evaluate<6>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<7>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<8>()<< std::endl;
+
+  std::cout << "Levi Civita test" << std::endl;
+
+  auto lc3 = evaluate(levi_civita3_up_t<double>());
+
+  std::cout << lc3 << std::endl;
+
+  for(int i=0; i<3; ++i) {
+    for(int j=0; j<3; ++j)
+      for(int k=0; k<3; ++k)
+        std::cout << "(" << i  << "," << j << "," << k << ") = " << lc3.access(i,j,k) << " ";
+    std::cout<<std::endl;
+  }
+
 
   auto H = evaluate(-A+B);
 
@@ -528,9 +542,6 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
       std::cout << " "<< H.access(i,j) << " ";
     std::cout<<std::endl;
   }
-
-
-
 }
 
 
