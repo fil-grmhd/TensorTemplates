@@ -539,6 +539,28 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
   }
   std::cout << "Found " << count << " non-zero elements" << std::endl;
 
+  levi_civita4_up_t<double> lc4_up;
+  levi_civita4_down_t<double> lc4_down;
+  levi_civita3_up_t<double> lc3_up;
+  levi_civita3_down_t<double> lc3_down;
+
+  auto lc_fac = trace<0,1>(
+                trace<0,2>(
+                trace<0,3>(
+                contract<0,0>(lc4_up,lc4_down))));
+
+  std::cout << "4! = " << lc_fac << std::endl;
+
+  auto kron = evaluate(0.5*
+              trace<1,3>(
+              contract<1,1>(lc3_down,lc3_up)));
+
+  std::cout << "kronecker = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< kron.access(i,j) << " ";
+    std::cout << std::endl;
+  }
 
   auto H = evaluate(-A+B);
 
