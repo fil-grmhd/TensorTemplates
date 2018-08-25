@@ -287,106 +287,57 @@ int main(){
 //            METRIC TESTS
 //
 /////////////////////////////////////////////////////////////////////
-/* old interface, needs to be updated to the new metric type
+metric_tensor3_t<double> metric{1, 0, -0.3,
+                                   1,  0,
+                                       1};
+inv_metric_tensor3_t<double> inv_metric = metric.inverse();
 
-//Flat space-time test
-double lapse = 1.;
-vector3_t<double> shift {1,2,3};
+auto abab = evaluate(tensor_cat(ab,ab));
 
-metric_tensor_t<double,3> mt{1, 0, -0.3,
-                                1,  0,
-                                    1};
+auto abab_l1 = evaluate(metric.lower<1>(abab));
+auto abab_l1l2 = evaluate(metric.lower<2>(abab_l1));
 
-//metric3_t metric(lapse, std::move(shift), std::move(mt));
-auto metric = make_metric3(lapse, std::move(shift), std::move(mt));
+// g_mj abab^imkl = s_j^ikl
+auto abab_l1_w = evaluate(contract<0,1>(metric,abab));
+auto abab_l1_r = evaluate(reorder_index<1,0,2,3>(abab_l1_w));
 
-std::cout << "Inverse metric" << metric.invmetric <<std::endl;
-std::cout << "metric" << metric.metric <<std::endl;
-std::cout << "sqrt(gamma)" << metric.sqrtdet <<std::endl;
+// g_mk abab^ijml = s_k^ijl
+auto abab_l1l2_w = evaluate(contract<0,2>(metric,abab_l1_r));
+auto abab_l1l2_r = evaluate(reorder_index<1,2,0,3>(abab_l1l2_w));
 
-vector3_t<double> am1 {11.,12.,13.};
-covector3_t<double> bm1 = lower_index<0>(metric, am1);
-vector3_t<double> cm1 = raise_index<0>(metric, bm1);
+std::cout << "abab lowered index 1 = " << std::endl;
+std::cout << abab_l1 << std::endl;
 
-std::cout << "am1 upper_t" << am1 <<std::endl;
-std::cout << "am1 lower_t" << bm1 <<std::endl;
-std::cout << "raised again" << cm1 <<std::endl;
+std::cout << "abab lowered index 1 and 2 = " << std::endl;
+std::cout << abab_l1l2 << std::endl;
 
-double norm2_am1 = contract<0,0>(metric,am1,am1);
+std::cout << "abab lowered index 1 wrong = " << std::endl;
+std::cout << abab_l1_w << std::endl;
+std::cout << "abab lowered index 1 right = " << std::endl;
+std::cout << abab_l1_r << std::endl;
 
-std::cout << "norm2 am1 :" << norm2_am1 <<std::endl;
+std::cout << "abab lowered index 1 and 2 wrong = " << std::endl;
+std::cout << abab_l1l2_w << std::endl;
+std::cout << "abab lowered index 1 and 2 right = " << std::endl;
+std::cout << abab_l1l2_r << std::endl;
 
-// 4-dim metric
+auto abab_l1l2_r1 = evaluate(inv_metric.raise<1>(abab_l1l2));
+auto abab_l1l2_r1r2 = evaluate(inv_metric.raise<2>(abab_l1l2_r1));
 
-//metric4_t metric4(lapse, std::move(shift), std::move(mt));
-auto metric4 = make_metric4(lapse, std::move(shift), std::move(mt));
+std::cout << "abab original = " << std::endl;
+std::cout << abab << std::endl;
 
-std::cout << "Inverse metric4" << metric4.invmetric <<std::endl;
-std::cout << "metric4" << metric4.metric <<std::endl;
-std::cout << "sqrt(gamma)" << metric4.sqrtdet <<std::endl;
+std::cout << "abab lowered and raised = " << std::endl;
+std::cout << abab_l1l2_r1r2 << std::endl;
 
-vector4_t<double> am14 {-11.,12.,13.,14.};
-covector4_t<double> bm14 = lower_index<0>(metric4, am14);
-vector4_t<double> cm14 = raise_index<0>(metric4, bm14);
 
-std::cout << "am14 upper_t" << am14 <<std::endl;
-std::cout << "am14 lower_t" << bm14 <<std::endl;
-std::cout << "raised again" << cm14 <<std::endl;
-
-double norm2_am14 = contract<0,0>(metric4,am14,am14);
-
-std::cout << "norm2 am14 :" << norm2_am14 <<std::endl;
-
-*/
-
-metric_tensor3_t<double> mt{1, 0, -0.3,
-                               1,  0,
-                                   1};
-inv_metric_tensor3_t<double> inv_mt = mt.inverse();
-
-auto l_ab = evaluate(mt.lower<1>(ab));
-auto l_ab_c = evaluate(contract<0,1>(mt,ab));
-auto l_ab_cr = evaluate(contract<1,0>(ab,mt));
-
-std::cout << "ab lowered = " << std::endl;
-for(int i=0; i<3; ++i){
-  for(int j=0; j<3; ++j)
-    std::cout << " "<< l_ab.access(i,j) << " ";
-  std::cout<<std::endl;
-}
-
-std::cout << "ab lowered contract = " << std::endl;
-for(int i=0; i<3; ++i){
-  for(int j=0; j<3; ++j)
-    std::cout << " "<< l_ab_c.access(i,j) << " ";
-  std::cout<<std::endl;
-}
-
-std::cout << "ab lowered contract right = " << std::endl;
-for(int i=0; i<3; ++i){
-  for(int j=0; j<3; ++j)
-    std::cout << " "<< l_ab_cr.access(i,j) << " ";
-  std::cout<<std::endl;
-}
-
-auto ll_ab = evaluate(mt.lower<0>(l_ab));
-
-auto rr_ab = evaluate(inv_mt.raise<1>(inv_mt.raise<0>(ll_ab)));
-
-std::cout << "ab orig = " << std::endl;
-for(int i=0; i<3; ++i){
-  for(int j=0; j<3; ++j)
-    std::cout << " "<< ab.access(i,j) << " ";
-  std::cout<<std::endl;
-}
-
-std::cout << "ab lowered and raised = " << std::endl;
+/*
 for(int i=0; i<3; ++i){
   for(int j=0; j<3; ++j)
     std::cout << " "<< rr_ab.access(i,j) << " ";
   std::cout<<std::endl;
 }
-
+*/
 // Symmetry of two indices
 sym_tensor3_t<double,0,1,upper_t,lower_t> sym_tensor3;
 sym_tensor4_t<double,0,1,upper_t,lower_t> sym_tensor4;
