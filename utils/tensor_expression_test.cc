@@ -339,6 +339,53 @@ std::cout << "norm2 am14 :" << norm2_am14 <<std::endl;
 
 */
 
+metric_tensor3_t<double> mt{1, 0, -0.3,
+                               1,  0,
+                                   1};
+inv_metric_tensor3_t<double> inv_mt = mt.inverse();
+
+auto l_ab = evaluate(mt.lower<1>(ab));
+auto l_ab_c = evaluate(contract<0,1>(mt,ab));
+auto l_ab_cr = evaluate(contract<1,0>(ab,mt));
+
+std::cout << "ab lowered = " << std::endl;
+for(int i=0; i<3; ++i){
+  for(int j=0; j<3; ++j)
+    std::cout << " "<< l_ab.access(i,j) << " ";
+  std::cout<<std::endl;
+}
+
+std::cout << "ab lowered contract = " << std::endl;
+for(int i=0; i<3; ++i){
+  for(int j=0; j<3; ++j)
+    std::cout << " "<< l_ab_c.access(i,j) << " ";
+  std::cout<<std::endl;
+}
+
+std::cout << "ab lowered contract right = " << std::endl;
+for(int i=0; i<3; ++i){
+  for(int j=0; j<3; ++j)
+    std::cout << " "<< l_ab_cr.access(i,j) << " ";
+  std::cout<<std::endl;
+}
+
+auto ll_ab = evaluate(mt.lower<0>(l_ab));
+
+auto rr_ab = evaluate(inv_mt.raise<1>(inv_mt.raise<0>(ll_ab)));
+
+std::cout << "ab orig = " << std::endl;
+for(int i=0; i<3; ++i){
+  for(int j=0; j<3; ++j)
+    std::cout << " "<< ab.access(i,j) << " ";
+  std::cout<<std::endl;
+}
+
+std::cout << "ab lowered and raised = " << std::endl;
+for(int i=0; i<3; ++i){
+  for(int j=0; j<3; ++j)
+    std::cout << " "<< rr_ab.access(i,j) << " ";
+  std::cout<<std::endl;
+}
 
 // Symmetry of two indices
 sym_tensor3_t<double,0,1,upper_t,lower_t> sym_tensor3;

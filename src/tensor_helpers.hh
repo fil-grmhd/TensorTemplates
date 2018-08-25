@@ -24,12 +24,12 @@ namespace tensors {
 // Drop each element
 struct op_drop {
   template<typename... Args>
-  inline static constexpr decltype(auto) op_const(Args&&... args) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Args&&... args) {
     return 0;
   }
 
   template<typename... Args>
-  inline static decltype(auto) op(Args&&... args) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Args&&... args) {
     return 0;
   }
 
@@ -38,20 +38,20 @@ struct op_drop {
 // Combine all elements with and
 struct op_and {
   template<typename Arg, typename... Args>
-  inline static constexpr decltype(auto) op_const(Arg arg, Args... args) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg, Args... args) {
     return arg && op_const(args...);
   }
   template<typename Arg>
-  inline static constexpr decltype(auto) op_const(Arg arg) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg) {
     return arg;
   }
 
   template<typename Arg, typename... Args>
-  inline static decltype(auto) op(Arg arg, Args... args) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg, Args... args) {
     return arg && op(args...);
   }
   template<typename Arg>
-  inline static decltype(auto) op(Arg arg) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg) {
     return arg;
   }
 };
@@ -59,20 +59,20 @@ struct op_and {
 // Combine all elements with or
 struct op_or {
   template<typename Arg, typename... Args>
-  inline static constexpr decltype(auto) op_const(Arg arg, Args... args) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg, Args... args) {
     return arg || op_const(args...);
   }
   template<typename Arg>
-  inline static constexpr decltype(auto) op_const(Arg arg) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg) {
     return arg;
   }
 
   template<typename Arg, typename... Args>
-  inline static decltype(auto) op(Arg arg, Args... args) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg, Args... args) {
     return arg || op(args...);
   }
   template<typename Arg>
-  inline static decltype(auto) op(Arg arg) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg) {
     return arg;
   }
 };
@@ -80,20 +80,20 @@ struct op_or {
 // Combine all elements with addition
 struct op_add {
   template<typename Arg, typename... Args>
-  inline static constexpr decltype(auto) op_const(Arg arg, Args... args) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg, Args... args) {
     return arg + op_const(args...);
   }
   template<typename Arg>
-  inline static constexpr decltype(auto) op_const(Arg arg) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg) {
     return arg;
   }
 
   template<typename Arg, typename... Args>
-  inline static decltype(auto) op(Arg arg, Args... args) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg, Args... args) {
     return arg + op(args...);
   }
   template<typename Arg>
-  inline static decltype(auto) op(Arg arg) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg) {
     return arg;
   }
 };
@@ -101,20 +101,20 @@ struct op_add {
 // Combine all elements with multiplication
 struct op_mult {
   template<typename Arg, typename... Args>
-  inline static constexpr decltype(auto) op_const(Arg arg, Args... args) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg, Args... args) {
     return arg * op_const(args...);
   }
   template<typename Arg>
-  inline static constexpr decltype(auto) op_const(Arg arg) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg) {
     return arg;
   }
 
   template<typename Arg, typename... Args>
-  inline static decltype(auto) op(Arg arg, Args... args) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg, Args... args) {
     return arg * op(args...);
   }
   template<typename Arg>
-  inline static decltype(auto) op(Arg arg) {
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg) {
     return arg;
   }
 };
@@ -129,7 +129,7 @@ private:
   template<int t_ind, typename OP>
   struct traverser_t {
     template<typename... Args>
-    inline static decltype(auto) traverse(Args&&... args) {
+    inline __attribute__ ((always_inline)) static decltype(auto) traverse(Args&&... args) {
       return OP::op(F::template call<t_ind>(std::forward<Args>(args)...),
                     traverser_t<t_ind+1,OP>::traverse(std::forward<Args>(args)...));
     }
@@ -137,7 +137,7 @@ private:
   template<typename OP>
   struct traverser_t<max,OP> {
     template<typename... Args>
-    inline static decltype(auto) traverse(Args&&... args) {
+    inline __attribute__ ((always_inline)) static decltype(auto) traverse(Args&&... args) {
       return F::template call<max>(std::forward<Args>(args)...);
     }
   };
@@ -146,7 +146,7 @@ public:
   // traverse "operator"
   // OP defines how each traversed element should be combined (dropped by default)
   template<typename OP = op_drop, typename... Args>
-  inline static decltype(auto) traverse(Args&&... args) {
+  inline __attribute__ ((always_inline)) static decltype(auto) traverse(Args&&... args) {
     return traverser_t<min,OP>::traverse(std::forward<Args>(args)...);
   }
 };
@@ -160,7 +160,7 @@ private:
   template<int t_ind, typename OP>
   struct traverser_t {
     template<typename... Args>
-    inline static constexpr decltype(auto) traverse(Args&&... args) {
+    inline __attribute__ ((always_inline)) static constexpr decltype(auto) traverse(Args&&... args) {
       return OP::op_const(F::template call<t_ind>(std::forward<Args>(args)...),
                           traverser_t<t_ind+1,OP>::traverse(std::forward<Args>(args)...));
     }
@@ -168,7 +168,7 @@ private:
   template<typename OP>
   struct traverser_t<max,OP> {
     template<typename... Args>
-    inline static constexpr decltype(auto) traverse(Args&&... args) {
+    inline __attribute__ ((always_inline)) static constexpr decltype(auto) traverse(Args&&... args) {
       return F::template call<max>(std::forward<Args>(args)...);
     }
   };
@@ -177,7 +177,7 @@ public:
   // traverse "operator"
   // OP defines how each traversed element should be combined (dropped by default)
   template<typename OP = op_drop, typename... Args>
-  inline static constexpr decltype(auto) traverse(Args&&... args) {
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) traverse(Args&&... args) {
     return traverser_t<min,OP>::traverse(std::forward<Args>(args)...);
   }
 };

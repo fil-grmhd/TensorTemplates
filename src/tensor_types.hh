@@ -25,9 +25,13 @@ template <typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typ
 class general_tensor_t;
 
 namespace general {
-// forward decleration of metric type
+// forward decleration of metric types
 template <typename T>
 class metric_tensor3_t;
+
+template <typename T>
+class inv_metric_tensor3_t;
+
 
 // general tensor typedefs
 

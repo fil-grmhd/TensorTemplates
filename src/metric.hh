@@ -25,7 +25,7 @@ namespace general {
 
 template <typename T>
 class metric_tensor3_t
-// this is a symmetric three dimensional tensor of rank 2 of lower indices
+    // this is a symmetric three dimensional tensor of rank 2 of lower indices
     : public sym2_tensor_t<T, 3, any_frame_t, 0, 1, lower_t, lower_t> {
 public:
   //! Data type
@@ -33,34 +33,11 @@ public:
 
   //! This tensor type, symmetric in both indices
   using this_tensor_t = sym2_tensor_t<T, 3, any_frame_t, 0, 1, lower_t, lower_t>;
-//	using this_tensor_t = metric_tensor3_t<T>;
 
   static constexpr size_t ndof = this_tensor_t::symmetry_t::ndof;
 
-  // since this class is derived, it does not inherit any constructor...
-  /*
-  template <typename E, typename Indices = std::make_index_sequence<ndof>>
-  metric_tensor3_t(metric_tensor3_t<E> const &tensor_expression)
-      : this_tensor_t(tensor_expression, Indices{}) {}
-
-  metric_tensor3_t() : m_data({0}) {};
-  */
-
   using property_t = typename this_tensor_t::property_t;
-/* property_t::this_tensor_t is still plain sym2_tensor_t
-  replace this with metric_property_t
-  using property_t = general_tensor_property_t<
-                       sym2_tensor_t<
-                         data_t,
-                         3,
-                         any_frame_t,
-                         0,
-                         1,
-                         lower_t,
-                         lower_t
-                       >
-                     >;
-*/
+
   //! Constructor from tensor expression given a index sequence
   //! Generates components from arbitrary tensor expression type (e.g. chained
   //! ones)
@@ -71,7 +48,6 @@ public:
   using general_metric_t = sym2_tensor_t<T, ndim_, any_frame_t, 0, 1, ranks...>;
 
   //! All important metric types
-  using inv_metric3_t = general_metric_t<3, upper_t, upper_t>;
   using metric4_t = general_metric_t<4, lower_t, lower_t>;
   using inv_metric4_t = general_metric_t<4, upper_t, upper_t>;
 
@@ -108,7 +84,7 @@ public:
     constexpr size_t GZZ = this_tensor_t::template compressed_index<2,2>();
 
     // inverse has upper indices
-    inv_metric3_t inverse_metric;
+    inv_metric_tensor3_t<T> inverse_metric;
 
     inverse_metric.template cc<GXX>() = (-this->SQ(this->template evaluate<GYZ>())
                                       + this->template evaluate<GYY>() * this->template evaluate<GZZ>()) / det;
@@ -233,6 +209,7 @@ public:
 
     return inv_g;
   }
+
   //! Computes the inverse 4-metric from lapse, shift, the 3-metric and det(gamma)
   inline __attribute__ ((always_inline)) decltype(auto)
   inverse_spacetime_metric(data_t const alpha,
@@ -240,6 +217,42 @@ public:
     return this->inverse_spacetime_metric(alpha,beta,this->det());
   }
 
+  //! Computes tensor with lowered index
+  template<size_t index, typename E>
+  inline __attribute__ ((always_inline)) decltype(auto) lower(E const & u) const {
+    return metric_contraction_t<index,this_tensor_t,E>(*this, u);
+  }
+};
+
+template <typename T>
+class inv_metric_tensor3_t
+    // this is a symmetric three dimensional tensor of rank 2 of upper indices
+    : public sym2_tensor_t<T, 3, any_frame_t, 0, 1, upper_t, upper_t> {
+public:
+  //! Data type
+  using data_t = T;
+
+  //! This tensor type, symmetric in both indices
+  using this_tensor_t = sym2_tensor_t<T, 3, any_frame_t, 0, 1, upper_t, upper_t>;
+
+  static constexpr size_t ndof = this_tensor_t::symmetry_t::ndof;
+
+  using property_t = typename this_tensor_t::property_t;
+
+  //! Constructor from tensor expression given a index sequence
+  //! Generates components from arbitrary tensor expression type (e.g. chained
+  //! ones)
+
+  using this_tensor_t::this_tensor_t;
+
+  template<size_t ndim_, typename... ranks>
+  using general_metric_t = sym2_tensor_t<T, ndim_, any_frame_t, 0, 1, ranks...>;
+
+  //! Computes tensor with raised index
+  template<size_t index, typename E>
+  inline __attribute__ ((always_inline)) decltype(auto) raise(E const & u) const {
+    return metric_contraction_t<index,this_tensor_t,E>(*this, u);
+  }
 };
 
 } // namespace general
