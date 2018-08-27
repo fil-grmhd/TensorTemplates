@@ -38,7 +38,7 @@ class lower_t : public rank_t {};
 // storing by ref is very bad for disappearing expressions,
 // i.e. temporaries and stuff which gets optimized away
 template<typename E>
-using operant_t = typename std::conditional<E::property_t::is_persistent, E const &, E>::type;
+using operant_t = typename std::conditional<E::property_t::is_persistent, E const &, E const>::type;
 
 } // namespace tensors
 
