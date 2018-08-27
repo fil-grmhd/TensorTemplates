@@ -218,9 +218,9 @@ public:
   }
 
   //! Computes tensor with lowered index
-  template<size_t index, typename E>
+  template<size_t lower_index = 0, typename E>
   inline __attribute__ ((always_inline)) decltype(auto) lower(E const & u) const {
-    return metric_contraction_t<index,this_tensor_t,E>(*this, u);
+    return metric_contraction_t<lower_index,this_tensor_t,E>(*this, u);
   }
 };
 
@@ -249,9 +249,9 @@ public:
   using general_metric_t = sym2_tensor_t<T, ndim_, any_frame_t, 0, 1, ranks...>;
 
   //! Computes tensor with raised index
-  template<size_t index, typename E>
+  template<size_t raise_index = 0, typename E>
   inline __attribute__ ((always_inline)) decltype(auto) raise(E const & u) const {
-    return metric_contraction_t<index,this_tensor_t,E>(*this, u);
+    return metric_contraction_t<raise_index,this_tensor_t,E>(*this, u);
   }
 };
 
