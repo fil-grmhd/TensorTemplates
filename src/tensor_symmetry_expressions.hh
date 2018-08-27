@@ -1,3 +1,23 @@
+//  TensorTemplates: C++ tensor class templates
+//  Copyright (C) 2017, Elias Roland Most (ERM)
+//                      <emost@itp.uni-frankfurt.de>
+//  Copyright (C) 2018, Ludwig Jens Papenfort
+//                      <papenfort@th.physik.uni-frankfurt.de>
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 /*
  * =====================================================================================
  *
@@ -26,7 +46,10 @@ namespace tensors {
 template <typename E, typename symmetry_t_>
 class symmetry_cast_t
     : public tensor_expression_t<symmetry_cast_t<E,symmetry_t_>> {
-  E const &_v;
+
+  using E_t = operant_t<E>;
+
+  E_t _v;
 
 public:
   using symmetry_t = symmetry_t_;

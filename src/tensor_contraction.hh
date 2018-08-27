@@ -7,9 +7,13 @@ namespace tensors {
 template <size_t i1, size_t i2, typename E1, typename E2>
 class tensor_contraction_t
     : public tensor_expression_t<tensor_contraction_t<i1, i2, E1, E2>> {
-  // references to both tensors
-  E1 const &_u;
-  E2 const &_v;
+
+  using E1_t = operant_t<E1>;
+  using E2_t = operant_t<E2>;
+
+  // reference or value to both expressions
+  E1_t _u;
+  E2_t _v;
 
 public:
   // Contraction changes the tensor type, thus a special property class is
@@ -151,9 +155,13 @@ decltype(auto) inline __attribute__ ((always_inline)) contract(E1 const &u, E2 c
 template <size_t i2, typename E1, typename E2>
 class metric_contraction_t
     : public tensor_expression_t<metric_contraction_t<i2, E1, E2>> {
-  // references to both tensors
-  E1 const &_u;
-  E2 const &_v;
+
+  using E1_t = operant_t<E1>;
+  using E2_t = operant_t<E2>;
+
+  // reference or value to both expressions
+  E1_t _u;
+  E2_t _v;
 
 public:
   // Contraction changes the tensor type, thus a special property class is

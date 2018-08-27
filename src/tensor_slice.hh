@@ -7,8 +7,12 @@ namespace tensors {
 template <typename E, int... Ind>
 class tensor_slice_t : public tensor_expression_t<tensor_slice_t<E, Ind...>> {
 protected:
-  // references to sliced expression
-  E const &_u;
+  using E_t = operant_t<E>;
+
+  // reference or value to sliced expression
+  E_t _u;
+
+
 
   // can only shift dimensions up to a two component (co)vector
   // a single component can be accessed directly...
