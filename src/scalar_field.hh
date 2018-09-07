@@ -19,6 +19,7 @@ class scalar_wrapper_t {
 
     struct property_t {
       using this_tensor_t = T;
+      static constexpr bool is_persistent = true;
     };
 
 
@@ -41,6 +42,26 @@ class scalar_wrapper_t {
     //! Sets the scalar at grid_index to data
     inline __attribute__ ((always_inline)) void operator=(T const data) {
       grid_ptr[grid_index] = data;
+    }
+
+    //! Add the scalar at grid_index to data
+    inline __attribute__ ((always_inline)) void operator+=(T const data) {
+      grid_ptr[grid_index] += data;
+    }
+
+    //! Substract the scalar at grid_index by data
+    inline __attribute__ ((always_inline)) void operator-=(T const data) {
+      grid_ptr[grid_index] -= data;
+    }
+
+    //! Multiply the scalar at grid_index by data
+    inline __attribute__ ((always_inline)) void operator*=(T const data) {
+      grid_ptr[grid_index] *= data;
+    }
+
+    //! Divide the scalar at grid_index by data
+    inline __attribute__ ((always_inline)) void operator/=(T const data) {
+      grid_ptr[grid_index] /= data;
     }
 
     //! Conversion operators, so that it is usable as a simple POD scalar
@@ -97,6 +118,7 @@ class scalar_wrapper_vt {
   public:
     struct property_t {
       using this_tensor_t = vec_t;
+      static constexpr bool is_persistent = true;
     };
 
     //! Constructor (called from a scalar field)
@@ -118,6 +140,34 @@ class scalar_wrapper_vt {
     //! Sets vec_t::Size scalar field values beginning at grid_index to data
     inline __attribute__ ((always_inline)) void operator=(vec_t const & data) {
       data.store(&grid_ptr[grid_index]);
+    }
+
+    //! Add the scalar at grid_index to data
+    inline __attribute__ ((always_inline)) void operator+=(vec_t const & data) {
+      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index]);
+      (*this) = vec_register + data;
+    }
+
+    //! Substract the scalar at grid_index by data
+    inline __attribute__ ((always_inline)) void operator-=(vec_t const & data) {
+      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index]);
+      (*this) = vec_register - data;
+    }
+
+    //! Multiply the scalar at grid_index by data
+    inline __attribute__ ((always_inline)) void operator*=(vec_t const & data) {
+      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index]);
+      (*this) = vec_register * data;
+    }
+
+    //! Divide the scalar at grid_index by data
+    inline __attribute__ ((always_inline)) void operator/=(vec_t const & data) {
+      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index]);
+      (*this) = vec_register / data;
     }
 
     //! Conversion operator, so that it is usable as plain vector register (Vc::Vector)
