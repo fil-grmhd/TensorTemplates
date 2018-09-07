@@ -19,7 +19,7 @@ protected:
 
   //! Array to the raw tensor field component pointers
   ptr_t const grid_ptr;
-  
+
   //! Object defining a finite difference operation on a pointer
   //  Must implement a diff<direction>(pointer,grid_index) member function
   //  returning the finite difference at the point represented by index

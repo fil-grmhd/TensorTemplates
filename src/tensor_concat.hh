@@ -7,9 +7,13 @@ namespace tensors {
 template <typename E1, typename E2>
 class tensor_concat_t
     : public tensor_expression_t<tensor_concat_t<E1, E2>> {
-  // references to both tensors
-  E1 const &_u;
-  E2 const &_v;
+
+  using E1_t = operant_t<E1>;
+  using E2_t = operant_t<E2>;
+
+  // reference or value to both expressions
+  E1_t _u;
+  E2_t _v;
 
 public:
   // Concatination changes the tensor type, thus a special property class is

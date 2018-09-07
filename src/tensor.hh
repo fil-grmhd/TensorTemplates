@@ -61,7 +61,7 @@ public:
       general_tensor_t<T, frame_t_, symmetry_t_, rank_, index_t, ndim_>;
 
   //! Fill property type with constexpr and types above (used in expressions)
-  using property_t = general_tensor_property_t<this_tensor_t>;
+  using property_t = general_tensor_property_t<this_tensor_t,true>;
 
 protected:
   //! Data storage for ndof elements

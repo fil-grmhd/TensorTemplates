@@ -7,8 +7,11 @@ namespace tensors {
 template <class E, size_t... Ind>
 class tensor_reorder_index_t
     : public tensor_expression_t<tensor_reorder_index_t<E,Ind...>> {
-  // reference to reordered tensor
-  E const &_u;
+
+  using E_t = operant_t<E>;
+
+  // reference or value to tensor/expression to reorder
+  E_t _u;
 
 public:
   // Reordering the indices changes the tensor type, thus a special property class is
