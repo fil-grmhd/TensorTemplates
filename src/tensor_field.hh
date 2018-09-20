@@ -116,7 +116,7 @@ class tensor_field_t {
 
 #ifdef TENSORS_VECTORIZED
 //! Template for a generic vectorized tensor field expression
-//! This represents a vector register of tensors at Vc::Vector<T>::Size successive grid points
+//! This represents a vector register of tensors at Vc::native_simd<T>::size() successive grid points
 template<typename T, typename ptr_array_t>
 class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expression_vt<T,ptr_array_t>> {
   public:
@@ -125,7 +125,7 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
     // The data type is in this case a vector register type
     using vec_t = typename property_t::data_t;
     // The actual data type
-    using data_t = typename vec_t::EntryType;
+    using data_t = typename vec_t::value_type;
 
     static constexpr size_t ndof = property_t::ndof;
 
@@ -144,15 +144,15 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
         // one has to cast to generic index before one can call evaluate
         constexpr size_t gen_index = E::property_t::symmetry_t::template index_to_generic<N>::value;
 
-        // gets a vector register and let it store Vc::Vector<T>::Size elements to memory starting at i
-        (e.template evaluate<gen_index>()).store(&arr[N][i]);
+        // gets a vector register and let it store Vc::native_simd<T>::size() elements to memory starting at i
+        (e.template evaluate<gen_index>()).copy_to(&arr[N][i], Vc::vector_aligned);
         setter_t<N-1,E>::set(i,e,arr);
       }
     };
     template<typename E>
     struct setter_t<0,E> {
       static inline __attribute__ ((always_inline)) void set(size_t const i, E const& e, ptr_array_t const & arr) {
-        (e.template evaluate<0>()).store(&arr[0][i]);
+        (e.template evaluate<0>()).copy_to(&arr[0][i], Vc::vector_aligned);
       }
     };
 
@@ -169,8 +169,8 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
     inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
       constexpr size_t converted_index = property_t::symmetry_t::template index_from_generic<index>::value;
 
-      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register of data_t
-      vec_t vec_register(&(ptr_array[converted_index][grid_index]));
+      // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register of data_t
+      vec_t vec_register(&(ptr_array[converted_index][grid_index]), Vc::vector_aligned);
 
       return vec_register;
     }
@@ -214,7 +214,7 @@ class tensor_field_vt {
     // The data type is in this case a vector register type
     using vec_t = typename property_t::data_t;
     // The actual data type
-    using data_t = typename vec_t::EntryType;
+    using data_t = typename vec_t::value_type;
     static constexpr size_t ndof = property_t::ndof;
 
   protected:

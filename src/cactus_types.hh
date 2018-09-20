@@ -84,9 +84,9 @@ struct cactus_diff_v {
   template<size_t dir, typename T>
   inline __attribute__ ((always_inline)) decltype(auto) diff(T const * const ptr, size_t const index) const {
     // in this case we want to get a vector register of derivatives
-    Vc::Vector<T> vec_register;
+    Vc::native_simd<T> vec_register;
 
-    for(size_t i = 0; i < Vc::Vector<T>::Size; ++i) {
+    for(size_t i = 0; i < Vc::native_simd<T>::size(); ++i) {
       vec_register[i] = idx[dir]*auto_diff<d,order,node_t>(ptr, index + i, stride[dir]);
     }
     return vec_register;

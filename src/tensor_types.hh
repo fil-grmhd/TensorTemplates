@@ -130,13 +130,13 @@ using namespace general;
 
 // Tensor of rank index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
-using tensor_vt = general_tensor_t<Vc::Vector<T>, frame_t_, generic_symmetry_t<ndim_,sizeof...(ranks)>,
+using tensor_vt = general_tensor_t<Vc::native_simd<T>, frame_t_, generic_symmetry_t<ndim_,sizeof...(ranks)>,
                                   sizeof...(ranks),
                                   std::tuple<ranks...>, ndim_>;
 
 // Symmetric tensor in two indices of rank index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, size_t i0, size_t i1, typename... ranks>
-using sym2_tensor_vt = general_tensor_t<Vc::Vector<T>, frame_t_, sym2_symmetry_t<ndim_,sizeof...(ranks),i0,i1>,
+using sym2_tensor_vt = general_tensor_t<Vc::native_simd<T>, frame_t_, sym2_symmetry_t<ndim_,sizeof...(ranks),i0,i1>,
                                   sizeof...(ranks),
                                   std::tuple<ranks...>, ndim_>;
 
@@ -185,10 +185,10 @@ template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
 using sym_tensor4_vt = sym2_tensor_vt<T, 4, eulerian_t, i0, i1, ranks...>;
 
 template <typename T, typename frame_t_,  size_t ndim_>
-using kronecker_vt = general::kronecker_t<Vc::Vector<T>,frame_t_,ndim_>;
+using kronecker_vt = general::kronecker_t<Vc::native_simd<T>,frame_t_,ndim_>;
 
 template <typename T, typename frame_t_, typename... ranks>
-using levi_civita_vt = general::levi_civita_t<Vc::Vector<T>,frame_t_,ranks...>;
+using levi_civita_vt = general::levi_civita_t<Vc::native_simd<T>,frame_t_,ranks...>;
 
 template<typename T>
 using kronecker3_vt = kronecker_vt<T,any_frame_t,3>;
@@ -207,15 +207,15 @@ using levi_civita4_down_vt = levi_civita_vt<T,any_frame_t,lower_t,lower_t,lower_
 
 // component type
 template<typename T>
-using comp_vt = Vc::Vector<T>;
+using comp_vt = Vc::native_simd<T>;
 
 // loop vector increment
 template<typename T>
-constexpr size_t loop_vinc = Vc::Vector<T>::Size;
+constexpr size_t loop_vinc = Vc::native_simd<T>::size();
 
 // metric type
 template<typename T>
-using metric_tensor3_vt = general::metric_tensor3_t<Vc::Vector<T>>;
+using metric_tensor3_vt = general::metric_tensor3_t<Vc::native_simd<T>>;
 
 // deliver vectorized types as default types if code is vectorization agnostic
 #ifdef TENSORS_AUTOVEC

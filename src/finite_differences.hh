@@ -184,7 +184,7 @@ public:
       // grid values to be summed are at non-unit stride locations
       // this makes it inefficient to load them, so a simple loop is used
       Vc::Vector<T> weighted_value;
-      for(int i = 0; i < Vc::Vector<T>::Size; ++i) {
+      for(int i = 0; i < Vc::Vector<T>::size(); ++i) {
         T const * const vector_index_ptr = grid_ptr + i;
 
         weighted_value[i] = vector_index_ptr[(order-N-dpoint)*stride];
@@ -201,7 +201,7 @@ public:
       // grid values to be summed are at non-unit stride locations
       // this makes it inefficient to load them, so a simple loop is used
       Vc::Vector<T> weighted_value;
-      for(int i = 0; i < Vc::Vector<T>::Size; ++i) {
+      for(int i = 0; i < Vc::Vector<T>::size(); ++i) {
         T const * const vector_index_ptr = grid_ptr + i;
 
         weighted_value[i] = vector_index_ptr[(order-dpoint)*stride];

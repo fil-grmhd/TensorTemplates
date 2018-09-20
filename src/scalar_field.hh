@@ -105,7 +105,7 @@ template<typename T, typename ptr_t>
 class scalar_wrapper_vt {
   public:
     // Data is stored as vector register
-    using vec_t = Vc::Vector<T>;
+    using vec_t = Vc::native_simd<T>;
     // The actual data type
     using data_t = T;
 
@@ -137,43 +137,43 @@ class scalar_wrapper_vt {
       return scalar_advective_derivative_t<vec_t,ptr_t,beta_t,fd_u_t,fd_d_t>(grid_index, grid_ptr, beta, fdu, fdd);
     }
 
-    //! Sets vec_t::Size scalar field values beginning at grid_index to data
+    //! Sets vec_t::size() scalar field values beginning at grid_index to data
     inline __attribute__ ((always_inline)) void operator=(vec_t const & data) {
-      data.store(&grid_ptr[grid_index]);
+      data.copy_to(&grid_ptr[grid_index], Vc::vector_aligned);
     }
 
     //! Add the scalar at grid_index to data
     inline __attribute__ ((always_inline)) void operator+=(vec_t const & data) {
-      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index]);
+      // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
       (*this) = vec_register + data;
     }
 
     //! Substract the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator-=(vec_t const & data) {
-      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index]);
+      // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
       (*this) = vec_register - data;
     }
 
     //! Multiply the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator*=(vec_t const & data) {
-      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index]);
+      // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
       (*this) = vec_register * data;
     }
 
     //! Divide the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator/=(vec_t const & data) {
-      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index]);
+      // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
       (*this) = vec_register / data;
     }
 
-    //! Conversion operator, so that it is usable as plain vector register (Vc::Vector)
+    //! Conversion operator, so that it is usable as plain vector register (Vc::native_simd)
     operator vec_t const () const {
-      // reads Vc::Vector<data_t>::Size values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index]);
+      // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
 
       return vec_register;
     }
@@ -186,7 +186,7 @@ template<typename T>
 class scalar_field_vt {
   public:
     // Data is stored as vector register
-    using vec_t = Vc::Vector<T>;
+    using vec_t = Vc::native_simd<T>;
     // The actual data type
     using data_t = T;
 
