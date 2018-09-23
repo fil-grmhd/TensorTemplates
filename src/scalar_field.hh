@@ -139,41 +139,41 @@ class scalar_wrapper_vt {
 
     //! Sets vec_t::size() scalar field values beginning at grid_index to data
     inline __attribute__ ((always_inline)) void operator=(vec_t const & data) {
-      data.copy_to(&grid_ptr[grid_index], Vc::vector_aligned);
+      data.copy_to(&grid_ptr[grid_index], Vc::element_aligned);
     }
 
     //! Add the scalar at grid_index to data
     inline __attribute__ ((always_inline)) void operator+=(vec_t const & data) {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
+      vec_t vec_register(&grid_ptr[grid_index], Vc::element_aligned);
       (*this) = vec_register + data;
     }
 
     //! Substract the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator-=(vec_t const & data) {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
+      vec_t vec_register(&grid_ptr[grid_index], Vc::element_aligned);
       (*this) = vec_register - data;
     }
 
     //! Multiply the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator*=(vec_t const & data) {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
+      vec_t vec_register(&grid_ptr[grid_index], Vc::element_aligned);
       (*this) = vec_register * data;
     }
 
     //! Divide the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator/=(vec_t const & data) {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
+      vec_t vec_register(&grid_ptr[grid_index], Vc::element_aligned);
       (*this) = vec_register / data;
     }
 
     //! Conversion operator, so that it is usable as plain vector register (Vc::native_simd)
     operator vec_t const () const {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
-      vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
+      vec_t vec_register(&grid_ptr[grid_index], Vc::element_aligned);
 
       return vec_register;
     }
