@@ -70,6 +70,13 @@ public:
                                   E1::property_t::rank>
                               >::type;
 
+  using this_tensor_t = general_tensor_t<typename E1::property_t::data_t,
+                                         typename E1::property_t::frame_t,
+                                         symmetry_t,
+                                         E1::property_t::rank,
+                                         typename E1::property_t::index_t,
+                                         E1::property_t::ndim>;
+
   static_assert(
       std::is_same<typename E1::property_t::frame_t,
                    typename E2::property_t::frame_t>::value ||
