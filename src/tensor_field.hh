@@ -145,14 +145,14 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
         constexpr size_t gen_index = E::property_t::symmetry_t::template index_to_generic<N>::value;
 
         // gets a vector register and let it store Vc::native_simd<T>::size() elements to memory starting at i
-        (e.template evaluate<gen_index>()).copy_to(&arr[N][i], Vc::element_aligned);
+        (e.template evaluate<gen_index>()).copy_to(&arr[N][i], Vc::vector_aligned);
         setter_t<N-1,E>::set(i,e,arr);
       }
     };
     template<typename E>
     struct setter_t<0,E> {
       static inline __attribute__ ((always_inline)) void set(size_t const i, E const& e, ptr_array_t const & arr) {
-        (e.template evaluate<0>()).copy_to(&arr[0][i], Vc::element_aligned);
+        (e.template evaluate<0>()).copy_to(&arr[0][i], Vc::vector_aligned);
       }
     };
 
@@ -170,7 +170,7 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
       constexpr size_t converted_index = property_t::symmetry_t::template index_from_generic<index>::value;
 
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register of data_t
-      vec_t vec_register(&(ptr_array[converted_index][grid_index]), Vc::element_aligned);
+      vec_t vec_register(&(ptr_array[converted_index][grid_index]), Vc::vector_aligned);
 
       return vec_register;
     }
