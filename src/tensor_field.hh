@@ -96,9 +96,12 @@ class tensor_field_t {
 
   protected:
     //! Storage for ndof grid pointers
-    const std::array<data_t * __restrict__ const,ndof> ptr_array;
+    std::array<data_t * __restrict__ ,ndof> ptr_array;
 
   public:
+
+    tensor_field_t() = default;
+
     //! Constructor from grid pointer parameters
     template <typename... TArgs>
     tensor_field_t(data_t * __restrict__ const first_elem, TArgs... elem)
@@ -219,9 +222,12 @@ class tensor_field_vt {
 
   protected:
     //! Storage for ndof grid pointers
-    const std::array<data_t * __restrict__ const,ndof> ptr_array;
+    std::array<data_t * __restrict__ ,ndof> ptr_array;
 
   public:
+
+    tensor_field_vt() = default;
+
     //! Constructor from grid pointer parameters
     template <typename... TArgs>
     tensor_field_vt(data_t * __restrict__ const first_elem, TArgs... elem)

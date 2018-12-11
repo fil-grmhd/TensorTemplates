@@ -84,9 +84,12 @@ template<typename T>
 class scalar_field_t {
   protected:
     //! Storage for the grid pointer
-    T * __restrict__ const grid_ptr;
+    T * __restrict__ grid_ptr;
 
   public:
+
+    scalar_field_t() = default;
+
     //! Constructor from grid pointer parameter
     scalar_field_t(T * __restrict__ const grid_ptr_)
         : grid_ptr(grid_ptr_) {};
@@ -192,9 +195,12 @@ class scalar_field_vt {
 
   protected:
     //! Storage for grid pointer
-    data_t * __restrict__ const grid_ptr;
+    data_t * __restrict__ grid_ptr;
 
   public:
+
+    scalar_field_vt() = default;
+
     //! Constructor from grid pointer parameter
     scalar_field_vt(data_t * __restrict__ const grid_ptr_)
         : grid_ptr(grid_ptr_) {};
