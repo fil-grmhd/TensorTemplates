@@ -69,8 +69,11 @@ public:
 
 template <typename E1, typename E2>
 class tensor_sum_t : public tensor_expression_t<tensor_sum_t<E1, E2>> {
-  E1 const &_u;
-  E2 const &_v;
+  using E1_t = operant_t<E1>;
+  using E2_t = operant_t<E2>;
+
+  E1_t _u;
+  E2_t _v;
 
 public:
   // This operation doesn't change the tensor properties, but one has to check
@@ -92,8 +95,11 @@ public:
 
 template <typename E1, typename E2>
 class tensor_sub_t : public tensor_expression_t<tensor_sub_t<E1, E2>> {
-  E1 const &_u;
-  E2 const &_v;
+  using E1_t = operant_t<E1>;
+  using E2_t = operant_t<E2>;
+
+  E1_t _u;
+  E2_t _v;
 
 public:
   // This operation doesn't change the tensor properties, but one has to check
@@ -117,7 +123,8 @@ template <typename E>
 class tensor_scalar_mult_t
     : public tensor_expression_t<tensor_scalar_mult_t<E>> {
   typename E::property_t::data_t const &_u;
-  E const &_v;
+  using E_t = operant_t<E>;
+  E_t _v;
 
 public:
   //! Scalar expression doesn't change tensor properties
@@ -139,7 +146,9 @@ public:
 template <typename E>
 class tensor_scalar_div_t : public tensor_expression_t<tensor_scalar_div_t<E>> {
   typename E::property_t::data_t const &_v;
-  E const &_u;
+  using E_t = operant_t<E>;
+
+  E_t _u;
 
 public:
   //! Scalar expression doesn't change tensor properties

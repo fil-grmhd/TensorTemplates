@@ -287,59 +287,57 @@ int main(){
 //            METRIC TESTS
 //
 /////////////////////////////////////////////////////////////////////
-/* old interface, needs to be updated to the new metric type
+metric_tensor3_t<double> metric{1, 0, -0.3,
+                                   1,  0,
+                                       1};
+inv_metric_tensor3_t<double> inv_metric = metric.inverse();
 
-//Flat space-time test
-double lapse = 1.;
-vector3_t<double> shift {1,2,3};
+auto abab = evaluate(tensor_cat(ab,ab));
 
-metric_tensor_t<double,3> mt{1, 0, -0.3,
-                                1,  0,
-                                    1};
+auto abab_l1 = evaluate(metric.lower<1>(abab));
+auto abab_l1l2 = evaluate(metric.lower<2>(abab_l1));
 
-//metric3_t metric(lapse, std::move(shift), std::move(mt));
-auto metric = make_metric3(lapse, std::move(shift), std::move(mt));
+// g_mj abab^imkl = s_j^ikl
+auto abab_l1_w = evaluate(contract<0,1>(metric,abab));
+auto abab_l1_r = evaluate(reorder_index<1,0,2,3>(abab_l1_w));
 
-std::cout << "Inverse metric" << metric.invmetric <<std::endl;
-std::cout << "metric" << metric.metric <<std::endl;
-std::cout << "sqrt(gamma)" << metric.sqrtdet <<std::endl;
+// g_mk abab^ijml = s_k^ijl
+auto abab_l1l2_w = evaluate(contract<0,2>(metric,abab_l1_r));
+auto abab_l1l2_r = evaluate(reorder_index<1,2,0,3>(abab_l1l2_w));
 
-vector3_t<double> am1 {11.,12.,13.};
-covector3_t<double> bm1 = lower_index<0>(metric, am1);
-vector3_t<double> cm1 = raise_index<0>(metric, bm1);
+std::cout << "abab lowered index 1 = " << std::endl;
+std::cout << abab_l1 << std::endl;
 
-std::cout << "am1 upper_t" << am1 <<std::endl;
-std::cout << "am1 lower_t" << bm1 <<std::endl;
-std::cout << "raised again" << cm1 <<std::endl;
+std::cout << "abab lowered index 1 and 2 = " << std::endl;
+std::cout << abab_l1l2 << std::endl;
 
-double norm2_am1 = contract<0,0>(metric,am1,am1);
+std::cout << "abab lowered index 1 wrong = " << std::endl;
+std::cout << abab_l1_w << std::endl;
+std::cout << "abab lowered index 1 right = " << std::endl;
+std::cout << abab_l1_r << std::endl;
 
-std::cout << "norm2 am1 :" << norm2_am1 <<std::endl;
+std::cout << "abab lowered index 1 and 2 wrong = " << std::endl;
+std::cout << abab_l1l2_w << std::endl;
+std::cout << "abab lowered index 1 and 2 right = " << std::endl;
+std::cout << abab_l1l2_r << std::endl;
 
-// 4-dim metric
+auto abab_l1l2_r1 = evaluate(inv_metric.raise<1>(abab_l1l2));
+auto abab_l1l2_r1r2 = evaluate(inv_metric.raise<2>(abab_l1l2_r1));
 
-//metric4_t metric4(lapse, std::move(shift), std::move(mt));
-auto metric4 = make_metric4(lapse, std::move(shift), std::move(mt));
+std::cout << "abab original = " << std::endl;
+std::cout << abab << std::endl;
 
-std::cout << "Inverse metric4" << metric4.invmetric <<std::endl;
-std::cout << "metric4" << metric4.metric <<std::endl;
-std::cout << "sqrt(gamma)" << metric4.sqrtdet <<std::endl;
+std::cout << "abab lowered and raised = " << std::endl;
+std::cout << abab_l1l2_r1r2 << std::endl;
 
-vector4_t<double> am14 {-11.,12.,13.,14.};
-covector4_t<double> bm14 = lower_index<0>(metric4, am14);
-vector4_t<double> cm14 = raise_index<0>(metric4, bm14);
 
-std::cout << "am14 upper_t" << am14 <<std::endl;
-std::cout << "am14 lower_t" << bm14 <<std::endl;
-std::cout << "raised again" << cm14 <<std::endl;
-
-double norm2_am14 = contract<0,0>(metric4,am14,am14);
-
-std::cout << "norm2 am14 :" << norm2_am14 <<std::endl;
-
+/*
+for(int i=0; i<3; ++i){
+  for(int j=0; j<3; ++j)
+    std::cout << " "<< rr_ab.access(i,j) << " ";
+  std::cout<<std::endl;
+}
 */
-
-
 // Symmetry of two indices
 sym_tensor3_t<double,0,1,upper_t,lower_t> sym_tensor3;
 sym_tensor4_t<double,0,1,upper_t,lower_t> sym_tensor4;
@@ -496,8 +494,8 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
 
   std::cout << "Kronecker test" << std::endl;
 
-  std::cout << kronecker3_t<double>::template evaluate<0>()<< std::endl; 
-  std::cout << kronecker3_t<double>::template evaluate<1>()<< std::endl; 
+  std::cout << kronecker3_t<double>::template evaluate<0>()<< std::endl;
+  std::cout << kronecker3_t<double>::template evaluate<1>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<2>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<3>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<4>()<< std::endl;
@@ -505,6 +503,62 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
   std::cout << kronecker3_t<double>::template evaluate<6>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<7>()<< std::endl;
   std::cout << kronecker3_t<double>::template evaluate<8>()<< std::endl;
+
+  std::cout << "Levi Civita test" << std::endl;
+
+  auto lc3 = evaluate(levi_civita3_up_t<double>());
+
+  int count = 0;
+  for(int i=0; i<3; ++i) {
+    for(int j=0; j<3; ++j)
+      for(int k=0; k<3; ++k) {
+        if(lc3.access(i,j,k) != 0) {
+          std::cout << "(" << i  << "," << j << "," << k << ") = " << lc3.access(i,j,k) << " ";
+          ++count;
+        }
+      }
+    std::cout<<std::endl;
+  }
+  std::cout << "Found " << count << " non-zero elements" << std::endl;
+
+  auto lc4 = evaluate(levi_civita4_up_t<double>());
+
+  count = 0;
+  for(int i=0; i<4; ++i) {
+    for(int j=0; j<4; ++j)
+      for(int k=0; k<4; ++k)
+        for(int l=0; l<4; ++l) {
+          if(lc4.access(i,j,k,l) != 0) {
+            std::cout << "(" << i  << "," << j << "," << k << "," << l << ") = " << lc4.access(i,j,k,l) << " ";
+            ++count;
+          }
+        }
+    std::cout<<std::endl;
+  }
+  std::cout << "Found " << count << " non-zero elements" << std::endl;
+
+  levi_civita4_up_t<double> lc4_up;
+  levi_civita4_down_t<double> lc4_down;
+  levi_civita3_up_t<double> lc3_up;
+  levi_civita3_down_t<double> lc3_down;
+
+  auto lc_fac = trace<0,1>(
+                trace<0,2>(
+                trace<0,3>(
+                contract<0,0>(lc4_up,lc4_down))));
+
+  std::cout << "4! = " << lc_fac << std::endl;
+
+  auto kron = evaluate(0.5*
+              trace<1,3>(
+              contract<1,1>(lc3_down,lc3_up)));
+
+  std::cout << "kronecker = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< kron.access(i,j) << " ";
+    std::cout << std::endl;
+  }
 
   auto H = evaluate(-A+B);
 

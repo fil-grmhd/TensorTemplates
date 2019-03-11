@@ -24,7 +24,7 @@ namespace tensors {
 // SYM: check if property classes could forward / preserve symmetry
 
 //! Property class holding data and types defining a specific tensor
-template <typename E> class general_tensor_property_t {
+template <typename E, bool is_persistent_ = false> class general_tensor_property_t {
 public:
   //! Data type of components
   using data_t = typename E::data_t;
@@ -45,6 +45,10 @@ public:
   using index_t = typename E::index_t;
   //! Actual type of tensor with these properties
   using this_tensor_t = typename E::this_tensor_t;
+
+  //! Is this a persistent object or could it be optimized away?
+  //  i.e. does it have storage <=> is it an instantiated tensor
+  static constexpr bool is_persistent = is_persistent_;
 };
 
 //! Property class holding data and types defining arithmetic combination of two
@@ -65,6 +69,13 @@ public:
                                   E1::property_t::ndim,
                                   E1::property_t::rank>
                               >::type;
+
+  using this_tensor_t = general_tensor_t<typename E1::property_t::data_t,
+                                         typename E1::property_t::frame_t,
+                                         symmetry_t,
+                                         E1::property_t::rank,
+                                         typename E1::property_t::index_t,
+                                         E1::property_t::ndim>;
 
   static_assert(
       std::is_same<typename E1::property_t::frame_t,
@@ -124,6 +135,11 @@ public:
   //! Number of components (disregarding any symmetries)
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
+  //! Is this a persistent object or could it be optimized away?
+  //  i.e. does it have storage <=> is it an instantiated tensor
+  //  this is an expression, so NO
+  static constexpr bool is_persistent = false;
+
   // static compile-time routine to get index_t, doesn't work, see generator above
   // static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_index_t(){}
 
@@ -176,6 +192,11 @@ public:
   //! Number of components (disregarding any symmetries)
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
+  //! Is this a persistent object or could it be optimized away?
+  //  i.e. does it have storage <=> is it an instantiated tensor
+  //  this is an expression, so NO
+  static constexpr bool is_persistent = false;
+
   // static compile-time routine to get index_t, doesn't work, see above
   //static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_index_t(){}
 
@@ -217,6 +238,10 @@ public:
   //! Number of components (disregarding any symmetries)
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
 
+  //! Is this a persistent object or could it be optimized away?
+  //  i.e. does it have storage <=> is it an instantiated tensor
+  //  this is an expression, so NO
+  static constexpr bool is_persistent = false;
 
   // static compile-time routine to get index_t
   // static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_index_t(){}
@@ -280,6 +305,11 @@ public:
   static constexpr size_t ndof = symmetry_t::ndof;
   //! Number of components (disregarding any symmetries)
   static constexpr size_t ncomp = utilities::static_pow<ndim,rank>::value;
+
+  //! Is this a persistent object or could it be optimized away?
+  //  i.e. does it have storage <=> is it an instantiated tensor
+  //  this is an expression, so NO
+  static constexpr bool is_persistent = false;
 
   // static compile-time routine to get index_t
   // static inline __attribute__ ((always_inline)) constexpr decltype(auto) get_index_t(){}

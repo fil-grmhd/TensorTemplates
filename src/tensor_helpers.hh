@@ -20,6 +20,169 @@
 
 namespace tensors {
 
+//! Operator structs
+// Drop each element
+struct op_drop {
+  template<typename... Args>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Args&&... args) {
+    return 0;
+  }
+
+  template<typename... Args>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Args&&... args) {
+    return 0;
+  }
+
+};
+
+// Combine all elements with and
+struct op_and {
+  template<typename Arg, typename... Args>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg, Args... args) {
+    return arg && op_const(args...);
+  }
+  template<typename Arg>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg) {
+    return arg;
+  }
+
+  template<typename Arg, typename... Args>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg, Args... args) {
+    return arg && op(args...);
+  }
+  template<typename Arg>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg) {
+    return arg;
+  }
+};
+
+// Combine all elements with or
+struct op_or {
+  template<typename Arg, typename... Args>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg, Args... args) {
+    return arg || op_const(args...);
+  }
+  template<typename Arg>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg) {
+    return arg;
+  }
+
+  template<typename Arg, typename... Args>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg, Args... args) {
+    return arg || op(args...);
+  }
+  template<typename Arg>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg) {
+    return arg;
+  }
+};
+
+// Combine all elements with addition
+struct op_add {
+  template<typename Arg, typename... Args>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg, Args... args) {
+    return arg + op_const(args...);
+  }
+  template<typename Arg>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg) {
+    return arg;
+  }
+
+  template<typename Arg, typename... Args>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg, Args... args) {
+    return arg + op(args...);
+  }
+  template<typename Arg>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg) {
+    return arg;
+  }
+};
+
+// Combine all elements with multiplication
+struct op_mult {
+  template<typename Arg, typename... Args>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg, Args... args) {
+    return arg * op_const(args...);
+  }
+  template<typename Arg>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) op_const(Arg arg) {
+    return arg;
+  }
+
+  template<typename Arg, typename... Args>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg, Args... args) {
+    return arg * op(args...);
+  }
+  template<typename Arg>
+  inline __attribute__ ((always_inline)) static decltype(auto) op(Arg arg) {
+    return arg;
+  }
+};
+
+
+//! General index traverser, i.e. "for loop" over template indices
+//  i.e. constexpr loop
+template<typename F, int min, int max>
+class index_recursion_t {
+private:
+  // traverser defining a general template recursion
+  template<int t_ind, typename OP>
+  struct traverser_t {
+    template<typename... Args>
+    inline __attribute__ ((always_inline)) static decltype(auto) traverse(Args&&... args) {
+      return OP::op(F::template call<t_ind>(std::forward<Args>(args)...),
+                    traverser_t<t_ind+1,OP>::traverse(std::forward<Args>(args)...));
+    }
+  };
+  template<typename OP>
+  struct traverser_t<max,OP> {
+    template<typename... Args>
+    inline __attribute__ ((always_inline)) static decltype(auto) traverse(Args&&... args) {
+      return F::template call<max>(std::forward<Args>(args)...);
+    }
+  };
+
+public:
+  // traverse "operator"
+  // OP defines how each traversed element should be combined (dropped by default)
+  template<typename OP = op_drop, typename... Args>
+  inline __attribute__ ((always_inline)) static decltype(auto) traverse(Args&&... args) {
+    return traverser_t<min,OP>::traverse(std::forward<Args>(args)...);
+  }
+};
+
+//! General index traverser, i.e. "for loop" over template indices
+//  i.e. constexpr loop with constexpr callback function
+template<typename F, int min, int max>
+class index_recursion_constexpr_t {
+private:
+  // traverser defining a general template recursion
+  template<int t_ind, typename OP>
+  struct traverser_t {
+    template<typename... Args>
+    inline __attribute__ ((always_inline)) static constexpr decltype(auto) traverse(Args&&... args) {
+      return OP::op_const(F::template call<t_ind>(std::forward<Args>(args)...),
+                          traverser_t<t_ind+1,OP>::traverse(std::forward<Args>(args)...));
+    }
+  };
+  template<typename OP>
+  struct traverser_t<max,OP> {
+    template<typename... Args>
+    inline __attribute__ ((always_inline)) static constexpr decltype(auto) traverse(Args&&... args) {
+      return F::template call<max>(std::forward<Args>(args)...);
+    }
+  };
+
+public:
+  // traverse "operator"
+  // OP defines how each traversed element should be combined (dropped by default)
+  template<typename OP = op_drop, typename... Args>
+  inline __attribute__ ((always_inline)) static constexpr decltype(auto) traverse(Args&&... args) {
+    return traverser_t<min,OP>::traverse(std::forward<Args>(args)...);
+  }
+};
+
+
 // Template recursion to set components, fastest for chained expressions
 template<typename E, typename T, size_t N, int... Ind>
 struct setter_t {

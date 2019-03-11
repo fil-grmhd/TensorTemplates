@@ -1,70 +1,16 @@
 #include<iostream>
 
 //#define TENSORS_VECTORIZED
-#include "../tensor_templates.hh"
+#include "../src/tensor_templates.hh"
+
+// lazy
+using namespace tensors;
 
 double rel_diff(double d0, double d1) {
   return 2 * std::abs(d0 - d1)
          / (std::abs(d0) + std::abs(d1));
 }
-constexpr double eps = 1e-14;
-
-
-template<typename node_t, size_t order>
-struct test_diff {
-  const double idx;
-  const int stride[3];
-
-  test_diff() : idx(1), stride {1,1,1} {}
-
-  template<size_t dir, typename T>
-  inline __attribute__ ((always_inline)) T diff(T const * const ptr, size_t const index) const {
-    return idx*tensors::fd::auto_diff<1,order,node_t>(ptr, index, stride[dir]);
-  }
-};
-
-
-struct op_drop {
-  template<typename... Args>
-  inline static decltype(auto) op(Args&&... args) {
-    return 0;
-  }
-};
-
-struct op_and {
-  template<typename Arg, typename... Args>
-  inline static decltype(auto) op(Arg arg, Args... args) {
-    return arg && op(args...);
-  }
-  template<typename Arg>
-  inline static decltype(auto) op(Arg arg) {
-    return arg;
-  }
-};
-
-template<typename F, int min, int max>
-struct index_recursion_t {
-  template<int t_ind, typename OP>
-  struct traverser_t {
-    template<typename... Args>
-    inline static decltype(auto) traverse(Args&&... args) {
-      return OP::op(F::template call<t_ind>(std::forward<Args>(args)...),
-                    traverser_t<t_ind+1,OP>::traverse(std::forward<Args>(args)...));
-    }
-  };
-  template<typename OP>
-  struct traverser_t<max,OP> {
-    template<typename... Args>
-    inline static decltype(auto) traverse(Args&&... args) {
-      return F::template call<max>(std::forward<Args>(args)...);
-    }
-  };
-
-  template<typename OP = op_drop, typename... Args>
-  inline static decltype(auto) traverse(Args&&... args) {
-    return traverser_t<min,OP>::traverse(std::forward<Args>(args)...);
-  }
-};
+constexpr double eps = 1e-20;
 
 template<int cind, typename tensor_t>
 struct uncompressed_index_printer : public index_recursion_t<uncompressed_index_printer<cind,tensor_t>,0,tensor_t::rank-1> {
@@ -151,33 +97,36 @@ struct gen_to_gen_comp : public index_recursion_t<gen_to_gen_comp<T,S,print>,0,T
   }
 };
 
-template<typename T, bool print = false>
-struct check_slopes : public index_recursion_t<check_slopes<T,print>,0,T::ncomp-1> {
-  template<int cind, typename V>
-  inline static decltype(auto) call(T const & t, V const & slopes) {
-    constexpr int sym_cind = T::symmetry_t::template index_from_generic<cind>::value;
-    constexpr int comp_index = T::symmetry_t::template uncompress_index<0,sym_cind>::value;
+template<typename T, size_t compressed_index, size_t current_index>
+//struct index_signs : public index_recursion_constexpr_t<index_signs<T,compressed_index,current_index>,current_index,T::property_t::rank-1> {
+struct index_signs : public index_recursion_t<index_signs<T,compressed_index,current_index>,current_index+1,T::property_t::rank-1> {
+  template<int ind>
+  inline static decltype(auto) call() {
+    std::cout << "Comparing " << current_index << " to " << ind << std::endl;
 
-    double rel_err = rel_diff(t.template evaluate<cind>(),slopes.template evaluate<comp_index>());
-    if(rel_err > eps) {
-      if(print) {
-        std::cout << "slope wrong [" << cind << "],";
-        uncompressed_index_printer<cind,T>::traverse();
-        std::cout << "," << comp_index;
-        std::cout << ": ";
-        std::cout << t.template evaluate<cind>() << " != " << slopes.template evaluate<comp_index>() << " (" << rel_err << ")" << std::endl;
-      }
-      return false;
-    }
-    return true;
+    constexpr int sym_ind = T::property_t::symmetry_t::template index_from_generic<compressed_index>::value;
+    constexpr int current_val = T::property_t::symmetry_t::template uncompress_index<current_index,sym_ind>::value;
+    constexpr int index_val = T::property_t::symmetry_t::template uncompress_index<ind,sym_ind>::value;
+
+    constexpr int diff = index_val - current_val;
+    std::cout << "Difference:" << index_val << " - " << current_val << " = " << diff << std::endl;
+    std::cout << "Signum:" << utilities::static_sign<diff>::value << std::endl;
+
+    return utilities::static_sign<diff>::value;
   }
 };
 
+template<typename T, size_t cind>
+struct index_loop : public index_recursion_t<index_loop<T,cind>,0,T::rank-2> {
+
+  template<int ind>
+  inline static decltype(auto) call() {
+    std::cout << "Starting inner loop on compress index " << cind << " and index " << ind << std::endl;
+    return index_signs<T,cind,ind>::template traverse<op_mult>();
+  }
+};
 
 int main(){
-
-  using namespace tensors;
-
   constexpr int i0 = 0;
   constexpr int i1 = 2;
 
@@ -216,30 +165,15 @@ int main(){
 
   std::cout << "Comparing sym to reordered... " << gen_to_gen_comp<sym_type,gen_type>::traverse<op_and>(sym,sym_reorder3) << std::endl;
 
-  constexpr int num_points = 20;
-  double vec0[num_points], vec1[num_points], vec2[num_points];
+  constexpr size_t inds[] = {1,0,2,1};
+  constexpr size_t cind_gen = gen_type::symmetry_t::compressed_index<inds[0], inds[1], inds[2], inds[3]>::value;
+  constexpr size_t cind_sym = sym_type::symmetry_t::compressed_index<inds[0], inds[1], inds[2], inds[3]>::value;
 
-  vector3_t<double> slopes(2,10,1337);
-  vector3_t<double> constants(5,16,42);
+  std::cout << "Calling with compressed indices " << cind_gen << " " << cind_sym << std::endl;
+  std::cout << "And uncompressed indices " << inds[0] << " " << inds[1] << " " << inds[2] << " " << inds[3] << std::endl;
 
-  for(int i = 0; i<num_points; ++i) {
-    vec0[i] = slopes[0]*i+constants[0];
-    vec1[i] = slopes[1]*i+constants[1];
-    vec2[i] = slopes[2]*i+constants[2];
-  }
-
-  test_diff<fd::central_nodes,4> c4_diff;
-  test_diff<fd::onesided_nodes<false,1>,4> up4_diff;
-  test_diff<fd::onesided_nodes<true,1>,4> down4_diff;
-
-  tensor_field_t<vector3_t<double>> vec_field(vec0,vec1,vec2);
-  auto dvec0 = evaluate(vec_field[num_points/2].finite_diff(c4_diff));
-  auto dvec1 = evaluate(vec_field[num_points/2].finite_diff(up4_diff));
-  auto dvec2 = evaluate(vec_field[num_points/2].finite_diff(down4_diff));
-
-  std::cout << "Comparing slopes (central)... " << check_slopes<decltype(dvec0)>::traverse<op_and>(dvec0,slopes) << std::endl;
-  std::cout << "Comparing slopes (up)... " << check_slopes<decltype(dvec1)>::traverse<op_and>(dvec1,slopes) << std::endl;
-  std::cout << "Comparing slopes (down)... " << check_slopes<decltype(dvec2)>::traverse<op_and>(dvec2,slopes) << std::endl;
+  std::cout << "Signum multiplication gen: " << std::endl << index_loop<gen_type,cind_gen>::traverse<op_mult>() << std::endl;
+  std::cout << "Signum multiplication sym: " << std::endl << index_loop<sym_type,cind_sym>::traverse<op_mult>() << std::endl;
 }
 
 

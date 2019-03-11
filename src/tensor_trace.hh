@@ -6,8 +6,11 @@ namespace tensors {
 //! Expression template for generic tensor trace
 template<size_t i1, size_t i2, typename E>
 class tensor_trace_t : public tensor_expression_t<tensor_trace_t<i1,i2,E> > {
-    // references to traced tensor
-    E const& _u;
+
+    using E_t = operant_t<E>;
+
+    // reference or value of traced tensor/expression
+    E_t _u;
 
   public:
     // Trace changes the tensor type, thus a special property class is needed.

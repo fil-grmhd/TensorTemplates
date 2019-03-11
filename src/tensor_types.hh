@@ -25,9 +25,13 @@ template <typename T, typename frame_t_, typename symmetry_t_, size_t rank_, typ
 class general_tensor_t;
 
 namespace general {
-// forward decleration of metric type
+// forward decleration of metric types
 template <typename T>
 class metric_tensor3_t;
+
+template <typename T>
+class inv_metric_tensor3_t;
+
 
 // general tensor typedefs
 
@@ -80,6 +84,29 @@ template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
 using sym_tensor3_t = sym2_tensor_t<T, 3, eulerian_t, i0, i1, ranks...>;
 template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
 using sym_tensor4_t = sym2_tensor_t<T, 4, eulerian_t, i0, i1, ranks...>;
+
+template <typename T, typename frame_t_,  size_t ndim_>
+class kronecker_t;
+
+template <typename T, typename frame_t_, typename... ranks>
+class levi_civita_t;
+
+template<typename T>
+using kronecker3_t = general::kronecker_t<T,any_frame_t,3>;
+template<typename T>
+using kronecker4_t = general::kronecker_t<T,any_frame_t,4>;
+
+template <typename T>
+using levi_civita3_up_t = general::levi_civita_t<T,any_frame_t,upper_t,upper_t,upper_t>;
+template <typename T>
+using levi_civita4_up_t = general::levi_civita_t<T,any_frame_t,upper_t,upper_t,upper_t,upper_t>;
+
+
+template <typename T>
+using levi_civita3_down_t = general::levi_civita_t<T,any_frame_t,lower_t,lower_t,lower_t>;
+template <typename T>
+using levi_civita4_down_t = general::levi_civita_t<T,any_frame_t,lower_t,lower_t,lower_t,lower_t>;
+
 
 // component type
 template<typename T>
@@ -157,6 +184,27 @@ using sym_tensor3_vt = sym2_tensor_vt<T, 3, eulerian_t, i0, i1, ranks...>;
 template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
 using sym_tensor4_vt = sym2_tensor_vt<T, 4, eulerian_t, i0, i1, ranks...>;
 
+template <typename T, typename frame_t_,  size_t ndim_>
+using kronecker_vt = general::kronecker_t<Vc::Vector<T>,frame_t_,ndim_>;
+
+template <typename T, typename frame_t_, typename... ranks>
+using levi_civita_vt = general::levi_civita_t<Vc::Vector<T>,frame_t_,ranks...>;
+
+template<typename T>
+using kronecker3_vt = kronecker_vt<T,any_frame_t,3>;
+template<typename T>
+using kronecker4_vt = kronecker_vt<T,any_frame_t,4>;
+
+template <typename T>
+using levi_civita3_up_vt = levi_civita_vt<T,any_frame_t,upper_t,upper_t,upper_t>;
+template <typename T>
+using levi_civita4_up_vt = levi_civita_vt<T,any_frame_t,upper_t,upper_t,upper_t,upper_t>;
+
+template <typename T>
+using levi_civita3_down_vt = levi_civita_vt<T,any_frame_t,lower_t,lower_t,lower_t>;
+template <typename T>
+using levi_civita4_down_vt = levi_civita_vt<T,any_frame_t,lower_t,lower_t,lower_t,lower_t>;
+
 // component type
 template<typename T>
 using comp_vt = Vc::Vector<T>;
@@ -222,6 +270,27 @@ using sym_tensor3_t = sym2_tensor_vt<T, 3, eulerian_t, i0, i1, ranks...>;
 template <typename T, size_t i0 = 0, size_t i1 = 1, typename... ranks>
 using sym_tensor4_t = sym2_tensor_vt<T, 4, eulerian_t, i0, i1, ranks...>;
 
+template <typename T, typename frame_t_,  size_t ndim_>
+using kronecker_t = kronecker_vt<T,frame_t_,ndim_>;
+
+template <typename T, typename frame_t_, typename... ranks>
+using levi_civita_t = levi_civita_vt<T,frame_t_,ranks...>;
+
+template<typename T>
+using kronecker3_t = kronecker3_vt<T>;
+template<typename T>
+using kronecker4_t = kronecker4_vt<T>;
+
+template <typename T>
+using levi_civita3_up_t = levi_civita3_up_vt<T>;
+template <typename T>
+using levi_civita4_up_t = levi_civita4_up_vt<T>;
+
+template <typename T>
+using levi_civita3_down_t = levi_civita3_down_vt<T>;
+template <typename T>
+using levi_civita4_down_t = levi_civita4_down_vt<T>;
+
 // component type
 template<typename T>
 using comp_t = comp_vt<T>;
@@ -237,19 +306,6 @@ using metric_tensor3_t = metric_tensor3_vt<T>;
 #endif // TENSORS_AUTOVEC
 
 #endif // TENSORS_VECTORIZED
-
-//Kronecker delta has no underlying data structure so define globally.
-
-namespace general{
-template <typename T, typename frame_t_,  size_t ndim_>
-class kronecker_t;
-}
-
-template<typename T>
-using kronecker3_t = general::kronecker_t<T,any_frame_t,3>;
-template<typename T>
-using kronecker4_t = general::kronecker_t<T,any_frame_t,4>;
-
 
 } // namespace tensors
 

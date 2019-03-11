@@ -33,6 +33,14 @@ template <size_t a> struct static_pow<a, 0> {
   static constexpr size_t value = 1;
 };
 
+//! Compile-time integer signum function
+template <int a> struct static_sign {
+  static constexpr int value = (a < 0) ? -1 : 1;
+};
+template<> struct static_sign<0> {
+  static constexpr int value = 0;
+};
+
 // Useful helper for checking conditions on template parameters
 // https://stackoverflow.com/questions/28253399/check-traits-for-all-variadic-template-arguments/28253503#28253503
 template <bool...> struct bool_pack;
