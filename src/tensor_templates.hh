@@ -79,6 +79,9 @@
 // general tensor product expression
 #include "tensor_concat.hh"
 
+// general hadamard like product
+#include "tensor_product.hh"
+
 // general index reordering expression
 #include "tensor_index_reordering.hh"
 

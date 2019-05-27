@@ -582,6 +582,38 @@ std::cout << "Ndof: " << decltype(sym_tensor3)::ndof << " " << decltype(from_sym
       std::cout << " "<< H.access(i,j) << " ";
     std::cout<<std::endl;
   }
+
+
+///////////////////////////////////////
+
+
+ std::cout << std::endl;
+ std::cout << "Testing tensor product: "  << std::endl;
+ std::cout << std::endl;
+ std::cout << std::endl;
+
+  std::cout << "A = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< A.access(i,j) << " ";
+    std::cout<<std::endl;
+  }
+
+  
+  vector3_t<double> p;
+
+  p[0] = 10.; p[1]= 100.; p[2] = 1000.;
+
+  auto Ap = evaluate( tensor_product(A,p));
+
+  std::cout << "Ap = " << std::endl;
+  for(int i=0; i<3; ++i){
+    for(int j=0; j<3; ++j)
+      std::cout << " "<< Ap.access(i,j) << " ";
+    std::cout<<std::endl;
+  }
+
+   
 }
 
 
