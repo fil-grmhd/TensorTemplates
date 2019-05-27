@@ -10,10 +10,7 @@
 
 \begin{abstract}
 This is a first approach for a quick
-reference for the TensorTemplates code,
-available at
-\url{https://bitbucket.org/infrastructuredevs/tensortemplates}
-\end{abstract}
+reference for the TensorTemplates code. \end{abstract}
 
 \section{Basics}
 
@@ -92,60 +89,6 @@ T_{a_1,\dots,a_i,\dots,a_j,\dots,a_N}
 \end{equation*}
 
 \end{description}
-
-\section{Constructing tensor objects}
-
-There should be something about input/output,
-i.e. how to setup a tensor object, how to extract
-the elements again?
-
-For tensors, there are actually the output stream
-carets \verb|<<| overloaded, this is convenient for
-debugging.
-
-\section{What I am missing}
-
-The possibility to contract two or multiple
-indices in one operation without a chain
-of \texttt{trace} and \texttt{contract}
-operations, i.e. I want to compute $D$ in
-
-\begin{equation*}
-A^{ik} B^{nm} C_{knm}
-= D^i
-\end{equation*}
-%
-Then I can do this with
-%
-\begin{equation*}
-D=
-\mathtt{contract}\braket{1,0}\left(A,
-\mathtt{trace}\braket{0,2}\left(
-\mathtt{contract}\braket{0,2}\left(
-B,C
-\right)\right)\right)
-\end{equation*}
-%
-However this is really not well readable.
-Instead, one should be able to write something
-like this pseudocode:
-\begin{equation*}
-D = 
-\mathtt{contract}\braket{1,0}\left(A,
-\mathtt{contract}\braket{0,0}\braket{1,1}(B,C)
-\right)
-\end{equation*}
-A nice way of writing this down would probably
-be this pseudocode
-\begin{equation*}
-D=
-\mathtt{trace}\braket{2,5}\braket{2,4}\braket{3,6}
-\mathtt{tensor\_cat}\left(A,B,C\right)
-\end{equation*}
-because it avoid the headache of computing the
-indices of the intermediate results in the head.
-
-What is the TensorTemplate'y way of doing this?
 
 
 
