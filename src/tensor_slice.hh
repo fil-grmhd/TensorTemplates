@@ -45,14 +45,14 @@ public:
 
   template <size_t N, size_t N_count, int i0, int... Indices>
   struct get_free_indices {
-    static constexpr size_t value =
+    static constexpr int value =
         (N + 1 > N_count) +
         get_free_indices<N, N_count + (i0 == -1), Indices...>::value;
   };
 
   template <size_t N, size_t N_count, int i0>
   struct get_free_indices<N, N_count, i0> {
-    static constexpr size_t value = (N + 1 > N_count) - 1;
+    static constexpr int value = (N + 1 > N_count) - 1;
   };
 
   template <size_t N> struct get_index_t {
