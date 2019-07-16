@@ -108,6 +108,7 @@ template<typename T, typename ptr_t>
 class scalar_wrapper_vt {
   public:
     // Data is stored as vector register
+
 #ifdef TENSORS_TSIMD
 #ifdef __AVX512F__
     static constexpr int tsimd_width = 8;
@@ -119,6 +120,7 @@ class scalar_wrapper_vt {
 #else
     using vec_t = Vc::native_simd<T>;
 #endif
+
     // The actual data type
     using data_t = T;
 
@@ -152,65 +154,77 @@ class scalar_wrapper_vt {
 
     //! Sets vec_t::size() scalar field values beginning at grid_index to data
     inline __attribute__ ((always_inline)) void operator=(vec_t const & data) {
+
 #ifdef TENSORS_TSIMD
       tsimd::store(data,&grid_ptr[grid_index]);
 #else
       data.copy_to(&grid_ptr[grid_index], Vc::vector_aligned);
 #endif
+
     }
 
     //! Add the scalar at grid_index to data
     inline __attribute__ ((always_inline)) void operator+=(vec_t const & data) {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+
 #ifdef TENSORS_TSIMD
       auto vec_register=tsimd::load<vec_t>(&grid_ptr[grid_index]);
 #else
       vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
 #endif
+
       (*this) = vec_register + data;
     }
 
     //! Substract the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator-=(vec_t const & data) {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+
 #ifdef TENSORS_TSIMD
       auto vec_register=tsimd::load<vec_t>(&grid_ptr[grid_index]);
 #else
       vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
 #endif
+
       (*this) = vec_register - data;
     }
 
     //! Multiply the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator*=(vec_t const & data) {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+
 #ifdef TENSORS_TSIMD
       auto vec_register=tsimd::load<vec_t>(&grid_ptr[grid_index]);
 #else
       vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
 #endif
+
       (*this) = vec_register * data;
     }
 
     //! Divide the scalar at grid_index by data
     inline __attribute__ ((always_inline)) void operator/=(vec_t const & data) {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+
 #ifdef TENSORS_TSIMD
       auto vec_register=tsimd::load<vec_t>(&grid_ptr[grid_index]);
 #else
       vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
 #endif
+
       (*this) = vec_register / data;
     }
 
     //! Conversion operator, so that it is usable as plain vector register (Vc::native_simd)
     operator vec_t const () const {
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register
+
 #ifdef TENSORS_TSIMD
       auto vec_register=tsimd::load<vec_t>(&grid_ptr[grid_index]);
 #else
       vec_t vec_register(&grid_ptr[grid_index], Vc::vector_aligned);
 #endif
+
 
       return vec_register;
     }
@@ -234,6 +248,7 @@ class scalar_field_vt {
     // Data is stored as vector register
     using vec_t = Vc::native_simd<T>;
 #endif
+
     // The actual data type
     using data_t = T;
 

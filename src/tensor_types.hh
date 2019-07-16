@@ -145,13 +145,17 @@ using tensors_vector_t = Vc::native_simd<T>;
 
 // Tensor of rank index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, typename... ranks>
+
 using tensor_vt = general_tensor_t<tensors_vector_t<T>, frame_t_, generic_symmetry_t<ndim_,sizeof...(ranks)>,
+
                                   sizeof...(ranks),
                                   std::tuple<ranks...>, ndim_>;
 
 // Symmetric tensor in two indices of rank index types, e.g. lower_t, upper_t, ...
 template <typename T, size_t ndim_, typename frame_t_, size_t i0, size_t i1, typename... ranks>
+
 using sym2_tensor_vt = general_tensor_t<tensors_vector_t<T>, frame_t_, sym2_symmetry_t<ndim_,sizeof...(ranks),i0,i1>,
+
                                   sizeof...(ranks),
                                   std::tuple<ranks...>, ndim_>;
 
@@ -206,6 +210,7 @@ using kronecker_vt = general::kronecker_t<tensors_vector_t<T>,frame_t_,ndim_>;
 template <typename T, typename frame_t_, typename... ranks>
 using levi_civita_vt = general::levi_civita_t<tensors_vector_t<T>,frame_t_,ranks...>;
 
+
 template<typename T>
 using kronecker3_vt = kronecker_vt<T,any_frame_t,3>;
 template<typename T>
@@ -236,6 +241,7 @@ constexpr size_t loop_vinc = tensors_vector_t<T>::size();
 // metric type
 template<typename T>
 using metric_tensor3_vt = general::metric_tensor3_t<tensors_vector_t<T>>;
+
 
 // deliver vectorized types as default types if code is vectorization agnostic
 #ifdef TENSORS_AUTOVEC
