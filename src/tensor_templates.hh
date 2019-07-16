@@ -20,8 +20,13 @@
 
 
 #ifdef TENSORS_VECTORIZED
-  #pragma message ("TensorTemplates: Vectorization support enabled.")
+#ifdef TENSORS_TSIMD
+  #pragma message ("TensorTemplates: tsimd Vectorization support enabled.")
+  #include <tsimd/tsimd.h>
+#else
+  #pragma message ("TensorTemplates: Vc Vectorization support enabled.")
   #include <Vc/Vc>
+#endif
 #else
   #pragma message ("TensorTemplates: Vectorization support disabled.")
 #endif
@@ -78,9 +83,6 @@
 
 // general tensor product expression
 #include "tensor_concat.hh"
-
-// general hadamard like product
-#include "tensor_product.hh"
 
 // general index reordering expression
 #include "tensor_index_reordering.hh"

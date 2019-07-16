@@ -145,7 +145,7 @@ public:
   }
   //  This gives back a const reference, for const tensors
   template <size_t... Ind>
-  inline __attribute__((always_inline)) data_t c() const {
+  inline __attribute__((always_inline)) data_t const &c() const {
     return this->cc<compressed_index<Ind...>()>();
   }
 
@@ -156,7 +156,7 @@ public:
     return m_data[symmetry_t::template index_from_generic<index>::value];
   }
   template <size_t index>
-  inline __attribute__((always_inline)) data_t cc() const {
+  inline __attribute__((always_inline)) data_t const &cc() const {
     return m_data[symmetry_t::template index_from_generic<index>::value];
   }
 
