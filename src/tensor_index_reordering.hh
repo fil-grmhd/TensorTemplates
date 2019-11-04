@@ -4,6 +4,8 @@
 namespace tensors {
 
 //! Expression template for a index reordered tensor
+// The indices at the position reorder the given symbol
+// i.e. ijk and 201 -> jki
 template <class E, size_t... Ind>
 class tensor_reorder_index_t
     : public tensor_expression_t<tensor_reorder_index_t<E,Ind...>> {
