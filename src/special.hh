@@ -44,7 +44,7 @@ public:
     constexpr size_t i1 = generic_symmetry_t<ndim_,2>::template uncompress_index<1,index>::value;
 
 
-    return (i0==i1);
+    return double(i0==i1);
   }
 };
 
