@@ -102,6 +102,34 @@ class tensor_field_t {
 
     tensor_field_t() = default;
 
+
+    tensor_field_t(tensor_field_t&& tf){
+	for(int i=0;i<ndof; ++i){
+	  ptr_array[i] = tf.ptr_array[i];
+	}
+    };
+
+    tensor_field_t(tensor_field_t& tf){
+	for(int i=0;i<ndof; ++i){
+	  ptr_array[i] = tf.ptr_array[i];
+	}
+    };
+
+    tensor_field_t operator=(tensor_field_t& tf){
+	for(int i=0;i<ndof; ++i){
+	  ptr_array[i] = tf.ptr_array[i];
+	}
+	return *this;
+    };
+
+    tensor_field_t operator=(tensor_field_t&& tf){
+	for(int i=0;i<ndof; ++i){
+	  ptr_array[i] = tf.ptr_array[i];
+	}
+	return *this;
+    };
+
+
     //! Constructor from grid pointer parameters
     template <typename... TArgs>
     tensor_field_t(data_t * __restrict__ const first_elem, TArgs... elem)
@@ -128,7 +156,13 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
     // The data type is in this case a vector register type
     using vec_t = typename property_t::data_t;
     // The actual data type
+
+#ifdef TENSORS_TSIMD
+    using data_t = typename vec_t::element_t;
+#else
     using data_t = typename vec_t::value_type;
+#endif
+
 
     static constexpr size_t ndof = property_t::ndof;
 
@@ -148,14 +182,26 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
         constexpr size_t gen_index = E::property_t::symmetry_t::template index_to_generic<N>::value;
 
         // gets a vector register and let it store Vc::native_simd<T>::size() elements to memory starting at i
+
+#ifdef TENSORS_TSIMD
+	tsimd::store(e.template evaluate<gen_index>(),&arr[N][i]);
+#else
         (e.template evaluate<gen_index>()).copy_to(&arr[N][i], Vc::vector_aligned);
+#endif
+
         setter_t<N-1,E>::set(i,e,arr);
       }
     };
     template<typename E>
     struct setter_t<0,E> {
       static inline __attribute__ ((always_inline)) void set(size_t const i, E const& e, ptr_array_t const & arr) {
+
+#ifdef TENSORS_TSIMD
+	tsimd::store(e.template evaluate<0>(),&arr[0][i]);
+#else
         (e.template evaluate<0>()).copy_to(&arr[0][i], Vc::vector_aligned);
+#endif
+
       }
     };
 
@@ -173,7 +219,13 @@ class tensor_field_expression_vt : public tensor_expression_t<tensor_field_expre
       constexpr size_t converted_index = property_t::symmetry_t::template index_from_generic<index>::value;
 
       // reads Vc::native_simd<data_t>::size() values from grid_index on into vector register of data_t
+
+#ifdef TENSORS_TSIMD
+      vec_t vec_register = tsimd::load<vec_t>(&(ptr_array[converted_index][grid_index]));
+#else
       vec_t vec_register(&(ptr_array[converted_index][grid_index]), Vc::vector_aligned);
+#endif
+
 
       return vec_register;
     }
@@ -217,7 +269,13 @@ class tensor_field_vt {
     // The data type is in this case a vector register type
     using vec_t = typename property_t::data_t;
     // The actual data type
+
+#ifdef TENSORS_TSIMD
+    using data_t = typename vec_t::element_t;
+#else
     using data_t = typename vec_t::value_type;
+#endif
+
     static constexpr size_t ndof = property_t::ndof;
 
   protected:
@@ -227,6 +285,34 @@ class tensor_field_vt {
   public:
 
     tensor_field_vt() = default;
+
+
+    tensor_field_vt(tensor_field_vt&& tf){
+	for(int i=0;i<ndof; ++i){
+	  ptr_array[i] = tf.ptr_array[i];
+	}
+    };
+
+    tensor_field_vt(tensor_field_vt& tf){
+	for(int i=0;i<ndof; ++i){
+	  ptr_array[i] = tf.ptr_array[i];
+	}
+    };
+
+    tensor_field_vt operator=(tensor_field_vt& tf){
+	for(int i=0;i<ndof; ++i){
+	  ptr_array[i] = tf.ptr_array[i];
+	}
+	return *this;
+    };
+
+    tensor_field_vt operator=(tensor_field_vt&& tf){
+	for(int i=0;i<ndof; ++i){
+	  ptr_array[i] = tf.ptr_array[i];
+	}
+	return *this;
+    };
+    
 
     //! Constructor from grid pointer parameters
     template <typename... TArgs>

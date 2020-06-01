@@ -10,3 +10,5 @@ Licence      : GPLv3
 Tensor class templates with various operations on them defined.
 For an overview look into tensor_types.hh and the test files in the utils directory.
 Directory structure is adapted to fit as a Cactus Thorn, but source files in src/ are completely independent.
+This is a header-only library and the automatic vectorization is based on
+https://github.com/VcDevel/Vc.

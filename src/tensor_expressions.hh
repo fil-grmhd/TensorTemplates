@@ -167,6 +167,29 @@ public:
   };
 };
 
+template <typename E>
+class tensor_minus_left_t : public tensor_expression_t<tensor_minus_left_t<E>> {
+  using E_t = operant_t<E>;
+
+  E_t _u;
+
+public:
+  //! Scalar expression doesn't change tensor properties
+  using property_t = scalar_expression_property_t<E>;
+
+  tensor_minus_left_t(E const &u)
+      : _u(u){};
+
+  [[deprecated("Do not access the tensor expression via the [] operator, this "
+               "is UNDEFINED!")]] inline __attribute__ ((always_inline)) decltype(auto)
+  operator[](size_t i) const = delete;
+  //    inline __attribute__ ((always_inline)) decltype(auto) operator[](size_t i) const { return _u[i]/_v; };
+
+  template <size_t index> inline __attribute__ ((always_inline)) decltype(auto) evaluate() const {
+    return _u.template evaluate<index>()* static_cast<typename E::property_t::data_t>(-1.0);
+  };
+};
+
 template <typename E1, typename E2>
 tensor_sum_t<E1, E2> const inline __attribute__ ((always_inline)) operator+(E1 const &u, E2 const &v) {
   return tensor_sum_t<E1, E2>(u, v);
@@ -199,11 +222,8 @@ operator/(E const &u, typename E::property_t::data_t const &v) {
 }
 
 template <typename E>
-tensor_scalar_mult_t<E> const inline __attribute__ ((always_inline)) operator-(E const &u) {
-//[[deprecated("Using -Tensor at the beginning of an expression might cause unexpected behaviour")]]
-  //IMPORTANT: The static keyword must NOT be removed!
-  static typename E::property_t::data_t minus(-1.0); // This must be a double, not an integer.
-  return tensor_scalar_mult_t<E>(minus, u);
+tensor_minus_left_t<E> const inline __attribute__ ((always_inline)) operator-(E const &u) {
+  return tensor_minus_left_t<E>(u);
 }
 
 } // namespace tensors
